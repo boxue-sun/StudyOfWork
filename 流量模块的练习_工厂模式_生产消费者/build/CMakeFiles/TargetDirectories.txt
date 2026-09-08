@@ -1,0 +1,3 @@
+/work/sunboxue/LiuLiang/practice/build/CMakeFiles/task_practice.dir
+/work/sunboxue/LiuLiang/practice/build/CMakeFiles/edit_cache.dir
+/work/sunboxue/LiuLiang/practice/build/CMakeFiles/rebuild_cache.dir
