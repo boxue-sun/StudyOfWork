@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="262" viewBox="0 0 680 262" role="img">
+<title>编码发生在相机里，解码发生在下游：H.264 数据的完整旅程</title>
+<desc>相机内部完成采集与编码，输出就是 H.264 码流；经 RTSP 网络传到边缘设备；驱动用 FFmpeg 只做解封装拆包，把 H.264 裸数据放进 protobuf 发布；下游分两类消费者，录制与转发不需要解码，感知与显示才需要解码成像素。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+<rect x="60" y="60" width="140" height="110" rx="12" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="76" y="82" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">① 相机内部</text>
+<text x="76" y="108" font-size="12" fill="#AFA9EC" dominant-baseline="central">传感器 → ISP → 编码器</text>
+<text x="76" y="128" font-size="12" fill="#AFA9EC" dominant-baseline="central">出厂就带编码芯片</text>
+<text x="76" y="152" font-size="12" fill="#FAC775" dominant-baseline="central">编码在这里完成</text>
+
+<path d="M204 115 H220" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="224" y="60" width="100" height="110" rx="12" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="240" y="82" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">② 网络</text>
+<text x="240" y="108" font-size="12" fill="#85B7EB" dominant-baseline="central">RTSP / RTP</text>
+<text x="240" y="128" font-size="12" fill="#85B7EB" dominant-baseline="central">只负责搬运</text>
+<text x="240" y="152" font-size="12" fill="#85B7EB" dominant-baseline="central">不改内容</text>
+
+<path d="M328 115 H344" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="348" y="60" width="130" height="110" rx="12" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="364" y="82" font-size="13" font-weight="500" fill="#C0DD97" dominant-baseline="central">③ 本驱动</text>
+<text x="364" y="108" font-size="12" fill="#97C459" dominant-baseline="central">av_read_frame</text>
+<text x="364" y="128" font-size="12" fill="#97C459" dominant-baseline="central">拆包 demux</text>
+<text x="364" y="152" font-size="12" fill="#FAC775" dominant-baseline="central">这里不解码</text>
+
+<path d="M482 115 H492 V86 H498" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M482 115 H492 V144 H498" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="502" y="60" width="138" height="52" rx="12" fill="#085041" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="518" y="80" font-size="13" font-weight="500" fill="#9FE1CB" dominant-baseline="central">④ 录制 / 转发</text>
+<text x="518" y="100" font-size="12" fill="#5DCAA5" dominant-baseline="central">data 原样存，不解码</text>
+
+<rect x="502" y="118" width="138" height="52" rx="12" fill="#4A1B0C" stroke="#993C1D" stroke-width="0.5"/>
+<text x="518" y="138" font-size="13" font-weight="500" fill="#F5C4B3" dominant-baseline="central">④ 感知 / 显示</text>
+<text x="518" y="158" font-size="12" fill="#F0997B" dominant-baseline="central">解码 → YUV → RGB</text>
+
+<rect x="60" y="190" width="580" height="52" rx="12" fill="#2C2C2A" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="76" y="210" font-size="13" font-weight="500" fill="#D3D1C7" dominant-baseline="central">H.264 从头到尾没变过：它是「压缩后的码流」，只有需要看像素时才解码</text>
+<text x="76" y="230" font-size="12" fill="#B4B2A9" dominant-baseline="central">驱动拿到的已经是相机编码好的数据，驱动只负责拆包和贴标签</text>
+</g>
+</svg>

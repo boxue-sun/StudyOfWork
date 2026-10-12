@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="396" viewBox="0 0 680 396" role="img">
+<title>帧间隔统计：相邻两帧发送时刻之差</title>
+<desc>五个帧按顺序发出，两两之间测一次时间差；第一帧因上一时刻为零而跳过；正常 33 毫秒，异常处 520 毫秒。统计结果累加进每路流的总时间、次数、最小值和最大值，每 100 帧打一次日志。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+<rect x="60" y="40" width="580" height="196" rx="16" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="76" y="64" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">每发出一帧测一次：interval = 当前时刻 − 上一帧发送时刻</text>
+
+<rect x="80" y="96" width="60" height="52" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="110" y="116" font-size="14" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">第 1 帧</text>
+<text x="110" y="134" font-size="12" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">last=0</text>
+
+<rect x="190" y="96" width="60" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="220" y="116" font-size="14" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">第 2 帧</text>
+<text x="220" y="134" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">t2</text>
+
+<rect x="300" y="96" width="60" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="330" y="116" font-size="14" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">第 3 帧</text>
+<text x="330" y="134" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">t3</text>
+
+<rect x="410" y="96" width="60" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="440" y="116" font-size="14" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">第 4 帧</text>
+<text x="440" y="134" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">t4</text>
+
+<rect x="570" y="96" width="60" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="600" y="116" font-size="14" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">第 5 帧</text>
+<text x="600" y="134" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">t5</text>
+
+<path d="M144 182 H186" fill="none" stroke="#888780" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<text x="165" y="202" font-size="12" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">跳过</text>
+
+<path d="M254 182 H296" fill="none" stroke="#5DCAA5" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<text x="275" y="202" font-size="12" fill="#9FE1CB" text-anchor="middle" dominant-baseline="central">33ms</text>
+
+<path d="M364 182 H406" fill="none" stroke="#5DCAA5" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<text x="385" y="202" font-size="12" fill="#9FE1CB" text-anchor="middle" dominant-baseline="central">33ms</text>
+
+<path d="M474 182 H566" fill="none" stroke="#EF9F27" stroke-width="1.5" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<text x="520" y="202" font-size="12" fill="#FAC775" text-anchor="middle" dominant-baseline="central">520ms</text>
+
+<text x="76" y="222" font-size="12" fill="#AFA9EC" dominant-baseline="central">第一帧 last_send_time 还是 0，跳过；否则会算出「从程序启动到现在」的巨大值</text>
+
+<rect x="60" y="252" width="580" height="124" rx="16" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="76" y="276" font-size="13" font-weight="500" fill="#9FE1CB" dominant-baseline="central">四个统计量存在每路流各自的 StreamInfo 里</text>
+
+<rect x="72" y="292" width="130" height="44" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="137" y="306" font-size="14" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">total</text>
+<text x="137" y="324" font-size="12" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">所有间隔累加</text>
+
+<rect x="214" y="292" width="130" height="44" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="279" y="306" font-size="14" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">count</text>
+<text x="279" y="324" font-size="12" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">统计了多少次</text>
+
+<rect x="356" y="292" width="130" height="44" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="421" y="306" font-size="14" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">min</text>
+<text x="421" y="324" font-size="12" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">初值 DBL_MAX</text>
+
+<rect x="498" y="292" width="130" height="44" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="563" y="306" font-size="14" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">max</text>
+<text x="563" y="324" font-size="12" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">初值 0.0，看抖动</text>
+
+<text x="76" y="356" font-size="12" fill="#5DCAA5" dominant-baseline="central">每 100 帧：avg = total ÷ count，连同 min、max 打一条 INFO 日志</text>
+</g>
+</svg>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="470" viewBox="0 0 680 470" role="img">
+<title>发送给谁：往 CyberRT 总线广播，发布方不知道谁在订阅</title>
+<desc>上半部分：驱动把数据发到 CyberRT 的 channel 上，一路流一个 topic，发布方不需要知道谁在订阅。下半部分：仓库里能查到的订阅方有三类，rtsp_tool 把 channel 再推成 RTSP 流、extract_h264.py 从离线 record 包里抽 H.264 存文件、真正的业务下游是融合感知等组件但不在本仓库里。底部提醒别把另一套 camera 驱动当成下游。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+<rect x="60" y="40" width="580" height="196" rx="16" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="76" y="64" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">发送 = 往 CyberRT 总线上广播（发布方不知道谁在听，也不需要知道）</text>
+
+<rect x="76" y="90" width="140" height="60" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="146" y="110" font-size="13" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">驱动（本模块）</text>
+<text x="146" y="130" font-size="11" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">4 路拉流线程</text>
+
+<path d="M218 120 H246" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="248" y="90" width="188" height="60" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="342" y="110" font-size="12" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">CyberRT channel</text>
+<text x="342" y="130" font-size="11" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">/sensor/ipcamera/h264/&lt;IP&gt;</text>
+
+<path d="M438 120 H466" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="468" y="90" width="160" height="60" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="548" y="110" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">谁订阅谁收到</text>
+<text x="548" y="130" font-size="11" fill="#97C459" text-anchor="middle" dominant-baseline="central">0 个也不报错</text>
+
+<text x="76" y="176" font-size="12" fill="#CECBF6" dominant-baseline="central">像广播电台：我们只管往频道里播，谁打开收音机听、有几个人听，我们不知道也不用管</text>
+<text x="76" y="202" font-size="12" fill="#AFA9EC" dominant-baseline="central">正因为这样，sender_ 回调才必须把 topic 带上——没有地址，总线不知道该往哪个频道播</text>
+<text x="76" y="224" font-size="12" fill="#888780" dominant-baseline="central">解耦的好处：下游增删、换人，驱动一行代码都不用改</text>
+
+<rect x="60" y="256" width="580" height="194" rx="16" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="76" y="280" font-size="13" font-weight="500" fill="#9FE1CB" dominant-baseline="central">仓库里能查到的订阅方（三类）</text>
+
+<rect x="76" y="300" width="168" height="72" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="160" y="320" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">rtsp_tool（C++）</text>
+<text x="160" y="340" font-size="11" fill="#97C459" text-anchor="middle" dominant-baseline="central">订阅 h264 channel</text>
+<text x="160" y="358" font-size="11" fill="#5DCAA5" text-anchor="middle" dominant-baseline="central">再推成 RTSP 流</text>
+
+<rect x="262" y="300" width="168" height="72" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="346" y="320" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">extract_h264.py</text>
+<text x="346" y="340" font-size="11" fill="#97C459" text-anchor="middle" dominant-baseline="central">读离线 record 包</text>
+<text x="346" y="358" font-size="11" fill="#5DCAA5" text-anchor="middle" dominant-baseline="central">抽 H.264 存文件</text>
+
+<rect x="448" y="300" width="180" height="72" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="538" y="320" font-size="13" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">业务侧组件</text>
+<text x="538" y="340" font-size="11" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">融合感知 / 算法</text>
+<text x="538" y="358" font-size="11" fill="#888780" text-anchor="middle" dominant-baseline="central">不在本仓库里</text>
+
+<text x="76" y="396" font-size="12" fill="#9FE1CB" dominant-baseline="central">前两个是工具链（联调、复现用）；真正的业务下游在公司业务代码里，这个开源仓库看不到</text>
+<text x="76" y="424" font-size="12" fill="#FAC775" dominant-baseline="central">⚠ 别把 modules/camera/ipcamera 当成下游：它用另一套 proto、是独立 SDK，只是恰好也往同名 channel 发</text>
+
+</g>
+</svg>

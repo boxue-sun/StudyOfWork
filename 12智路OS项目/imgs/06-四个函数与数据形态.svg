@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="450" viewBox="0 0 680 450" role="img">
+<title>四个 FFmpeg 函数各管什么，以及 pkt.data 里的 H.264 数据长什么样</title>
+<desc>上半部分用水管类比：avformat_open_input 是接上水龙头（建立连接并探测格式），find_stream_info 是看清有几根管子各出什么，av_read_frame 是每次接一杯水，avformat_close_input 是关水龙头拆管子。下半部分展示一个 packet 里的 H.264 数据形态：起始码 00 00 00 01、NALU 头（低 5 位是类型）、编码后的压缩图像数据；类型 5 是关键帧 IDR，类型 1 是普通帧，7 和 8 是参数集，6 是 SEI 自定义信息。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+<rect x="60" y="40" width="580" height="152" rx="16" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="76" y="64" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">四个函数各管什么（水管类比）</text>
+
+<rect x="76" y="90" width="132" height="60" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="142" y="110" font-size="11" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">avformat_open_input</text>
+<text x="142" y="130" font-size="11" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">接上水龙头</text>
+
+<path d="M210 120 H222" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="224" y="90" width="132" height="60" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="290" y="110" font-size="11" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">find_stream_info</text>
+<text x="290" y="130" font-size="11" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">看清几根管子</text>
+
+<path d="M358 120 H370" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="372" y="90" width="132" height="60" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="438" y="110" font-size="12" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">av_read_frame</text>
+<text x="438" y="130" font-size="11" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">每次接一杯</text>
+
+<path d="M506 120 H518" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="520" y="90" width="120" height="60" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="580" y="110" font-size="11" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">close_input</text>
+<text x="580" y="130" font-size="11" fill="#97C459" text-anchor="middle" dominant-baseline="central">关水龙头拆管</text>
+
+<text x="76" y="172" font-size="12" fill="#FAC775" dominant-baseline="central">open_input 【不会】把数据全拉下来——RTSP 是持续不断的流，压根没有"整个"这回事；真正读数据的是 read_frame</text>
+
+<rect x="60" y="212" width="580" height="218" rx="16" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="76" y="236" font-size="13" font-weight="500" fill="#9FE1CB" dominant-baseline="central">pkt.data 里装的到底是什么（H.264 裸码流，不是像素）</text>
+
+<rect x="76" y="258" width="104" height="44" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="128" y="272" font-size="12" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">00 00 00 01</text>
+<text x="128" y="290" font-size="11" fill="#97C459" text-anchor="middle" dominant-baseline="central">起始码</text>
+
+<rect x="188" y="258" width="96" height="44" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="236" y="272" font-size="12" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">NALU 头</text>
+<text x="236" y="290" font-size="11" fill="#97C459" text-anchor="middle" dominant-baseline="central">低 5 位 = 类型</text>
+
+<rect x="292" y="258" width="348" height="44" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="466" y="272" font-size="12" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">编码后的图像数据（压缩字节，几 KB ~ 几十 KB）</text>
+<text x="466" y="290" font-size="11" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">要还原成画面得靠解码，我们这一站不干</text>
+
+<rect x="76" y="322" width="150" height="48" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="151" y="340" font-size="12" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">type = 5　IDR</text>
+<text x="151" y="358" font-size="11" fill="#97C459" text-anchor="middle" dominant-baseline="central">关键帧，可独立解</text>
+
+<rect x="238" y="322" width="150" height="48" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="313" y="340" font-size="12" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">type = 1　P / B</text>
+<text x="313" y="358" font-size="11" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">普通帧，依赖前帧</text>
+
+<rect x="400" y="322" width="118" height="48" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="459" y="340" font-size="12" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">type = 7 / 8</text>
+<text x="459" y="358" font-size="11" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">SPS / PPS 参数</text>
+
+<rect x="530" y="322" width="110" height="48" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="585" y="340" font-size="12" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">type = 6　SEI</text>
+<text x="585" y="358" font-size="11" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">曝光时间戳</text>
+
+<text x="76" y="396" font-size="12" fill="#FAC775" dominant-baseline="central">所以一个 packet 不一定是"完整一帧"：大帧可能切成多个片，也可能压根不是图像（SPS/PPS/SEI）</text>
+<text x="76" y="420" font-size="12" fill="#9FE1CB" dominant-baseline="central">代码证据：IsKeyFrame 扫 00 00 01 取低 5 位 == 5（.cc:471-504）；SEI 曝光时间解析 nal_type == 6（.cc:414-469）</text>
+
+</g>
+</svg>

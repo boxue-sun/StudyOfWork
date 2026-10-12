@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="360" viewBox="0 0 680 360" role="img">
+<title>Start 点名，StartStream 建线程</title>
+<desc>Start 加锁遍历流表逐个调用 StartStream；StartStream 先用 topic 查表，幂等判断后把这一路的停止标志拨回 false，再 new 一个线程跑拉流函数。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="50" y="48" font-size="14" font-weight="500" fill="#CECBF6" dominant-baseline="central">Start 只「点名」，真正建线程的是 StartStream</text>
+
+<rect x="50" y="70" width="200" height="270" rx="16" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="70" y="92" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">Start()</text>
+<text x="70" y="120" font-size="12" fill="#AFA9EC" dominant-baseline="central">① stop_ 已拉就 return</text>
+<text x="70" y="146" font-size="12" fill="#AFA9EC" dominant-baseline="central">② 加 streams_mutex_ 锁</text>
+<text x="70" y="172" font-size="12" fill="#AFA9EC" dominant-baseline="central">③ 遍历 streams_ 台账</text>
+<text x="70" y="198" font-size="12" fill="#AFA9EC" dominant-baseline="central">④ 对每个 key 调一次</text>
+<text x="86" y="216" font-size="12" fill="#CECBF6" dominant-baseline="central">StartStream(pair.first)</text>
+<text x="70" y="252" font-size="12" fill="#EF9F27" dominant-baseline="central">它自己不查表、</text>
+<text x="70" y="270" font-size="12" fill="#EF9F27" dominant-baseline="central">也不创建线程</text>
+
+<path d="M254 205 L284 205" fill="none" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="290" y="70" width="340" height="270" rx="16" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="310" y="92" font-size="13" font-weight="500" fill="#9FE1CB" dominant-baseline="central">StartStream(stream_id)　四步</text>
+
+<rect x="310" y="106" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="122" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">① streams_.find(stream_id) 查表</text>
+<text x="460" y="140" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">stream_id 就是 output topic，查不到就报错 return</text>
+
+<rect x="310" y="162" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="178" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">② if (pull_thread) return 幂等</text>
+<text x="460" y="196" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">已经在跑就不重复启动</text>
+
+<rect x="310" y="218" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="234" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">③ stop.store(false) 拨回「照常跑」</text>
+<text x="460" y="252" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">不拨回去，线程一起来就退出</text>
+
+<rect x="310" y="274" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="290" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">④ new std::thread → Reset 接管</text>
+<text x="460" y="308" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">线程立刻开跑 TaskPullRtspStream</text>
+</g>
+</svg>

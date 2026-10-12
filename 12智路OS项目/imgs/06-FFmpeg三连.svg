@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="452" viewBox="0 0 680 452" role="img">
+<title>ConnectRtspStream 的 FFmpeg 三连与失败分支</title>
+<desc>先查流表，再依次打开 RTSP 输入、拉取流信息、遍历所有流找视频流索引；任何一步失败都要关闭连接并返回 false，由外层循环睡五秒后重试。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="60" y="48" font-size="14" font-weight="500" fill="#CECBF6" dominant-baseline="central">ConnectRtspStream()：连一次 RTSP 要做的事（成功返回 true）</text>
+
+<rect x="60" y="70" width="560" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="80" y="88" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">⓪ streams_.find(stream_id) 查档案袋</text>
+<text x="80" y="106" font-size="12" fill="#85B7EB" dominant-baseline="central">.cc:363　查不到直接 return false</text>
+
+<rect x="60" y="132" width="560" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="80" y="150" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">① avformat_open_input　打开 RTSP</text>
+<text x="80" y="168" font-size="12" fill="#F09595" dominant-baseline="central">.cc:373　失败 → return false</text>
+
+<rect x="60" y="194" width="560" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="80" y="212" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">② avformat_find_stream_info　拉流信息</text>
+<text x="80" y="230" font-size="12" fill="#F09595" dominant-baseline="central">.cc:379　失败 → close_input + return false</text>
+
+<rect x="60" y="256" width="560" height="52" rx="8" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="80" y="274" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">③ 遍历 nb_streams 找视频流索引</text>
+<text x="80" y="292" font-size="12" fill="#AFA9EC" dominant-baseline="central">.cc:390　codec_type == AVMEDIA_TYPE_VIDEO 就记下标并 break</text>
+
+<rect x="60" y="318" width="560" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="80" y="336" font-size="13" font-weight="500" fill="#C0DD97" dominant-baseline="central">④ 找到 → video_stream_index = i，返回 true</text>
+<text x="80" y="354" font-size="12" fill="#97C459" dominant-baseline="central">这个索引后面用来过滤音频包</text>
+
+<rect x="60" y="380" width="560" height="52" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="80" y="398" font-size="13" font-weight="500" fill="#D3D1C7" dominant-baseline="central">仍为 -1 → 没视频流 → 关闭 + return false</text>
+<text x="80" y="416" font-size="12" fill="#EF9F27" dominant-baseline="central">外层拿到 false 就 sleep 5 秒再连一次</text>
+
+<path d="M340 122 L340 128" fill="none" stroke="#85B7EB" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 184 L340 190" fill="none" stroke="#85B7EB" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 246 L340 252" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 308 L340 314" fill="none" stroke="#97C459" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 370 L340 376" fill="none" stroke="#B4B2A9" stroke-width="1.5" marker-end="url(#arrow)"/>
+</g>
+</svg>
