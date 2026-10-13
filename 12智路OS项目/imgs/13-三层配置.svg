@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="358" viewBox="0 0 680 358" role="img">
+<title>三层配置一层指一层，各自回答什么问题</title>
+<desc>第一层 dag 指出组件库与组件配置路径，第二层 config.pb.txt 指出用哪个驱动与驱动配置路径，第三层 ipcamera_config.yaml 给出相机地址、输出话题和各项参数。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="60" y="48" font-size="14" font-weight="500" fill="#CECBF6" dominant-baseline="central">三层配置：一层把路径「喂」给下一层</text>
+
+<rect x="60" y="70" width="400" height="76" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="80" y="90" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">① dag/ipcamera.dag</text>
+<text x="80" y="110" font-size="12" fill="#85B7EB" dominant-baseline="central">module_library：加载哪个 .so</text>
+<text x="80" y="130" font-size="12" fill="#85B7EB" dominant-baseline="central">config_file_path：组件配置在哪</text>
+
+<rect x="480" y="70" width="140" height="76" rx="8" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="550" y="94" font-size="12" fill="#CECBF6" text-anchor="middle" dominant-baseline="central">回答</text>
+<text x="550" y="114" font-size="12" fill="#AFA9EC" text-anchor="middle" dominant-baseline="central">起哪个进程、</text>
+<text x="550" y="132" font-size="12" fill="#AFA9EC" text-anchor="middle" dominant-baseline="central">加载哪个组件库</text>
+
+<rect x="60" y="166" width="400" height="76" rx="8" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="80" y="186" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">② conf/config.pb.txt</text>
+<text x="80" y="206" font-size="12" fill="#AFA9EC" dominant-baseline="central">device: "standard_ipcamera"　选哪个驱动</text>
+<text x="80" y="226" font-size="12" fill="#AFA9EC" dominant-baseline="central">config_file: 驱动配置路径</text>
+
+<rect x="480" y="166" width="140" height="76" rx="8" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="550" y="190" font-size="12" fill="#CECBF6" text-anchor="middle" dominant-baseline="central">回答</text>
+<text x="550" y="210" font-size="12" fill="#AFA9EC" text-anchor="middle" dominant-baseline="central">用哪个驱动、</text>
+<text x="550" y="228" font-size="12" fill="#AFA9EC" text-anchor="middle" dominant-baseline="central">驱动配置在哪</text>
+
+<rect x="60" y="262" width="400" height="76" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="80" y="282" font-size="13" font-weight="500" fill="#C0DD97" dominant-baseline="central">③ conf/ipcamera_config.yaml</text>
+<text x="80" y="302" font-size="12" fill="#97C459" dominant-baseline="central">rtsp_urls / output_topics　去哪拉、拉到哪</text>
+<text x="80" y="322" font-size="12" fill="#97C459" dominant-baseline="central">重连间隔 / 超时 / SEI / 落盘开关</text>
+
+<rect x="480" y="262" width="140" height="76" rx="8" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="550" y="286" font-size="12" fill="#9FE1CB" text-anchor="middle" dominant-baseline="central">回答</text>
+<text x="550" y="306" font-size="12" fill="#5DCAA5" text-anchor="middle" dominant-baseline="central">去哪拉、拉到哪、</text>
+<text x="550" y="324" font-size="12" fill="#5DCAA5" text-anchor="middle" dominant-baseline="central">参数是多少</text>
+
+<path d="M150 146 L150 162" fill="none" stroke="#85B7EB" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M150 242 L150 258" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="164" y="154" font-size="12" fill="#85B7EB" dominant-baseline="central">喂路径</text>
+<text x="164" y="250" font-size="12" fill="#AFA9EC" dominant-baseline="central">喂路径</text>
+</g>
+</svg>

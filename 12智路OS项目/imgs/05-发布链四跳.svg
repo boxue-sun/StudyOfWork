@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="330" viewBox="0 0 680 330" role="img" font-family="system-ui, -apple-system, sans-serif">
+<title>从驱动调用 sender_ 到 CyberRT Write 的四跳发布链路</title>
+<desc>左侧驱动插件在拉流线程里调用 sender_ 回调，交给右侧框架组件；框架的 MultiStreamCallBack 转发给 Send，Send 按 channel 从缓存里取或创建 Writer，最后 Writer 把消息写进 CyberRT 的 channel。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect x="40" y="48" width="260" height="234" rx="16" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="56" y="72" font-size="14" font-weight="500" fill="#CECBF6">驱动插件 standard_ipcamera.so</text>
+
+<rect x="56" y="86" width="228" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="170" y="106" font-size="14" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">TaskPullRtspStream 线程</text>
+<text x="170" y="124" font-size="12" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">6 路相机 = 6 个独立线程</text>
+
+<rect x="56" y="150" width="228" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="170" y="170" font-size="14" font-weight="500" fill="#B5D4F4" text-anchor="middle" dominant-baseline="central">sender_(topic, img)</text>
+<text x="170" y="188" font-size="12" fill="#85B7EB" text-anchor="middle" dominant-baseline="central">第 1 跳 · .cc:323-324</text>
+
+<rect x="56" y="214" width="228" height="52" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="170" y="234" font-size="14" font-weight="500" fill="#D3D1C7" text-anchor="middle" dominant-baseline="central">驱动手里没有 Writer</text>
+<text x="170" y="252" font-size="12" fill="#B4B2A9" text-anchor="middle" dominant-baseline="central">只有框架知道往哪发</text>
+
+<text x="340" y="98" font-size="12" fill="#5DCAA5" text-anchor="middle">回调跨边界</text>
+<line x1="304" y1="112" x2="374" y2="112" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="380" y="48" width="260" height="234" rx="16" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="396" y="72" font-size="14" font-weight="500" fill="#9FE1CB">框架组件 IpCameraComponent</text>
+
+<rect x="396" y="86" width="228" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="510" y="106" font-size="14" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">MultiStreamCallBack</text>
+<text x="510" y="124" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">第 2 跳 · component.cc:74-78</text>
+
+<rect x="396" y="150" width="228" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="510" y="170" font-size="14" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">Send(channel, msg)</text>
+<text x="510" y="188" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">第 3 跳 · 按 channel 取或建 Writer</text>
+
+<rect x="396" y="214" width="228" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="510" y="234" font-size="14" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">Writer-&gt;Write(msg)</text>
+<text x="510" y="252" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">第 4 跳 · 写入 CyberRT channel</text>
+
+<text x="40" y="310" font-size="12" fill="#888780">每个 channel 只在第一次发送时 CreateWriter，之后走缓存 —— 这就是「统一发布」的落点</text>
+</svg>

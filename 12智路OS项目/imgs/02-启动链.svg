@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="452" viewBox="0 0 680 452" role="img">
+<title>从进程启动到拉流线程：六步启动链</title>
+<desc>框架启动器 mainboard 读 dag，加载组件 so，组件初始化读配置，工厂按 device 名 new 出驱动，驱动读 yaml 建流表，最后 Start 为每路流起独立线程。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="60" y="48" font-size="14" font-weight="500" fill="#CECBF6" dominant-baseline="central">启动链：从一条命令到 4 个拉流线程</text>
+
+<rect x="60" y="70" width="560" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="80" y="88" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">① mainboard -d dag/ipcamera.dag</text>
+<text x="80" y="106" font-size="12" fill="#85B7EB" dominant-baseline="central">框架启动器读 dag（一个 dag = 一个进程）</text>
+
+<rect x="60" y="132" width="560" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="80" y="150" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">② dlopen libipcamera_component.so</text>
+<text x="80" y="168" font-size="12" fill="#85B7EB" dominant-baseline="central">按 class_name 找到注册的 IpCameraComponent</text>
+
+<rect x="60" y="194" width="560" height="52" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="80" y="212" font-size="13" font-weight="500" fill="#B5D4F4" dominant-baseline="central">③ 组件 Init → 读 conf/config.pb.txt</text>
+<text x="80" y="230" font-size="12" fill="#85B7EB" dominant-baseline="central">拿到 device 名 和 config_file 路径</text>
+
+<rect x="60" y="256" width="560" height="52" rx="8" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="80" y="274" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">④ 工厂 Produce() → new StandardIpCamera</text>
+<text x="80" y="292" font-size="12" fill="#AFA9EC" dominant-baseline="central">按 device: "standard_ipcamera" 查工厂表（注册宏登记过）</text>
+
+<rect x="60" y="318" width="560" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="80" y="336" font-size="13" font-weight="500" fill="#C0DD97" dominant-baseline="central">⑤ 驱动 Init(yaml) → 建 StreamInfo 流表</text>
+<text x="80" y="354" font-size="12" fill="#97C459" dominant-baseline="central">读地址与话题，一路一个「档案袋」，此时还没连相机</text>
+
+<rect x="60" y="380" width="560" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="80" y="398" font-size="13" font-weight="500" fill="#C0DD97" dominant-baseline="central">⑥ Start() → 每路 new std::thread</text>
+<text x="80" y="416" font-size="12" fill="#97C459" dominant-baseline="central">4 路 = 4 个独立线程，各自跑 TaskPullRtspStream</text>
+
+<path d="M340 122 L340 128" fill="none" stroke="#85B7EB" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 184 L340 190" fill="none" stroke="#85B7EB" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 246 L340 252" fill="none" stroke="#AFA9EC" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 308 L340 314" fill="none" stroke="#97C459" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 370 L340 376" fill="none" stroke="#97C459" stroke-width="1.5" marker-end="url(#arrow)"/>
+</g>
+</svg>

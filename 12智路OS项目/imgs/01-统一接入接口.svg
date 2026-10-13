@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="490" viewBox="0 0 680 490" role="img">
+<title>统一接入接口：抽象基类 + 工厂自注册 + 动态加载 三件套</title>
+<desc>框架组件层只面向抽象基类 IpCameraDevice 编程，通过工厂按配置里的名字取实例；工厂靠注册宏在静态初始化期把「名字-构造函数」登记进 map；具体驱动 StandardIpCamera 继承基类并 override 四个纯虚方法，编译成 .so 启动时动态加载；数据通过基类受保护的回调成员上行回框架。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+<rect x="40" y="24" width="556" height="72" rx="8" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="318" y="50" text-anchor="middle" dominant-baseline="central" fill="#CECBF6" font-size="14" font-weight="500">框架 / 组件层</text>
+<text x="318" y="72" text-anchor="middle" dominant-baseline="central" fill="#CECBF6" font-size="12">只 include 接口头文件 · 手里只有一个基类指针 · 不认识任何厂商名字</text>
+
+<path d="M318 96 L318 124" fill="none" stroke="#85B7EB" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="330" y="110" fill="#85B7EB" font-size="12">按配置里的名字取实例</text>
+
+<rect x="40" y="124" width="556" height="72" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="318" y="148" text-anchor="middle" dominant-baseline="central" fill="#D3D1C7" font-size="14" font-weight="500">工厂 IpCameraDeviceFactory（单例）</text>
+<text x="318" y="170" text-anchor="middle" dominant-baseline="central" fill="#B4B2A9" font-size="12">内部一张 map：名字 → 构造函数　←　注册宏在静态初始化期自动登记</text>
+
+<path d="M318 196 L318 224" fill="none" stroke="#B4B2A9" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="330" y="210" fill="#B4B2A9" font-size="12">找到就 new 一个给你</text>
+
+<rect x="40" y="224" width="556" height="100" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="318" y="250" text-anchor="middle" dominant-baseline="central" fill="#B5D4F4" font-size="14" font-weight="500">抽象基类 IpCameraDevice（这一层才叫「统一接口」）</text>
+<text x="318" y="272" text-anchor="middle" dominant-baseline="central" fill="#B5D4F4" font-size="12">四个纯虚函数：初始化 / 启动采集 / 查询状态 / 下发控制指令</text>
+<text x="318" y="292" text-anchor="middle" dominant-baseline="central" fill="#85B7EB" font-size="12">protected 回调成员：数据上行的通道</text>
+<text x="318" y="310" text-anchor="middle" dominant-baseline="central" fill="#85B7EB" font-size="12">有实现的虚析构：保证基类指针 delete 能走到子类那一层</text>
+
+<path d="M318 324 L318 352" fill="none" stroke="#97C459" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="330" y="338" fill="#97C459" font-size="12">继承 + override</text>
+
+<rect x="40" y="352" width="556" height="88" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="318" y="376" text-anchor="middle" dominant-baseline="central" fill="#C0DD97" font-size="13" font-weight="500">具体驱动 StandardIpCamera : public IpCameraDevice</text>
+<text x="318" y="398" text-anchor="middle" dominant-baseline="central" fill="#97C459" font-size="12">四个方法全部重写（一家厂商 / 一种协议一份实现）</text>
+<text x="318" y="418" text-anchor="middle" dominant-baseline="central" fill="#97C459" font-size="12">编译成独立 .so，启动时被扫描目录动态加载</text>
+
+<path d="M596 410 L628 410 L628 60 L596 60" fill="none" stroke="#EF9F27" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="40" y="470" fill="#EF9F27" font-size="12">橙色回环 = 数据上行：驱动只负责把数据交给回调，不关心发给谁</text>
+
+</g>
+</svg>

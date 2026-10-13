@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="360" viewBox="0 0 680 360" role="img">
+<title>Stop 收尾为什么要先置标志再 join</title>
+<desc>Stop 先拉总闸再逐路调用 StopStream；StopStream 置停止标志和断开连接状态，让阻塞在读帧里的线程自己退出，然后 join 等待，最后关闭 FFmpeg 连接。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="50" y="48" font-size="14" font-weight="500" fill="#CECBF6" dominant-baseline="central">Stop 收尾：置标志 → 等线程自己退 → 再关连接</text>
+
+<rect x="50" y="70" width="200" height="270" rx="16" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+<text x="70" y="92" font-size="13" font-weight="500" fill="#CECBF6" dominant-baseline="central">Stop()</text>
+<text x="70" y="120" font-size="12" fill="#AFA9EC" dominant-baseline="central">① stop_.store(true)</text>
+<text x="70" y="140" font-size="12" fill="#CECBF6" dominant-baseline="central">拉总闸，所有路都看它</text>
+<text x="70" y="168" font-size="12" fill="#AFA9EC" dominant-baseline="central">② 遍历 streams_</text>
+<text x="70" y="188" font-size="12" fill="#AFA9EC" dominant-baseline="central">③ 每路调 StopStream</text>
+<text x="70" y="226" font-size="12" fill="#EF9F27" dominant-baseline="central">绝不能直接销毁对象：</text>
+<text x="70" y="246" font-size="12" fill="#EF9F27" dominant-baseline="central">线程可能正卡在阻塞的</text>
+<text x="70" y="264" font-size="12" fill="#EF9F27" dominant-baseline="central">av_read_frame 里</text>
+
+<path d="M254 205 L284 205" fill="none" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="290" y="70" width="340" height="270" rx="16" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="310" y="92" font-size="13" font-weight="500" fill="#9FE1CB" dominant-baseline="central">StopStream(stream_id)　四步</text>
+
+<rect x="310" y="106" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="122" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">① stop.store(true)　通知这一路</text>
+<text x="460" y="140" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">循环条件不成立，线程自然退出</text>
+
+<rect x="310" y="162" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="178" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">② connected.store(false)　打断内层</text>
+<text x="460" y="196" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">双重保险，让内层循环也退出</text>
+
+<rect x="310" y="218" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="234" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">③ pull_thread-&gt;join()　等它真退完</text>
+<text x="460" y="252" font-size="12" fill="#EF9F27" text-anchor="middle" dominant-baseline="central">不 join 就析构线程对象会 terminate</text>
+
+<rect x="310" y="274" width="300" height="46" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+<text x="460" y="290" font-size="13" font-weight="500" fill="#C0DD97" text-anchor="middle" dominant-baseline="central">④ avformat_close_input　关连接</text>
+<text x="460" y="308" font-size="12" fill="#97C459" text-anchor="middle" dominant-baseline="central">线程已退出，此时关才安全</text>
+</g>
+</svg>

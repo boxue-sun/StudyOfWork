@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="320" viewBox="0 0 680 320" role="img">
+<title>车辆过线判定：轨迹线段与停止线相交</title>
+<desc>把每辆车上一帧位置到当前帧位置连成一条线段，判断它是否与停止线相交；相交且通过质量门（移动够远、方向够横切）才判定为过线。质量门滤掉原地抖动与沿停止线平行擦过。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+<text x="340" y="28" text-anchor="middle" dominant-baseline="central" fill="#CECBF6" font-size="14" font-weight="500">车辆轨迹（上一帧 → 当前帧）与停止线相交 ⇒ 判定过线</text>
+<line x1="120" y1="150" x2="560" y2="150" stroke="#97C459" stroke-width="3"/>
+<text x="560" y="142" text-anchor="end" dominant-baseline="central" fill="#9FE1CB" font-size="12">停止线 StopLine</text>
+<line x1="200" y1="225" x2="420" y2="80" stroke="#85B7EB" stroke-width="2"/>
+<circle cx="200" cy="225" r="6" fill="#B5D4F4"/>
+<circle cx="420" cy="80" r="6" fill="#B5D4F4"/>
+<text x="200" y="245" text-anchor="middle" dominant-baseline="central" fill="#85B7EB" font-size="12">上一帧</text>
+<text x="420" y="68" text-anchor="middle" dominant-baseline="central" fill="#85B7EB" font-size="12">当前帧</text>
+<circle cx="326" cy="150" r="7" fill="#EF9F27"/>
+<text x="326" y="172" text-anchor="middle" dominant-baseline="central" fill="#EF9F27" font-size="12">相交点</text>
+<path d="M300 150 L352 150" stroke="#EF9F27" stroke-width="0" />
+<rect x="60" y="255" width="560" height="52" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="80" y="275" dominant-baseline="central" fill="#D3D1C7" font-size="12">① 移动距离 ≥ 0.5m —— 滤掉原地抖动（停车抖一下不算过线）</text>
+<text x="80" y="295" dominant-baseline="central" fill="#D3D1C7" font-size="12">② 移动方向与停止线法线夹角 ≤ 60° —— 滤掉沿停止线平行擦过</text>
+</g>
+</svg>

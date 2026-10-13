@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="500" viewBox="0 0 680 500" role="img">
+<title>工作线程消费链：逐帧累加 + 到点结算</title>
+<desc>线程 take 一帧后广播给所有检测器累加；帧时间戳跨过周期边界才结算、聚合、组装并交给发布回调。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+  <!-- 容器 A：逐帧累加 -->
+  <rect x="16" y="16" width="400" height="168" rx="16" fill="#26215C" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="32" y="42" fill="#CECBF6" font-size="13" font-weight="500">逐帧累加 · 每一帧都做（只记账、不出数）</text>
+
+  <rect x="32" y="60" width="166" height="48" rx="8" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+  <text x="115" y="84" fill="#D3D1C7" font-size="12" text-anchor="middle" dominant-baseline="central">① take() 取一帧</text>
+  <line x1="198" y1="84" x2="228" y2="84" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="232" y="60" width="168" height="48" rx="8" fill="#0C447C" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="316" y="76" fill="#B5D4F4" font-size="12" text-anchor="middle" dominant-baseline="central">② update() 广播累加</text>
+  <text x="316" y="94" fill="#85B7EB" font-size="11" text-anchor="middle" dominant-baseline="central">（每个检测器各记一笔）</text>
+
+  <text x="32" y="140" fill="#B5D4F4" font-size="11.5">流量检测器内部：判过线 → 分车型 → 按 lane_tag 记账</text>
+  <text x="32" y="162" fill="#85B7EB" font-size="11">（过线判定是 volume / headway 的公共零件）</text>
+
+  <!-- 右卡片：为什么分两拍 -->
+  <rect x="424" y="16" width="240" height="168" rx="16" fill="#444441" stroke="#B4B2A9" stroke-width="0.5"/>
+  <text x="440" y="44" fill="#D3D1C7" font-size="12.5" font-weight="500">为什么要分两拍？</text>
+  <text x="440" y="76" fill="#D3D1C7" font-size="11.5">· 每帧都得更新状态（车在动）</text>
+  <text x="440" y="102" fill="#D3D1C7" font-size="11.5">· 只在周期边界出数</text>
+  <text x="440" y="128" fill="#D3D1C7" font-size="11.5">· 边界看帧时间戳，帧到达的</text>
+  <text x="452" y="148" fill="#D3D1C7" font-size="11.5">抖动不会累积进周期</text>
+
+  <!-- 判断节点 -->
+  <line x1="220" y1="184" x2="220" y2="204" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="120" y="208" width="200" height="52" rx="8" fill="#444441" stroke="#EF9F27" stroke-width="1"/>
+  <text x="220" y="226" fill="#EF9F27" font-size="12" text-anchor="middle" dominant-baseline="central">③ check_trigger</text>
+  <text x="220" y="246" fill="#EF9F27" font-size="11" text-anchor="middle" dominant-baseline="central">这帧跨过周期边界了吗？</text>
+
+  <!-- 回环：否 -->
+  <path d="M120 234 H60 V84 H38" fill="none" stroke="#EF9F27" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="66" y="152" fill="#EF9F27" font-size="11">否 → 直接取下一帧</text>
+
+  <!-- 容器 B：到点结算 -->
+  <line x1="220" y1="260" x2="220" y2="284" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="16" y="290" width="648" height="196" rx="16" fill="#04342C" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="32" y="316" fill="#9FE1CB" font-size="13" font-weight="500">到点结算 · 只有跨过边界才做（算完即清零，周期不重叠）</text>
+
+  <rect x="32" y="338" width="176" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+  <text x="120" y="356" fill="#C0DD97" font-size="12" text-anchor="middle" dominant-baseline="central">④ calculate_once()</text>
+  <text x="120" y="375" fill="#97C459" font-size="11" text-anchor="middle" dominant-baseline="central">结算成结果 + 清零账本</text>
+  <line x1="208" y1="364" x2="236" y2="364" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="240" y="338" width="200" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+  <text x="340" y="356" fill="#C0DD97" font-size="12" text-anchor="middle" dominant-baseline="central">⑤ 分级 + merge_by_key</text>
+  <text x="340" y="375" fill="#97C459" font-size="11" text-anchor="middle" dominant-baseline="central">按 lane_tag / 断面标签合并</text>
+  <line x1="440" y1="364" x2="468" y2="364" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="472" y="338" width="176" height="52" rx="8" fill="#173404" stroke="#97C459" stroke-width="0.5"/>
+  <text x="560" y="356" fill="#C0DD97" font-size="12" text-anchor="middle" dominant-baseline="central">⑥ 聚合 + 组装报文</text>
+  <text x="560" y="375" fill="#97C459" font-size="11" text-anchor="middle" dominant-baseline="central">aggregate_to_flow → build_output</text>
+
+  <path d="M560 390 V416 H524" fill="none" stroke="#5DCAA5" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="240" y="412" width="284" height="52" rx="8" fill="#444441" stroke="#F09595" stroke-width="0.5"/>
+  <text x="382" y="430" fill="#F09595" font-size="12" text-anchor="middle" dominant-baseline="central">⑦ _publish_callback(报文)</text>
+  <text x="382" y="449" fill="#B4B2A9" font-size="11" text-anchor="middle" dominant-baseline="central">出口在这——简历不写这一步 ❗</text>
+
+</g>
+</svg>
