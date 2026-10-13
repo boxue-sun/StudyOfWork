@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="240" viewBox="0 0 680 240" role="img">
+<title>ROS2 通信三兄弟对比：Topic、Service、Action</title>
+<desc>Topic 像广播电台一直发；Service 像查快递，问一次答一次就结束；Action 像叫外卖，下单、接单、报进度、最后送达。</desc>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+<rect x="42" y="40" width="176" height="110" rx="8" fill="#F0FDF4" stroke="#059669" stroke-width="0.5"/>
+<text x="130" y="64" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#065F46">Topic 话题</text>
+<text x="130" y="92" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#047857">广播电台</text>
+<text x="130" y="114" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#047857">一直发，不管谁听</text>
+<text x="130" y="136" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#047857">/cmd_vel、/scan</text>
+
+<rect x="252" y="40" width="176" height="110" rx="8" fill="#F5F5F4" stroke="#A8A29E" stroke-width="0.5"/>
+<text x="340" y="64" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#44403C">Service 服务</text>
+<text x="340" y="92" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#57534E">查快递</text>
+<text x="340" y="114" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#57534E">问一次答一次，结束</text>
+<text x="340" y="136" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#57534E">查小车状态</text>
+
+<rect x="462" y="40" width="176" height="110" rx="8" fill="#EDE9FE" stroke="#7C3AED" stroke-width="0.5"/>
+<text x="550" y="64" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="500" fill="#4C1D95">Action 动作</text>
+<text x="550" y="92" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5B21B6">叫外卖 / 打车</text>
+<text x="550" y="114" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5B21B6">下单→接单→进度→送达</text>
+<text x="550" y="136" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5B21B6">导航去某展点</text>
+
+<rect x="42" y="176" width="596" height="44" rx="8" fill="#F5F5F4" stroke="#A8A29E" stroke-width="0.5"/>
+<text x="340" y="198" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#44403C">判断口诀：耗时任务 + 途中要看进度 + 可能要取消 → 用 Action</text>
+
+</g>
+</svg>

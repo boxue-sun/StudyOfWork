@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="306" viewBox="0 0 680 306" role="img">
+<title>导览项目里 Action 的位置：tour_node 用 ActionClient 指挥 Nav2</title>
+<desc>tour_node.py 的状态机通过 ActionClient 向 Nav2 发导航目标，Nav2 算出的速度再经桥接送给 Gazebo，小车才真正移动。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+<rect x="42" y="40" width="180" height="160" rx="16" fill="#F5F3FF" stroke="#7C3AED" stroke-width="0.5"/>
+<text x="132" y="62" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#4C1D95">你的代码 tour_node.py</text>
+
+<rect x="62" y="76" width="140" height="32" rx="8" fill="#EDE9FE" stroke="#A78BFA" stroke-width="0.5"/>
+<text x="132" y="92" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#3730A3">NAVIGATE</text>
+<rect x="62" y="116" width="140" height="32" rx="8" fill="#EDE9FE" stroke="#A78BFA" stroke-width="0.5"/>
+<text x="132" y="132" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#3730A3">GUIDE</text>
+<rect x="62" y="156" width="140" height="32" rx="8" fill="#EDE9FE" stroke="#A78BFA" stroke-width="0.5"/>
+<text x="132" y="172" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#3730A3">NEXT</text>
+
+<path d="M222 120 L248 120" fill="none" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="250" y="92" width="180" height="56" rx="8" fill="#EDE9FE" stroke="#7C3AED" stroke-width="0.5"/>
+<text x="340" y="110" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#4C1D95">ActionClient</text>
+<text x="340" y="130" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5B21B6">/navigate_to_pose</text>
+
+<path d="M430 120 L456 120" fill="none" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="458" y="92" width="180" height="56" rx="8" fill="#F5F5F4" stroke="#A8A29E" stroke-width="0.5"/>
+<text x="548" y="110" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#44403C">Nav2 服务端</text>
+<text x="548" y="130" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#57534E">规划路径 + 计算速度</text>
+
+<path d="M548 148 L548 228" fill="none" stroke="#A8A29E" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="42" y="230" width="596" height="56" rx="8" fill="#F0FDF4" stroke="#059669" stroke-width="0.5"/>
+<text x="340" y="248" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#065F46">Nav2 输出 /cmd_vel → ros_gz_bridge → Gazebo 差速插件</text>
+<text x="340" y="268" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#047857">这一步之后，小车才真的动起来</text>
+
+</g>
+</svg>

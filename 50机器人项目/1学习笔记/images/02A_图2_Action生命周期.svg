@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="382" viewBox="0 0 680 382" role="img">
+<title>Action 的一生：发单、接受、执行反馈、三种收尾</title>
+<desc>客户端发出目标，服务端决定接受或拒绝；接受后进入执行并持续发反馈；最终以成功、取消或中止三种状态结束。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<g font-family="system-ui, -apple-system, sans-serif">
+
+<rect x="210" y="30" width="260" height="56" rx="8" fill="#EDE9FE" stroke="#7C3AED" stroke-width="0.5"/>
+<text x="340" y="48" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#4C1D95">① 客户端发目标</text>
+<text x="340" y="68" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#5B21B6">send_goal_async(goal)</text>
+
+<path d="M340 86 L340 112" fill="none" stroke="#A8A29E" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="210" y="116" width="260" height="56" rx="8" fill="#F5F5F4" stroke="#A8A29E" stroke-width="0.5"/>
+<text x="340" y="134" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#44403C">② 服务端决定接不接</text>
+<text x="340" y="154" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#57534E">不接 → REJECT；接 → GOAL_ACCEPTED</text>
+
+<path d="M340 172 L340 198" fill="none" stroke="#A8A29E" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="210" y="202" width="260" height="56" rx="8" fill="#F5F5F4" stroke="#A8A29E" stroke-width="0.5"/>
+<text x="340" y="220" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#44403C">③ 执行中，反复发进度</text>
+<text x="340" y="240" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#57534E">feedback：distance_remaining…</text>
+
+<path d="M340 258 L340 286" fill="none" stroke="#A8A29E" stroke-width="1.5"/>
+<path d="M130 286 L550 286" fill="none" stroke="#A8A29E" stroke-width="1.5"/>
+<path d="M130 286 L130 302" fill="none" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340 286 L340 302" fill="none" stroke="#A8A29E" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M550 286 L550 302" fill="none" stroke="#DC2626" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<rect x="42" y="306" width="176" height="56" rx="8" fill="#F0FDF4" stroke="#059669" stroke-width="0.5"/>
+<text x="130" y="324" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#065F46">SUCCEEDED (4)</text>
+<text x="130" y="344" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#047857">到达，成功交付</text>
+
+<rect x="252" y="306" width="176" height="56" rx="8" fill="#F5F5F4" stroke="#A8A29E" stroke-width="0.5"/>
+<text x="340" y="324" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#44403C">CANCELED (5)</text>
+<text x="340" y="344" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#57534E">取消流程走完</text>
+
+<rect x="462" y="306" width="176" height="56" rx="8" fill="#FEF2F2" stroke="#DC2626" stroke-width="0.5"/>
+<text x="550" y="324" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#991B1B">ABORTED (6)</text>
+<text x="550" y="344" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#B91C1C">接受后执行失败</text>
+
+</g>
+</svg>
