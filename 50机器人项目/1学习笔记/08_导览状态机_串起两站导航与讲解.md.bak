@@ -1,0 +1,434 @@
+# 第八课：导览状态机——自己串起两站导航与讲解
+
+前面你已经会创建节点、收发话题、调用服务、发送导航 Action。这一课把它们放到一个简单导览流程里。
+
+有两个模式：**公司终端用 mock 模式**，模拟到达；**家里虚拟机用真实模式**，接入已有 Nav2。两种模式使用同一份业务代码。
+
+## 0．先知道要做的流程
+
+```text
+INIT → WAIT_VISITOR → NAVIGATE → GUIDE → NEXT
+                                      │       │
+                                      │       ├─ 还有站点：NAVIGATE
+                                      │       └─ 没有站点：FINISH
+                                      └─ 展示讲解文本
+
+导航拒绝/失败 → FAILED，不自动跳到下一站
+请求停止 → STOPPED，真实导航中先请求取消
+```
+
+模拟游客出现、模拟到达、展示讲解文本都用简化逻辑。**本课没有接入摄像头、TTS 或真实语音问答。** GUIDE 发文本并等待两秒，不是等待音频播放完成。
+
+| 文件 | 用途 |
+|---|---|
+| `points.yaml` | 存两站坐标、名字和讲解内容 |
+| `simple_tour.py` | 根据状态安排下一步，发导航目标，发布状态和讲解 |
+| `cancel_tour.py` | 通过服务请求停止导览 |
+
+## 1．创建包和展点文件
+
+```bash
+source /opt/ros/jazzy/setup.bash
+mkdir -p ~/ros2_lesson8_ws/src
+cd ~/ros2_lesson8_ws/src
+ros2 pkg create lesson_tour_demo --build-type ament_python \
+  --license Apache-2.0 \
+  --dependencies rclpy nav2_msgs action_msgs std_msgs std_srvs python3-yaml
+cd ~/ros2_lesson8_ws
+nano points.yaml
+```
+
+复制完整配置：
+
+```yaml
+points:
+  - name: Reception
+    x: 0.0
+    y: -3.0
+    yaw: 0.0
+    speech: "This is the reception area. Welcome to the tour."
+  - name: Technology
+    x: 4.5
+    y: 3.0
+    yaw: 3.14159
+    speech: "This area explains localization, planning and robot control."
+```
+
+这里的坐标对应你的原项目地图。在 mock 模式中不会真的使用坐标驱动车，配置只是让业务知道有哪些站点。
+
+如果 `import yaml` 报错，说明当前 Python 环境缺 PyYAML；在已配置的软件环境中安装 `python3-yaml`，或先联系服务器环境维护者确认。不要用 Windows 的 Python 运行 ROS2 Ubuntu 节点。
+
+## 2．自己建立导览节点文件
+
+```bash
+nano ~/ros2_lesson8_ws/src/lesson_tour_demo/lesson_tour_demo/simple_tour.py
+```
+
+复制保存：
+
+```python
+import math
+import time
+from pathlib import Path
+
+import yaml
+import rclpy
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from action_msgs.msg import GoalStatus
+from nav2_msgs.action import NavigateToPose
+from std_msgs.msg import String
+from std_srvs.srv import Trigger
+
+
+class SimpleTour(Node):
+    def __init__(self):
+        super().__init__('learning_simple_tour')
+        self.mock = self.declare_parameter('mock', True).value
+        filename = self.declare_parameter('points_file', '').value
+        data = yaml.safe_load(Path(filename).expanduser().read_text(encoding='utf-8'))
+        self.points = data['points']
+        if not isinstance(self.points, list) or not self.points:
+            raise ValueError('points must be a nonempty list')
+        for point in self.points:
+            for key in ['name', 'speech']:
+                if not isinstance(point[key], str):
+                    raise ValueError(key + ' must be a string')
+            for key in ['x', 'y', 'yaw']:
+                if not math.isfinite(float(point[key])):
+                    raise ValueError(key + ' must be finite')
+        self.nav = ActionClient(self, NavigateToPose, '/navigate_to_pose')
+        self.state_publisher = self.create_publisher(String, '/lesson8/state', 10)
+        self.speech_publisher = self.create_publisher(String, '/lesson8/speech', 10)
+        self.cancel_service = self.create_service(Trigger, '/lesson8/cancel', self.on_cancel)
+        self.index = 0
+        self.goal_handle = None
+        self.state = 'INIT'
+        self.changed_at = time.monotonic()
+        self.timer = self.create_timer(0.2, self.step)
+        self.get_logger().info(f'TOUR_READY: mock={self.mock}; state=INIT')
+
+    def change_state(self, state):
+        self.state = state
+        self.changed_at = time.monotonic()
+        msg = String()
+        msg.data = state
+        self.state_publisher.publish(msg)
+        self.get_logger().info('STATE: ' + state)
+
+    def step(self):
+        elapsed = time.monotonic() - self.changed_at
+        if self.state == 'INIT':
+            if self.mock or self.nav.server_is_ready():
+                self.change_state('WAIT_VISITOR')
+            elif elapsed > 10.0:
+                self.fail('Nav2 server not ready')
+        elif self.state == 'WAIT_VISITOR' and elapsed >= 1.0:
+            # 本课模拟游客出现，真实项目由 visitor_detector 提供事件。
+            self.start_navigation()
+        elif self.state == 'NAVIGATE' and self.mock and elapsed >= 1.5:
+            self.begin_guide()
+        elif self.state == 'GUIDE' and elapsed >= 2.0:
+            # 仅等待讲解展示时间；没有 TTS 播放完成确认。
+            self.change_state('NEXT')
+        elif self.state == 'NEXT':
+            self.index += 1
+            if self.index == len(self.points):
+                self.change_state('FINISH')
+            else:
+                self.start_navigation()
+
+    def start_navigation(self):
+        self.change_state('NAVIGATE')
+        point = self.points[self.index]
+        self.get_logger().info('GO_TO: ' + point['name'])
+        if self.mock:
+            return
+        goal = NavigateToPose.Goal()
+        goal.pose.header.frame_id = 'map'
+        goal.pose.header.stamp = self.get_clock().now().to_msg()
+        goal.pose.pose.position.x = float(point['x'])
+        goal.pose.pose.position.y = float(point['y'])
+        goal.pose.pose.orientation.z = math.sin(float(point['yaw']) / 2.0)
+        goal.pose.pose.orientation.w = math.cos(float(point['yaw']) / 2.0)
+        future = self.nav.send_goal_async(goal)
+        future.add_done_callback(self.on_goal_response)
+
+    def on_goal_response(self, future):
+        self.goal_handle = future.result()
+        if not self.goal_handle.accepted:
+            self.fail('Navigation goal rejected')
+            return
+        result = self.goal_handle.get_result_async()
+        result.add_done_callback(self.on_result)
+        if self.state == 'CANCELING':
+            self.goal_handle.cancel_goal_async()
+
+    def on_result(self, future):
+        response = future.result()
+        self.goal_handle = None
+        if response.status == GoalStatus.STATUS_CANCELED:
+            self.change_state('STOPPED')
+        elif self.state == 'CANCELING':
+            self.change_state('STOPPED')
+        elif response.status == GoalStatus.STATUS_SUCCEEDED:
+            self.begin_guide()
+        else:
+            self.fail('Navigation failed, status=' + str(response.status))
+
+    def begin_guide(self):
+        self.change_state('GUIDE')
+        msg = String()
+        msg.data = self.points[self.index]['speech']
+        self.speech_publisher.publish(msg)
+        self.get_logger().info('GUIDE_TEXT: ' + msg.data)
+
+    def on_cancel(self, request, response):
+        response.success = True
+        response.message = 'Stop requested; observe final state and robot motion'
+        if self.state in ['FINISH', 'FAILED', 'STOPPED']:
+            return response
+        if not self.mock and self.state == 'NAVIGATE':
+            self.change_state('CANCELING')
+            if self.goal_handle is not None:
+                self.goal_handle.cancel_goal_async()
+        else:
+            self.change_state('STOPPED')
+        return response
+
+    def fail(self, reason):
+        self.get_logger().error('TOUR_FAILED: ' + reason)
+        self.change_state('FAILED')
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = SimpleTour()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        print('Client closed; an accepted real Nav2 task may still be running.')
+    finally:
+        node.nav.destroy()
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+本课代码比前几课长，先复制跑通，之后只读第 6 步指定的函数。
+
+## 3．创建停止请求客户端
+
+```bash
+nano ~/ros2_lesson8_ws/src/lesson_tour_demo/lesson_tour_demo/cancel_tour.py
+```
+
+复制保存：
+
+```python
+import sys
+
+import rclpy
+from rclpy.node import Node
+from std_srvs.srv import Trigger
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = Node('learning_cancel_tour')
+    client = node.create_client(Trigger, '/lesson8/cancel')
+    try:
+        if not client.wait_for_service(timeout_sec=5.0):
+            print('Tour service not found')
+            return 1
+        future = client.call_async(Trigger.Request())
+        rclpy.spin_until_future_complete(node, future, timeout_sec=5.0)
+        if not future.done():
+            print('No reply; do not assume navigation stopped')
+            return 1
+        response = future.result()
+        print(response.message)
+        return 0 if response.success else 1
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+```
+
+这里复用第三课的服务通信：发请求、等答复。答复只确认业务节点收到停止请求，实际导航最终结束要看状态和运动。
+
+## 4．配置入口与构建
+
+```bash
+nano ~/ros2_lesson8_ws/src/lesson_tour_demo/setup.py
+```
+
+替换为：
+
+```python
+from setuptools import find_packages, setup
+
+package_name = 'lesson_tour_demo'
+
+setup(
+    name=package_name,
+    version='0.0.0',
+    packages=find_packages(exclude=['test']),
+    data_files=[
+        ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
+        ('share/' + package_name, ['package.xml']),
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='sbx',
+    maintainer_email='student@example.com',
+    description='Hands-on ROS2 learning demo',
+    license='Apache-2.0',
+    entry_points={
+        'console_scripts': [
+            'simple_tour = lesson_tour_demo.simple_tour:main',
+            'cancel_tour = lesson_tour_demo.cancel_tour:main',
+        ],
+    },
+)
+```
+
+构建：
+
+```bash
+cd ~/ros2_lesson8_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select lesson_tour_demo \
+  --symlink-install --executor sequential
+```
+
+## 5．公司终端先运行 mock 模式
+
+终端 A：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_lesson8_ws/install/setup.bash
+export ROS_DOMAIN_ID=95
+export FASTDDS_BUILTIN_TRANSPORTS=UDPv4
+ros2 run lesson_tour_demo simple_tour --ros-args \
+  -p mock:=true -p points_file:=$HOME/ros2_lesson8_ws/points.yaml
+```
+
+约十秒内应看到两次 `NAVIGATE → GUIDE → NEXT`，最后 `FINISH`。完整的一轮大致是：
+
+```text
+STATE: WAIT_VISITOR
+STATE: NAVIGATE
+GO_TO: Reception
+STATE: GUIDE
+GUIDE_TEXT: This is the reception area...
+STATE: NEXT
+STATE: NAVIGATE
+GO_TO: Technology
+STATE: GUIDE
+GUIDE_TEXT: This area explains...
+STATE: NEXT
+STATE: FINISH
+```
+
+`FINISH` 后节点仍在运行，继续提供停止服务；这是本课一轮结束，没有自动循环。按 `Ctrl+C` 退出 mock 节点即可。
+
+再启动一次 A，立即在终端 B 输入：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_lesson8_ws/install/setup.bash
+export ROS_DOMAIN_ID=95
+export FASTDDS_BUILTIN_TRANSPORTS=UDPv4
+ros2 run lesson_tour_demo cancel_tour
+```
+
+A 应进入 `STOPPED`，不继续后续站点。若等得太久已 `FINISH`，重启 A 再试。你没有 Gazebo，但业务状态和服务请求已经真实通过 ROS2 运行；模拟的是导航到达过程。
+
+## 6．只先啃这五个函数
+
+| 函数 | 作用 |
+|---|---|
+| `change_state` | 改当前状态，记录进入状态的时刻，发布状态消息 |
+| `step` | 定时查看当前状态和经过时间，决定是否转到下一步 |
+| `start_navigation` | 读取当前展点，进入 NAVIGATE，真实模式发送 Action |
+| `on_result` | 根据 Action 最终状态决定讲解、停止或失败 |
+| `begin_guide` | 进入 GUIDE，发布这站的讲解文字 |
+
+状态机可以先理解成：“同样的事件，在不同阶段应该做不同事情。”例如 NAVIGATE 阶段只有确认到达才能进入 GUIDE；不能因为目标刚被接受就立即讲解。
+
+`self.index` 是第几站，不是坐标；从 0 开始。`NEXT` 时加一，检查是否超过站点数量。
+
+`self.points` 来自 YAML。新增一个站点，不必重写状态机；在配置里加一项即可。
+
+真实导航使用两个 Future 回调：接受答复调用 `on_goal_response`，最终结果调用 `on_result`。它们由 ROS2 事件处理调用；主 `spin` 也继续处理定时器与停止服务，不是在回调里用 `sleep` 长时间占住节点。
+
+为了先看懂业务，本课等待游客和展示讲解的时间按实际时间算；导航目标时间戳在真实模式下按仿真时钟算。这两种计时用途不同。
+
+## 7．回家后接入真实 Nav2
+
+先退出所有 mock 练习节点。确保原项目已启动，然后按照第二课发原项目 `cmd stop`，检查导览进入 IDLE，观察原任务已停。不要让两个导览程序同时安排目的地。
+
+在新的终端 A：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/tour_guide_ws/install/setup.bash
+source ~/ros2_lesson8_ws/install/setup.bash
+export ROS_DOMAIN_ID=0
+export FASTDDS_BUILTIN_TRANSPORTS=UDPv4
+ros2 run lesson_tour_demo simple_tour --ros-args \
+  -p mock:=false -p use_sim_time:=true \
+  -p points_file:=$HOME/ros2_lesson8_ws/points.yaml
+```
+
+此时状态机等待 Nav2，按配置发两站目标。**NAVIGATE 不再过 1.5 秒就自动成功，而是等真实 Action 返回成功。** 小车从当前的位置出发。
+
+GUIDE 仍只打印和发布文字，不播放声音。若听到声音，可能是原项目已开始的音频或原导览未停，不应认为本课接入了 TTS。
+
+## 8．真实模式如何停止
+
+在终端 B：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_lesson8_ws/install/setup.bash
+export ROS_DOMAIN_ID=0
+export FASTDDS_BUILTIN_TRANSPORTS=UDPv4
+ros2 run lesson_tour_demo cancel_tour
+```
+
+导航阶段先进入 `CANCELING`，请求取消已接受的任务；任务结束后进入 `STOPPED`。如果目标接受答复还没回来，代码会在收到接受答复后再申请取消，避免漏掉这次任务。
+
+`STOPPED` 表示业务不再安排后续站点，可能是取消结束，也可能恰好任务已自然结束。要同时确认 RViz 中小车已停。服务答复本身不是底盘已停车证明。
+
+如果只是关闭 A，Nav2 已接收的目标可能仍执行。先用 B 请求停止并观察最终状态，再关闭 A。完成后可在原项目目录用 `bash replay_tour.sh` 恢复原导览。
+
+## 9．你自己改一次
+
+先只用 mock 模式：
+
+1. 修改 `points.yaml` 中某站的 `speech`，重启 A，看输出是否改变。
+2. 添加第三站，只需要 `name/x/y/yaw/speech` 五个字段；看是否出现第三次 GUIDE。
+3. 把 GUIDE 等待时间从 2 秒改成 4 秒，保存 `.py`、重启，看每站等待变长。
+
+配置文件在节点启动时读取，改 YAML 后要重启节点。本课没有增加完整问答、播报完成通知、自动返航、目标超时与故障重试；它是可理解的小流程，不是完整机器人产品。
+
+## 10．对应原项目与自测
+
+原项目还包括 `visitor_detector`、`tts_node`、`qa_node`、`voice_input_sim`。导览节点接收事件，决定调用导航或发布文本；各功能节点做各自工作。
+
+本课可描述为“通过配置驱动站点顺序，以状态机组织导航与讲解，并区分导航成功、失败和停止”，前提是你自己做过并能解释。
+
+回答：NEXT 什么时候发生？哪一段代码决定站点顺序？为什么不能接受目标后立即 GUIDE？mock 模式模拟了什么、没有模拟什么？一次停止答复是否等于车已停？
+
+验证范围见附录。Action 接口参考：[Nav2 Jazzy NavigateToPose 定义](https://raw.githubusercontent.com/ros-navigation/navigation2/jazzy/nav2_msgs/action/NavigateToPose.action)。
