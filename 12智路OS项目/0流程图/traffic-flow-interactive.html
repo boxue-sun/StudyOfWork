@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>交通参数服务 · 一帧数据的旅程</title>
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#f5f7fa,#141a23);--panel:light-dark(#fff,#1c2531);--ink:light-dark(#182b41,#e1eaf5);--muted:light-dark(#52657a,#a6b6c9);--line:light-dark(#dce4ed,#354558);--soft:light-dark(#edf2f8,#253140);--blue:light-dark(#1762bc,#8cc2ff);--blue-bg:light-dark(#e9f2ff,#213d5e);--green:light-dark(#08795c,#83dec1);--green-bg:light-dark(#e5f6ef,#173c33);--red:light-dark(#b33939,#ffb0aa);--red-bg:light-dark(#fff0ee,#452d2d);--orange:light-dark(#975600,#f3c177)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}button,input{font:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}main{max-width:1160px;margin:auto;padding:28px 24px 40px}h1,h2,p{margin:0}h1{font-size:27px;font-weight:650;letter-spacing:-.5px}h2{font-size:17px;font-weight:650}.sub{color:var(--muted);margin-top:5px}.eyebrow{color:var(--blue);font-size:12px;font-weight:650;letter-spacing:1px}.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:20px 0 12px}.btn{min-height:42px;border:1px solid var(--line);border-radius:8px;padding:8px 15px;background:var(--panel);color:var(--ink)}.btn.primary{background:var(--blue);border-color:var(--blue);color:light-dark(#fff,#142335);font-weight:600}.btn[aria-pressed="true"]{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}.divider{width:1px;height:25px;background:var(--line);margin:0 3px}.scenarios{display:flex;align-items:center;flex-wrap:wrap;gap:7px;color:var(--muted);font-size:13px}.scenarios .btn{font-size:13px;min-height:36px;padding:5px 11px}.hint{font-size:13px;color:var(--muted);margin-top:10px}.counts{display:flex;flex-wrap:wrap;gap:12px 24px;margin:17px 0;color:var(--muted);font-size:13px}.counts strong{color:var(--ink);font-size:16px;font-variant-numeric:tabular-nums}.init-section{border-top:1px solid var(--line);padding-top:17px;margin-top:18px}.section-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;margin-bottom:11px}.tag{font-size:12px;color:var(--muted);padding:2px 8px;background:var(--soft);border-radius:5px}.init-steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.step{border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);text-align:left;padding:10px;min-height:91px;font-size:13px;position:relative}.step b{display:block;color:var(--ink);font-size:13px;font-weight:600}.step small{font-size:11px;display:block;overflow-wrap:anywhere}.step.done{border-color:var(--green);background:var(--green-bg)}.step.active{box-shadow:0 0 0 2px var(--blue);border-color:var(--blue)}.step .num{display:block;font-size:11px;margin-bottom:4px;color:var(--muted)}.runtime-section{margin-top:24px}.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,.69fr) minmax(0,1.12fr);gap:18px;align-items:start}.lane-label{font-size:14px;font-weight:650;margin-bottom:9px}.lane-label span{display:block;font-size:12px;color:var(--muted);font-weight:400}.node{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:11px 13px;transition:background .25s,border-color .25s,transform .25s}.node .func{display:block;font-weight:600;font-size:14px;overflow-wrap:anywhere}.node .file{display:block;font:11px/1.6 ui-monospace,Consolas,monospace;color:var(--muted);overflow-wrap:anywhere}.node .desc{display:block;color:var(--muted);font-size:12px;margin-top:2px}.node.active{border-color:var(--blue);background:var(--blue-bg);box-shadow:0 0 0 1px var(--blue)}.node.selected{outline:2px dashed var(--blue);outline-offset:2px}.arrow{text-align:center;color:var(--muted);font-size:16px;line-height:23px}.frame-summary{background:var(--soft);border-radius:7px;padding:9px 11px;margin-top:12px;font-size:12px;min-height:59px}.queue-wrap{margin-top:32px;text-align:center}.queue-wrap h2{font-size:15px}.queue-sub{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.queue-slot{margin-top:9px;min-height:66px;border:1px dashed var(--line);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:12px;background:var(--panel);transition:background .25s,transform .25s}.queue-slot.occupied{border-style:solid;background:var(--blue-bg);border-color:var(--blue);color:var(--ink)}.queue-slot strong{font-size:15px;font-variant-numeric:tabular-nums}.queue-slot.arrival{animation:arrive .35s ease-out}.queue-caption{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin:5px 1px}.queue-state{margin:12px 0 5px;font-size:13px;font-weight:600}.drop{min-height:40px;color:var(--red);font-size:12px;margin-top:6px}.lock{font-size:12px;color:var(--muted);padding-top:9px;border-top:1px solid var(--line);margin-top:12px}.thread-state{font-size:12px;margin-bottom:8px;color:var(--green)}.thread-state.paused{color:var(--orange)}.send-target{text-align:center;color:var(--green);font-size:12px;margin-top:9px}.detail{margin-top:23px;border-top:1px solid var(--line);padding-top:17px}.detail-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.actor{font-size:12px;color:var(--blue);background:var(--blue-bg);padding:2px 8px;border-radius:5px}.detail-title{font-size:16px;font-weight:600}.detail p{margin-top:7px;max-width:900px}.source{display:block;color:var(--muted);font:12px/1.6 ui-monospace,Consolas,monospace;margin-top:7px;overflow-wrap:anywhere}pre{margin:10px 0 0;padding:13px 15px;background:var(--soft);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font:12px/1.7 ui-monospace,Consolas,monospace}.data-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px}.data-grid summary{cursor:pointer;font-size:13px;font-weight:600}.data-grid pre{min-height:94px;max-height:270px;overflow:auto;font-size:11px}.data-grid small{display:block;color:var(--muted);font-size:11px;margin-top:5px}.log-section{margin-top:20px}.log-section summary{font-size:13px;cursor:pointer;color:var(--muted)}.logs{list-style:none;padding:0;margin:8px 0 0}.logs li{font-size:12px;border-bottom:1px solid var(--line);padding:5px 0;color:var(--muted)}.logs b{font-weight:600;color:var(--ink)}.footer{font-size:12px;color:var(--muted);margin-top:24px;border-top:1px solid var(--line);padding-top:14px}.footer a{color:var(--blue)}.notice{color:var(--orange);font-size:12px;margin-top:8px;min-height:20px}@keyframes arrive{from{transform:translateY(10px);opacity:.4}to{transform:translateY(0);opacity:1}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}@media(max-width:800px){main{padding:20px 16px 30px}.init-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.board{grid-template-columns:minmax(0,1fr) minmax(140px,.65fr) minmax(0,1fr);gap:10px}.node{padding:10px}.node .file{font-size:11px}}@media(max-width:620px){h1{font-size:22px}.board{grid-template-columns:1fr}.queue-wrap{margin:0}.queue-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.queue-state{margin-top:8px}.drop{min-height:20px}.data-grid{grid-template-columns:1fr}.data-grid pre{min-height:0}.step{min-height:87px}.toolbar{gap:7px}.btn{padding:8px 11px}.divider{display:none}.counts{gap:8px 17px}.queue-caption{margin-top:5px}.lane-label{margin-top:9px}}
+</style>
+</head>
+<body>
+<main id="traffic-sim">
+  <div class="eyebrow">TRAFFIC FLOW / 代码调用动画</div>
+  <h1>跟着一帧数据，走过整个交通参数服务</h1>
+  <p class="sub">先创建一次工厂和检测器，再反复处理每一帧。点任意步骤，可看对应文件与代码。</p>
+  <div class="toolbar" aria-label="动画控制">
+    <button class="btn primary" id="next">下一步</button>
+    <button class="btn" id="auto" aria-pressed="false">自动演示</button>
+    <span class="divider" aria-hidden="true"></span>
+    <button class="btn" id="send" disabled>上游发一帧</button>
+    <button class="btn" id="worker" disabled aria-pressed="false">暂停计算线程</button>
+    <button class="btn" id="reset">重新开始</button>
+  </div>
+  <div class="scenarios"><span>也可以直接体验：</span><button class="btn" id="normal">正常处理 6 帧</button><button class="btn" id="empty">队列为空时等待</button><button class="btn" id="full">积压时丢旧帧</button></div>
+  <p class="hint">先点「下一步」看初始化；初始化完成后，自动演示会持续发帧。也可手动「发一帧 → 下一步」。</p>
+  <div class="counts" aria-label="对象状态"><span>工厂对象 <strong id="factoryCount">0</strong> / 1</span><span>检测器对象 <strong id="detectorCount">0</strong> / 2</span><span>已解析帧 <strong id="parsedCount">0</strong></span><span>已发布结果 <strong id="publishedCount">0</strong></span></div>
+  <section class="init-section" aria-labelledby="init-title">
+    <div class="section-title"><h2 id="init-title">① 初始化：做一次</h2><span class="tag" id="initStatus">尚未开始</span></div>
+    <div class="init-steps">
+      <button class="step" data-node="init0"><span class="num">01</span><b>加载插件</b><small>service.cpp · GetApi</small></button>
+      <button class="step" data-node="init1"><span class="num">02</span><b>读取配置</b><small>service_impl.cpp · init</small></button>
+      <button class="step" data-node="init2"><span class="num">03</span><b>创建单例工厂</b><small>factory.cpp · 构造函数</small></button>
+      <button class="step" data-node="init3"><span class="num">04</span><b>创建检测器</b><small>build_detectors_from_config</small></button>
+      <button class="step" data-node="init4"><span class="num">05</span><b>启动计算线程</b><small>std::thread → detect</small></button>
+      <button class="step" data-node="init5"><span class="num">06</span><b>绑定发布接口</b><small>register_callback / start</small></button>
+    </div>
+  </section>
+  <section class="runtime-section" aria-labelledby="run-title">
+    <div class="section-title"><h2 id="run-title">② 运行：每帧反复做</h2><span class="tag">两个线程，共用中间这一条队列</span></div>
+    <div class="board">
+      <div>
+        <div class="lane-label">接收回调线程 · 生产者<span>只接收、解析、入队，不做指标计算</span></div>
+        <button class="node" data-node="receive"><span class="func">接收一条 JSON 消息</span><span class="file">plugin/traffic_flow_service.cpp</span><span class="desc">OnDataAvailable → 实现类</span></button>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <button class="node" data-node="extract"><span class="func">取内容，获取已有工厂</span><span class="file">plugin/traffic_flow_service_impl.cpp</span><span class="desc">on_data_available / get_instance</span></button>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <button class="node" data-node="parse"><span class="func">解析成一帧 C++ 对象</span><span class="file">traffic_flow/traffic_flow_factory.cpp</span><span class="desc">update_new_frame / from_json</span></button>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <button class="node" data-node="put"><span class="func">put：放入队尾 →</span><span class="file">base/BlockingQueue.h</span><span class="desc">加锁、入队、超限丢队首、通知</span></button>
+        <div class="frame-summary" id="producerStatus">初始化后，等待上游发来第一帧。</div>
+      </div>
+      <div class="queue-wrap">
+        <h2>_input_buffer</h2><div class="queue-sub">BlockingQueue&lt;PerceptionResult&gt;</div><div class="queue-sub">工厂对象的成员 · 底层 deque</div>
+        <div class="queue-caption"><span>队首：先到，先取</span><span>队尾：新帧加入</span></div>
+        <div class="queue-slots" id="queueSlots" aria-label="等待消费的帧"></div>
+        <div class="queue-state" id="queueState">0 / 3 帧</div><div class="queue-sub">演示容量 3；源码 Release 容量 60</div>
+        <div class="drop" id="dropState">还没有丢帧</div>
+        <div class="lock" id="lockState">互斥锁保护入队和出队。<br>指标计算时不占着队列锁。</div>
+      </div>
+      <div>
+        <div class="lane-label">独立工作线程 · 消费者<span>持续运行 factory.cpp 里的 detect()</span></div>
+        <div class="thread-state" id="threadState">计算线程尚未创建</div>
+        <button class="node" data-node="take"><span class="func">← take：取队首一帧</span><span class="file">factory.cpp → base/BlockingQueue.h</span><span class="desc">空则等待；取出后释放队列锁</span></button>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <button class="node" data-node="volume"><span class="func">流量检测器 update(frame)</span><span class="file">detectors/accumulate_volume_detector.cpp</span><span class="desc" id="volumeStat">本窗口累计过线：0 辆</span></button>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <button class="node" data-node="headway"><span class="func">车头时距检测器 update(frame)</span><span class="file">detectors/accumulate_headway_detector.cpp</span><span class="desc" id="headwayStat">累计相邻过线间隔：0 个</span></button>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <button class="node" data-node="check"><span class="func">check_trigger：到结算点了吗？</span><span class="file">factory.cpp → factory.h</span><span class="desc" id="windowStat">按帧时间戳判断，不靠动画播放时钟</span></button>
+        <div class="arrow" aria-hidden="true">↓ 到点结算；没到则继续 take</div>
+        <button class="node" data-node="calculate"><span class="func">calculate_once → 合并结果</span><span class="file">各检测器.cpp → factory.cpp</span><span class="desc">统计清零，对象继续保留</span></button>
+        <div class="arrow" aria-hidden="true">↓</div>
+        <button class="node" data-node="publish"><span class="func">发布回调 → 宿主 Publish</span><span class="file">factory.cpp → service_impl.cpp</span><span class="desc">JSON 对象 → 字符串 → FusionMsg</span></button>
+        <div class="send-target" id="publishState">FusionService 再通过 DDS 发布给下游</div>
+      </div>
+    </div>
+  </section>
+  <section class="detail" aria-labelledby="detailTitle" aria-live="polite">
+    <div class="detail-top"><span class="actor" id="actor">准备开始</span><span class="detail-title" id="detailTitle">先看启动时创建了哪些对象</span></div>
+    <p id="detailText">点「下一步」。工厂不是每帧都创建，检测器也不是每帧都创建。</p>
+    <span class="source" id="sourcePath"></span><pre id="code">// 点击上面的函数块，也可以直接查看解释。</pre>
+    <div class="notice" id="notice"></div>
+  </section>
+  <div class="data-grid">
+    <details open><summary>输入：JSON 字符串</summary><pre id="jsonData">等待上游消息</pre><small>仅摘示 timestamp、目标列表等字段，不是完整回放报文。</small></details>
+    <details open><summary>入队：PerceptionResult 对象</summary><pre id="cppData">尚未解析出帧对象</pre><small>这一列是对象字段的可读示意，队列存的是对象，不是这段文字。</small></details>
+    <details open><summary>输出：JSON 消息</summary><pre id="outputData">尚未到结算点</pre><small>结果通过宿主发布，并未写入 JSON 文件；仅展示部分输出字段。</small></details>
+  </div>
+  <details class="log-section"><summary>查看最近的调用记录</summary><ol class="logs" id="logs"></ol></details>
+  <p class="footer">教学模拟，按当前源码的文件与调用关系编排；不运行 DDS 或真实 C++。两线程用交替事件展示，真实运行可并发。演示仅配置一个车道、流量与车头时距两个检测器；每条消息保留一个示例目标，每帧时间戳递增 1 秒，使用 3 秒相对窗口。过线判定简化为目标从停止线前移动到线后，不展示几何和质量门控。<br>源码根目录：<code>C:/Users/sunboxue/Desktop/traffic_flow-main/project/traffic_flow-main</code></p>
+</main>
+<script>
+(function(){
+'use strict';
+const $=function(id){return document.getElementById(id);};
+const root=document.getElementById('traffic-sim');
+const sourceRoot='src/';
+const info={
+init0:{title:'宿主取得插件接口，并创建业务实现对象',actor:'启动阶段 · 只做一次',file:'plugin/traffic_flow_service.cpp:86',text:'FusionService 加载动态库并取得接口表。GetApi 中 new 出 TrafficFlowServiceImpl，供宿主通过 C 接口调用。此时还没有检测器，也没有计算线程。',code:'api->Params = new TrafficFlowServiceImpl();\napi->TrafficFlowService_Init = TrafficFlowService_Init;\napi->TrafficFlowService_OnDataAvailable = TrafficFlowService_OnDataAvailable;'},
+init1:{title:'插件初始化：先把算法配置读好',actor:'启动阶段 · 只做一次',file:'plugin/traffic_flow_service_impl.cpp:39',text:'宿主调用 TrafficFlowService_Init，转到实现对象的 init。配置描述统计周期、指标、车道和停止线等信息，后面据此创建检测器。',code:'TrafficFlowService_Init(config_path, params);\n// 包装函数转调实现类\nimpl->init(config_path);\nGlobalConfig::get_instance(config_path);'},
+init2:{title:'首次 get_instance：创建唯一工厂和成员队列',actor:'启动阶段 · 只做一次',file:'traffic_flow/traffic_flow_factory.cpp:65；base/Singleton.h',text:'首次取单例才会调用工厂构造函数。队列是工厂的成员，构造工厂时一起初始化。后面每帧再调用 get_instance，拿到的仍然是它，不会重新创建。这个类除了创建对象，还负责处理主循环，可以先理解成检测管理器。',code:'auto& factory = TrafficFlowFactory::get_instance();\n// 仅首次：Singleton 内部 new TrafficFlowFactory\n// 构造成员：_input_buffer(BUFFER_CAPACITY)'},
+init3:{title:'按配置创建检测器：对象留着反复使用',actor:'启动阶段 · 只做一次',file:'traffic_flow/traffic_flow_factory.cpp:243',text:'工厂读取周期、检测器类型、车道等配置，创建具体检测器对象，用基类指针保存。本演示只有一个通道、一个车道，创建流量和车头时距两个对象。新帧只更新它们的状态。',code:'build_detectors_from_config();\nchannel.detectors.push_back(\n    std::make_unique<AccumulateVolumeDetector>(id, coil));\n// 同样创建 AccumulateHeadwayDetector'},
+init4:{title:'工厂自己创建工作线程，让它运行 detect()',actor:'启动阶段 · 只做一次',file:'traffic_flow/traffic_flow_factory.cpp:75',text:'新线程进入 detect 循环，首先调用 take。因为尚未收到帧，队列为空，计算线程会等待条件变量；等待时释放队列锁，不会一直占 CPU 空转。',code:'_working_thread = std::make_unique<std::thread>(\n    &TrafficFlowFactory::detect, this);\n// 新线程进入 detect：\nPerceptionResult frame = _input_buffer.take();'},
+init5:{title:'留好结果出口，再进入 RUNNING 状态',actor:'启动阶段 · 只做一次',file:'plugin/traffic_flow_service_impl.cpp:57；traffic_flow/traffic_flow_factory.cpp:87',text:'插件把自己的 publish 函数绑定为工厂的发布回调。工厂以后只需把计算出的字符串交给回调。start_running 主要改状态；工作线程已经在上一步创建了。',code:'factory.register_publish_callback(\n    std::bind(&TrafficFlowServiceImpl::publish, this, _1));\nfactory.start_running(); // 状态改为 RUNNING'},
+receive:{title:'宿主收到本次一帧，调用插件接收接口',actor:'接收回调线程 · 每帧执行',file:'plugin/traffic_flow_service.cpp:75',text:'上游持续输出结构化目标消息，宿主通过 DDS 收到后，主动调用已登记的回调。一条本演示消息表示一个时间点的目标状态，不是视频像素。',code:'TrafficFlowService_OnDataAvailable(id, msg, params);\n// C 接口包装函数转调：\nimpl->on_data_available(id, msg);'},
+extract:{title:'从消息体取 JSON，拿到已有工厂',actor:'接收回调线程 · 每帧执行',file:'plugin/traffic_flow_service_impl.cpp:126',text:'消息结构给出 body 地址和 body_size。这里按长度复制出 JSON 字符串，然后获取初始化时已经存在的单例工厂，调用 update_new_frame。工厂数量和检测器数量保持不变。',code:'std::string contents(\n    static_cast<char*>(fusion_message->body),\n    fusion_message->body_size);\nauto& factory = TrafficFlowFactory::get_instance();\nfactory.update_new_frame(contents);'},
+parse:{title:'一次调用解析一帧，创建本帧的数据对象',actor:'接收回调线程 · 每帧执行',file:'traffic_flow/traffic_flow_factory.cpp:191；common/perception_data.cpp:125',text:'JSON 字符串先解析为 JSON 对象，再通过 from_json 字段映射填入 PerceptionResult。队列里准备存的是本帧 C++ 对象，包含时间戳和目标列表，不是原始 JSON 字符串。每帧对象是新的，工厂与检测器仍复用。',code:'PerceptionResult detected_result;\nauto frame_json = nlohmann::json::parse(new_frame_data);\ndetected_result = frame_json; // 进入 from_json 字段映射\n_input_buffer.put(detected_result);'},
+put:{title:'put 加锁入队：新帧放队尾，超容量丢队首',actor:'接收回调线程 · 每帧执行',file:'base/BlockingQueue.h:27',text:'两个线程都修改同一个 deque，所以入队和出队由同一把互斥锁保护。旧帧指最早入队的队首，不按时间戳排序。队列满时不等空位，但仍需获取互斥锁。入队后通知等待中的消费者。',code:'MutexLockGuard lock(mutex_);\nqueue_.push_back(x);\nif (limit_ && queue_.size() > limit_)\n    queue_.pop_front();\nnotEmpty_.notify();'},
+take:{title:'take 取出一帧：拿到后就释放队列锁',actor:'独立工作线程 · detect 循环',file:'traffic_flow/traffic_flow_factory.cpp:358 → base/BlockingQueue.h:48',text:'如果队列为空，工作线程等待；wait 会释放互斥锁，唤醒后重新拿锁并检查队列。取走队首后返回，锁也随作用域释放；后面的指标计算不占着队列锁。',code:'MutexLockGuard lock(mutex_);\nwhile (queue_.empty()) notEmpty_.wait();\nT front(std::move(queue_.front()));\nqueue_.pop_front();\nreturn front; // 离开作用域，释放锁'},
+volume:{title:'调用流量检测器：根据新过线目标更新累计值',actor:'独立工作线程 · 每帧执行',file:'traffic_flow/traffic_flow_factory.cpp:369 → detectors/accumulate_volume_detector.cpp:32',text:'detect 用基类指针调用 update，运行时进入流量检测器自己的实现。它判断本帧哪些目标刚过停止线，再更新车型计数和 PCU。没过线的帧也会更新跟踪位置，但不增加流量。不是每收到一帧就加一辆车。',code:'for (auto& detector : channel.detectors)\n    detector->update(frame);\n// 流量检测器内部：\nauto crossed = _tracker.process_frame(frame);\n// 对 crossed 中目标更新 counts 与 pcu'},
+headway:{title:'同一帧再交给车头时距检测器',actor:'独立工作线程 · 每帧执行',file:'detectors/accumulate_headway_detector.cpp:32',text:'检测器接到同一帧，但更新自己的累计状态。第一辆过线车只记录到达时刻；后续车过线时累计与前车的时间差。对象一直保留，所以能记住之前的到达时刻。',code:'auto crossed = _tracker.process_frame(frame);\n// 有前车时：\nheadway_sum += current_time - last_arrival;\nlast_arrival = current_time;\n++count;'},
+check:{title:'用当前帧时间戳检查统计窗口',actor:'独立工作线程 · 每帧执行',file:'traffic_flow/traffic_flow_factory.cpp:375 → traffic_flow_factory.h:96',text:'每帧先更新检测器，再检查结算条件。演示采用源码支持的相对窗口：第一帧开窗，帧时间戳跨度达到 3 秒时触发。实际还支持绝对时间对齐、信号周期等配置。不是播放动画过了 3 秒就输出；没有新帧时也不会在这里自动检查。',code:'uint64_t current_time = frame.timestamp;\nif (!channel.check_trigger(current_time, signal_manager))\n    continue;\n// 条件满足，才进入 calculate_once'},
+calculate:{title:'结算并重置累计统计，检测器对象不销毁',actor:'独立工作线程 · 仅到点执行',file:'detectors/accumulate_*_detector.cpp → traffic_flow/traffic_flow_factory.cpp',text:'工厂调用各检测器 calculate_once：流量读取计数、车头时距计算均值等，然后重置相应窗口统计。再按 lane_tag 等合并指标，组织输出 JSON 对象。工厂和检测器的数量没有变化。',code:'auto results = detector->calculate_once();\n// 同车道的指标合并，进行相应空间聚合\nauto output = build_output(...);\n_publish_callback(output.dump());'},
+publish:{title:'发布 JSON 消息，不是写 JSON 文件',actor:'独立工作线程 → 宿主通信接口',file:'plugin/traffic_flow_service_impl.cpp:217',text:'工厂的发布回调转到插件 publish。插件把 JSON 字符串装进 FusionMsg，再调用宿主提供的 TrafficFlowService_Publish。宿主通过 DDS 向下游发布。插件与宿主之间是函数调用；此路径没有写入 JSON 文件。',code:'// result 是 output.dump() 得到的字符串\nmessage_buffer.assign(result.begin(), result.end());\nmessage.body = message_buffer.data();\ns_fs_api_->TrafficFlowService_Publish(id, &message, params);'}
+};
+let s,timer=null,autoIncoming=true,autoTicks=0;
+function fresh(){return{init:0,ready:false,factory:0,detectors:0,inbox:[],p:null,q:[],c:null,seq:0,parsed:0,dropped:[],published:[],workerPaused:false,turn:'p',active:null,selected:null,lastInput:null,lastParsed:null,lastOutput:null,volume:0,arrivals:0,lastArrival:null,headwaySum:0,headwayN:0,prev:new Map(),windowStart:null,logs:[],eventText:'',eventNode:null,stepNo:0,notice:'',lastEnqueued:null};}
+function frameLabel(f){return 'F'+f.seq+' · T+'+(f.ts/1000)+'s';}
+function jsonFrame(f){return{timestamp:f.ts,object_result:[{id:f.id,speed:36,lane_no:'1',position_demo_m:f.x}]};}
+function log(text,actor){s.logs.unshift({text:text,actor:actor});s.logs=s.logs.slice(0,9);}
+function activate(id,text){s.active=id;s.selected=null;s.eventNode=id;s.eventText=text||'';s.stepNo++;log(text||info[id].title,info[id].actor);}
+function initializeStep(){const i=s.init;if(i===0){}if(i===2)s.factory=1;if(i===3)s.detectors=2;if(i===5)s.ready=true;s.init++;activate('init'+i,info['init'+i].title);}
+function sendFrame(quiet){if(!s.ready)return;const n=++s.seq;const f={seq:n,ts:n*1000,id:101+Math.floor((n-1)/2),x:n%2?-1:1};s.inbox.push(f);s.lastInput=f;s.notice='';if(!quiet)log('上游已发送 '+frameLabel(f)+'；等待回调逐步处理。','上游');render();}
+function processProducer(){if(!s.p){if(!s.inbox.length)return false;s.p={f:s.inbox.shift(),stage:0};}const p=s.p,f=p.f;
+if(p.stage===0){activate('receive','收到 '+frameLabel(f)+' 的消息，进入 C 接口回调。');p.stage=1;}
+else if(p.stage===1){activate('extract',frameLabel(f)+'：取出 JSON 字符串；get_instance 返回已有工厂 #1。');p.stage=2;}
+else if(p.stage===2){s.parsed++;s.lastParsed=f;activate('parse',frameLabel(f)+'：创建本帧 PerceptionResult；工厂仍 1 个，检测器仍 2 个。');p.stage=3;}
+else{s.q.push(f);s.lastEnqueued=f.seq;let text=frameLabel(f)+' 入队尾，notify 唤醒等待者。';if(s.q.length>3){const old=s.q.shift();s.dropped.push(old);text+=' 超过容量 3，丢弃最早入队的 F'+old.seq+'（不比较时间戳）。';}activate('put',text);s.p=null;}return true;}
+function processConsumer(){if(s.workerPaused)return false;if(!s.c){if(!s.q.length)return false;const f=s.q.shift();s.c={f:f,stage:0,crossed:false,trigger:false};activate('take','取出 '+frameLabel(f)+'，离开 take 后释放队列锁，开始计算。');return true;}
+const c=s.c,f=c.f;
+if(c.stage===0){const old=s.prev.get(f.id);c.crossed=old!==undefined&&old<0&&f.x>=0;if(c.crossed)s.volume++;activate('volume',frameLabel(f)+'：'+(c.crossed?'目标 '+f.id+' 刚过线，流量累计变为 '+s.volume+'。':'未发现新过线目标，流量仍为 '+s.volume+'。'));c.stage=1;}
+else if(c.stage===1){if(c.crossed){if(s.lastArrival!==null){s.headwaySum+=f.ts-s.lastArrival;s.headwayN++;}s.lastArrival=f.ts;s.arrivals++;}s.prev.set(f.id,f.x);activate('headway',frameLabel(f)+'：'+(c.crossed?'记录过线时刻；本窗口共有 '+s.arrivals+' 次过线、'+s.headwayN+' 个相邻间隔。':'本帧没有新过线车，更新位置，保持时距累计。'));c.stage=2;}
+else if(c.stage===2){if(s.windowStart===null){s.windowStart=f.ts;c.trigger=false;activate('check','第一帧开窗：T+'+(f.ts/1000)+'s。后续按帧时间戳累计满 3 秒才结算。');s.c=null;}
+else{c.trigger=f.ts-s.windowStart>=3000;if(c.trigger){activate('check','帧时间戳从 T+'+(s.windowStart/1000)+'s 到 T+'+(f.ts/1000)+'s，满足 3 秒窗口，进入结算。');c.stage=3;}else{activate('check','当前窗口跨度 '+((f.ts-s.windowStart)/1000)+' 秒，未满 3 秒；保留累计状态，继续 take。');s.c=null;}}}
+else if(c.stage===3){c.output={Cycle:3,StartTime:'T+'+(s.windowStart/1000)+'s',StopTime:'T+'+(f.ts/1000)+'s',Coil_List:[{LaneNo:'1',Volume:s.volume,Headway:s.headwayN?Number((s.headwaySum/s.headwayN/1000).toFixed(3)):0}]};s.lastOutput=c.output;s.volume=0;s.arrivals=0;s.lastArrival=null;s.headwaySum=0;s.headwayN=0;s.windowStart=f.ts;activate('calculate','结算本窗口并合并指标：Volume='+c.output.Coil_List[0].Volume+'，Headway='+c.output.Coil_List[0].Headway+' 秒。重置累计，检测器对象继续复用。');c.stage=4;}
+else{s.published.push(c.output);activate('publish','JSON 字符串 → 插件 publish → 宿主 Publish → DDS，下游收到第 '+s.published.length+' 条结果；没有写文件。');s.c=null;}return true;}
+function tick(){s.notice='';s.lastEnqueued=null;if(!s.ready){initializeStep();render();return;}
+let done=false;if(s.turn==='p'){done=processProducer();if(!done)done=processConsumer();}else{done=processConsumer();if(!done)done=processProducer();}s.turn=s.turn==='p'?'c':'p';
+if(!done){s.active='take';s.selected=null;s.eventNode='take';s.eventText=s.workerPaused?'计算线程被你暂停了。可连续发帧，让接收线程填满队列，再观察丢旧帧。':'队列为空，计算线程在 take 的条件变量上等待，并释放锁。发一帧可唤醒它。';s.notice=s.workerPaused?'先发一帧继续观察，或恢复计算线程。':'现在没有待处理帧；点击「上游发一帧」。';}
+render();}
+function stopAuto(){if(timer!==null){clearInterval(timer);timer=null;}renderAuto();}
+function startAuto(){if(timer!==null)return;autoTicks=0;timer=setInterval(function(){autoTicks++;if(s.ready&&autoIncoming&&autoTicks%5===0&&s.inbox.length<2)sendFrame(true);tick();if(!autoIncoming&&s.ready&&!s.inbox.length&&!s.p&&(!s.q.length||s.workerPaused)&&!s.c){stopAuto();s.notice=s.workerPaused?'观察完成：计算线程暂停时，满队列丢最早入队的帧。可恢复计算线程继续。':'本次场景处理完成。可以继续发帧，或查看任意函数。';render();}},760);renderAuto();}
+function renderAuto(){$('auto').textContent=timer===null?'自动演示':'暂停动画';$('auto').setAttribute('aria-pressed',String(timer!==null));}
+function reset(){stopAuto();s=fresh();autoIncoming=true;render();}
+function fastInit(){for(let i=0;i<6;i++)initializeStep();}
+function scenario(kind){reset();fastInit();autoIncoming=false;if(kind==='normal'){for(let i=0;i<6;i++)sendFrame(true);s.notice='已创建好工厂与检测器。接下来处理 6 帧；第一条结果由 F4 的时间戳触发。';startAuto();}
+else if(kind==='full'){s.workerPaused=true;for(let i=0;i<6;i++)sendFrame(true);s.notice='教学容量为 3；计算线程暂停，接收线程继续处理 6 帧，观察队首被丢弃。';startAuto();}
+else{s.active='take';s.eventNode='take';s.eventText='队列为空，计算线程停在 take 等待；它释放队列锁，不会阻止接收线程入队。';s.notice='点击「上游发一帧」，再点「下一步」或「自动演示」，观察入队和唤醒。';}render();}
+function render(){
+$('factoryCount').textContent=s.factory;$('detectorCount').textContent=s.detectors;$('parsedCount').textContent=s.parsed;$('publishedCount').textContent=s.published.length;
+$('initStatus').textContent=s.ready?'初始化已完成 · 对象持续复用':s.init?'初始化 '+s.init+' / 6':'尚未开始';
+root.querySelectorAll('[data-node]').forEach(function(el){const id=el.dataset.node;el.classList.toggle('active',s.active===id);el.classList.toggle('selected',s.selected===id);if(id.indexOf('init')===0)el.classList.toggle('done',Number(id.slice(4))<s.init);});
+$('send').disabled=!s.ready;$('worker').disabled=!s.ready;$('worker').textContent=s.workerPaused?'恢复计算线程':'暂停计算线程';$('worker').setAttribute('aria-pressed',String(s.workerPaused));
+$('producerStatus').textContent=s.p?'正在接收 '+frameLabel(s.p.f)+'；另有 '+s.inbox.length+' 帧等待回调。':s.inbox.length?'还有 '+s.inbox.length+' 帧等待回调；点下一步继续。':s.ready?'接收线程暂时空闲，等待新消息。':'初始化后，等待上游发来第一帧。';
+const slots=$('queueSlots');slots.replaceChildren();for(let i=0;i<3;i++){const el=document.createElement('div');el.className='queue-slot';const f=s.q[i];if(f){el.classList.add('occupied');if(f.seq===s.lastEnqueued)el.classList.add('arrival');const b=document.createElement('strong');b.textContent='F'+f.seq;el.append(b);const small=document.createElement('span');small.textContent='T+'+(f.ts/1000)+'s · PerceptionResult';el.append(small);}else el.textContent='空位';slots.append(el);}
+$('queueState').textContent=s.q.length+' / 3 帧';$('dropState').textContent=s.dropped.length?'已丢弃 '+s.dropped.map(function(f){return 'F'+f.seq;}).join('、')+'（按入队顺序）':'还没有丢帧';
+const thread=$('threadState');thread.classList.toggle('paused',s.workerPaused);thread.textContent=s.init<5?'计算线程尚未创建':s.workerPaused?'你已暂停计算线程；接收线程仍可运行':s.c?'正在计算 '+frameLabel(s.c.f):s.q.length?'已有帧，计算线程可取队首':'队列为空：take 释放锁并等待条件变量';
+$('volumeStat').textContent='本窗口累计过线：'+s.volume+' 辆';$('headwayStat').textContent='累计相邻过线间隔：'+s.headwayN+' 个';$('windowStat').textContent=s.windowStart===null?'按帧时间戳判断，不靠动画播放时钟':'相对窗口起点 T+'+(s.windowStart/1000)+'s，跨度满 3 秒结算';
+$('publishState').textContent=s.published.length?'已通过宿主发布 '+s.published.length+' 条 JSON 结果消息':'FusionService 再通过 DDS 发布给下游';
+const key=s.selected||s.active;if(key&&info[key]){const d=info[key];$('actor').textContent=d.actor;$('detailTitle').textContent=d.title;$('detailText').textContent=!s.selected&&s.eventNode===key&&s.eventText?s.eventText+' '+d.text:d.text;$('sourcePath').textContent=sourceRoot+d.file;$('code').textContent=d.code;}else{$('actor').textContent='准备开始';$('detailTitle').textContent='先看启动时创建了哪些对象';$('detailText').textContent='点「下一步」。工厂不是每帧都创建，检测器也不是每帧都创建。';$('sourcePath').textContent='';$('code').textContent='// 点击上面的函数块，也可以直接查看解释。';}
+$('notice').textContent=s.notice;
+$('jsonData').textContent=s.lastInput?JSON.stringify(jsonFrame(s.lastInput),null,2):'等待上游消息';
+$('cppData').textContent=s.lastParsed?'PerceptionResult frame {\n  timestamp = '+s.lastParsed.ts+';\n  traffic_objects = [\n    { id: '+s.lastParsed.id+', speed: 36, lane_no: "1" }\n  ];\n};\n// 这次创建的是 F'+s.lastParsed.seq+' 的对象':'尚未解析出帧对象';
+$('outputData').textContent=s.lastOutput?JSON.stringify(s.lastOutput,null,2)+(s.c&&s.c.stage===4?'\n// 已结算，下一步通过宿主发布':'\n// JSON 消息，不是文件'):'尚未到结算点';
+const logs=$('logs');logs.replaceChildren();s.logs.forEach(function(item){const li=document.createElement('li');const b=document.createElement('b');b.textContent=item.actor+' · ';li.append(b,document.createTextNode(item.text));logs.append(li);});renderAuto();
+}
+$('next').addEventListener('click',function(){stopAuto();tick();});$('auto').addEventListener('click',function(){if(timer!==null)stopAuto();else startAuto();});$('send').addEventListener('click',function(){sendFrame(false);});$('worker').addEventListener('click',function(){s.workerPaused=!s.workerPaused;s.notice=s.workerPaused?'只暂停计算线程：接收线程还能继续解析入队。':'计算线程已恢复；点下一步或自动演示继续消费。';render();});$('reset').addEventListener('click',reset);$('normal').addEventListener('click',function(){scenario('normal');});$('empty').addEventListener('click',function(){scenario('empty');});$('full').addEventListener('click',function(){scenario('full');});
+root.querySelectorAll('[data-node]').forEach(function(el){el.addEventListener('click',function(){stopAuto();s.selected=el.dataset.node;render();});});
+window.addEventListener('pagehide',function(){if(timer!==null)clearInterval(timer);});
+window.trafficFlowDemo={snapshot:function(){return{ready:s.ready,init:s.init,factory:s.factory,detectors:s.detectors,seq:s.seq,parsed:s.parsed,queue:s.q.map(function(f){return f.seq;}),dropped:s.dropped.map(function(f){return f.seq;}),published:s.published,inbox:s.inbox.length,producer:!!s.p,consumer:!!s.c,paused:s.workerPaused};}};
+s=fresh();render();
+})();
+</script>
+</body>
+</html>
