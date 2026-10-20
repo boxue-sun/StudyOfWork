@@ -1,0 +1,3852 @@
+# 作者: tianchuan
+# 提交数: 7
+# 来源: 193 机 /work/sunboxue/airos2.0 (--all)
+
+@@@C	tianchuan	a5b610e703e7f35e688e04c00fccf532bec2f132	2025-03-25	优化代码
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.cc b/middleware/protocol/om_monitor/om_monitor_component.cc
+index 6f59108..a6f65d5 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.cc
++++ b/middleware/protocol/om_monitor/om_monitor_component.cc
+@@ -1466,7 +1466,11 @@ bool OM_MONITOR_COMPONENT::process_query_radar_cloud_data_status(struct sockaddr
+ 
+     m_MecRadarCloudStatus.data.mec_radars_v2x_in_flag = m_RradarsV2xInFlag.load();
+ 
+-    auto tmp = m_RadarDynamicDataMap;
++    std::map<std::string,std::pair<long,std::string>> tmp;
++    {
++        std::lock_guard<std::mutex> lock(m_MapMutex);
++        tmp = m_RadarDynamicDataMap;
++    }
+     for(const auto& data : tmp)
+     {
+         struct MecRadarDynamicData dynamicData;
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.h b/middleware/protocol/om_monitor/om_monitor_component.h
+index 10dfee5..ed0f0bb 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.h
++++ b/middleware/protocol/om_monitor/om_monitor_component.h
+@@ -122,7 +122,7 @@ private:
+     afl::base::json m_JsonAirosModulesStatus;
+     std::string m_ContainerTime = "";
+ 
+-    int m_MonitorDiskAirosModulesStatus = -1;
++
+     int m_MonitorDiskStatus = -1;
+     int m_MonitorDiskStatusOnce = -1;
+     int m_MonitorDiskStatusOnceCount = 0;
+
+@@@C	tianchuan	0a732461fb8a0e18b9236007fc0c51896d05e2f1	2025-03-20	将监控模块udp端口由50089还原为50088
+diff --git a/middleware/protocol/om_monitor/configer_om_monitor.h b/middleware/protocol/om_monitor/configer_om_monitor.h
+index 47e460c..431785b 100644
+--- a/middleware/protocol/om_monitor/configer_om_monitor.h
++++ b/middleware/protocol/om_monitor/configer_om_monitor.h
+@@ -224,7 +224,7 @@ public:
+ struct UdpConfigerMonitor : public ConfigerData<UdpConfigerMonitor>
+ {
+     bool                                enableDebugPrint = true;
+-    int                                 udpPort = 50089;
++    int                                 udpPort = 50088;
+     WorkParamConfiger                   configerWorkParam;
+     std::string                         rscuEsn = "110220330";
+     NeedFilePathConfiger                needFilePathConfiger;
+
+@@@C	tianchuan	114f45502c144d27a69a103b7663b71b3e9a7a16	2025-03-20	修改原有模块监控信息。将模块时间信息合入原有模块接口
+diff --git a/middleware/protocol/om_monitor/data_model/data_airos_status.h b/middleware/protocol/om_monitor/data_model/data_airos_status.h
+index 3845dc2..88e5ed8 100644
+--- a/middleware/protocol/om_monitor/data_model/data_airos_status.h
++++ b/middleware/protocol/om_monitor/data_model/data_airos_status.h
+@@ -25,37 +25,23 @@ using namespace afl::base;
+ using namespace os::v2x::protocol::om::common;
+ struct ProcessInfo
+ {
+-    std::string user;
+-    int pid;
+-    double cpu;
+-    double mem;
+-    std::string vsz;
+-    std::string rss;
+-    std::string tty;
+-    std::string stat;
+-    std::string start;
+-    std::string cpuTime;
+-    std::string command_name;
+-    std::string command_type;
+-    std::string moudle_name;
++    std::string pid;          // 进程ID
++    std::string comm;         // 用户
++    std::string lstart;         // 启动时间
++    std::string etime;         // 经过的时间
++    double cpu;                // CPU 使用率
++    double mem;                // mem 使用率
++    std::string cmd;        // 开始时间
+ public:
+     std::string to_string() const {
+         std::stringstream ss;
+-        ss << std::left << std::setw(40) << "user: "          << user << std::endl;
+         ss << std::left << std::setw(40) << "pid: "           << pid << std::endl;
++        ss << std::left << std::setw(40) << "comm: "           << comm << std::endl;
++        ss << std::left << std::setw(40) << "lstart: "            << lstart << std::endl;
++        ss << std::left << std::setw(40) << "etime: "          << etime << std::endl;
+         ss << std::left << std::setw(40) << "cpu: "            << cpu << std::endl;
+-        ss << std::left << std::setw(40) << "mem: "            << mem <<std::endl;
+-
+-        ss << std::left << std::setw(40) << "vsz: "          << vsz << std::endl;
+-        ss << std::left << std::setw(40) << "rss: "           << rss << std::endl;
+-        ss << std::left << std::setw(40) << "tty: "            << tty << std::endl;
+-        ss << std::left << std::setw(40) << "stat: "            << stat <<std::endl;
+-
+-        ss << std::left << std::setw(40) << "start: "          << start << std::endl;
+-        ss << std::left << std::setw(40) << "cpuTime: "          << cpuTime << std::endl;
+-        ss << std::left << std::setw(40) << "command_name: "           << command_name << std::endl;
+-        ss << std::left << std::setw(40) << "command_type: "           << command_type << std::endl;
+-        ss << std::left << std::setw(40) << "moudle_name: "           << moudle_name << std::endl;
++        ss << std::left << std::setw(40) << "mem: "          << mem << std::endl;
++        ss << std::left << std::setw(40) << "cmd: "           << cmd << std::endl;
+         return ss.str();
+     }
+ };
+@@ -90,34 +76,42 @@ public:
+ };
+ 
+ 
++
+ struct AirosMoudlesData  : public afl::base::SerializableData
+ {
+-    std::string moudle_pid = "";
+-    double module_cpu = 999.999;
+-    double module_mem = 999.999;
+-    std::string module_name = "";
++    std::string name = "";
++    std::string pid = "";
++    double cpu = 999.999;
++    double mem = 999.999;
++    std::string start_time = "";
++
+     void serialize(json& j) override
+     {
+-        JsonSerialize(moudle_pid,              "pid",           j, false);
+-        JsonSerialize(module_cpu,                "cpu",            j, false);
+-        JsonSerialize(module_mem,                 "mem",             j, false);
+-        JsonSerialize(module_name,                 "module_name",             j, false);
++        JsonSerialize(name,                 "name",             j, false);
++        JsonSerialize(pid,              "pid",           j, false);
++        JsonSerialize(cpu,                "cpu",            j, false);
++        JsonSerialize(mem,                 "mem",             j, false);
++        JsonSerialize(start_time,                 "start_time",             j, false);
++
+     }
+ 
+     void deserialize(const json& j)  override
+     {
+-        JsonDeserialize(moudle_pid,              "pid",           j, noUse_isEmptyFlag);
+-        JsonDeserialize(module_cpu,                "cpu",            j, noUse_isEmptyFlag);
+-        JsonDeserialize(module_mem,                 "mem",             j, noUse_isEmptyFlag);
+-        JsonDeserialize(module_name,                 "module_name",             j, noUse_isEmptyFlag);
++        JsonDeserialize(name,                 "name",             j, noUse_isEmptyFlag);
++        JsonDeserialize(pid,              "pid",           j, noUse_isEmptyFlag);
++        JsonDeserialize(cpu,                "cpu",            j, noUse_isEmptyFlag);
++        JsonDeserialize(mem,                 "mem",             j, noUse_isEmptyFlag);
++        JsonDeserialize(start_time,                 "start_time",             j, noUse_isEmptyFlag);
+     }
+ public:
+     std::string to_string() const {
+         std::stringstream ss;
+-        ss << std::left << std::setw(40) << "moudle_pid: "          << moudle_pid << std::endl;
+-        ss << std::left << std::setw(40) << "module_cpu: "           << module_cpu << std::endl;
+-        ss << std::left << std::setw(40) << "module_mem: "            << module_mem << std::endl;
+-        ss << std::left << std::setw(40) << "module_name: "            << module_name <<std::endl;
++        ss << std::left << std::setw(40) << "name: "            << name <<std::endl;
++        ss << std::left << std::setw(40) << "pid: "          << pid << std::endl;
++        ss << std::left << std::setw(40) << "cpu: "           << cpu << std::endl;
++        ss << std::left << std::setw(40) << "mem: "            << mem << std::endl;
++        ss << std::left << std::setw(40) << "start_time: "            << start_time <<std::endl;
++
+         return ss.str();
+     }
+ };
+@@ -125,35 +119,31 @@ public:
+ 
+ struct AirosStatusData  : public afl::base::SerializableData
+ {
+-    std::string modules_need_run;
+-    std::string modules_now_run;
+-    std::string modules_no_run;
+-    std::vector<AirosMoudlesData> modules_head;
++    std::string container_name = "";
++    std::string container_start_time = "";
++    std::vector<AirosMoudlesData> modules_status;
+     void serialize(json& j) override
+     {
+-        JsonSerialize(modules_need_run,              "modules_need_run",           j, false);
+-        JsonSerialize(modules_now_run,                "modules_now_run",            j, false);
+-        JsonSerialize(modules_no_run,                 "modules_no_run",             j, false);
+-        JsonSerialize(modules_head,                 "modules_head",             j, false);
++        JsonSerialize(container_name,              "container_name",             j, false);
++        JsonSerialize(container_start_time,              "container_start_time",             j, false);
++        JsonSerialize(modules_status,                 "modules_status",             j, false);
+     }
+ 
+     void deserialize(const json& j)  override
+     {
+-        JsonDeserialize(modules_need_run,             "modules_need_run",           j, noUse_isEmptyFlag);
+-        JsonDeserialize(modules_now_run,               "modules_now_run",            j, noUse_isEmptyFlag);
+-        JsonDeserialize(modules_no_run,                "modules_no_run",             j, noUse_isEmptyFlag);
+-        JsonDeserialize(modules_head,                 "modules_head",             j, noUse_isEmptyFlag);
++        JsonDeserialize(container_name,              "container_name",             j, noUse_isEmptyFlag);
++        JsonDeserialize(container_start_time,              "container_start_time",             j, noUse_isEmptyFlag);
++        JsonDeserialize(modules_status,                 "modules_status",             j, noUse_isEmptyFlag);
+     }
+ public:
+     std::string to_string() const {
+         std::stringstream ss;
+-        ss << std::left << std::setw(40) << "modules_need_run: "          << modules_need_run << std::endl;
+-        ss << std::left << std::setw(40) << "modules_now_run: "           << modules_now_run << std::endl;
+-        ss << std::left << std::setw(40) << "modules_no_run: "            << modules_no_run << std::endl;
+-        ss << std::left << std::setw(40) << "modules_head: "  << std::endl;
+-        for(auto module_head : modules_head)
++        ss << std::left << std::setw(40) << "container_name: "            << container_name << std::endl;
++        ss << std::left << std::setw(40) << "container_start_time: "            << container_start_time << std::endl;
++        ss << std::left << std::setw(40) << "modules_status: "  << std::endl;
++        for(auto module : modules_status)
+         {
+-            ss << std::left << std::setw(40) << "module_head: " << module_head.to_string() << std::endl;
++            ss << std::left << std::setw(40) << "module_status: " << module.to_string() << std::endl;
+         }
+         return ss.str();
+     }
+diff --git a/middleware/protocol/om_monitor/data_model/data_sys_performance_status.h b/middleware/protocol/om_monitor/data_model/data_sys_performance_status.h
+index 029c8f2..cb5491d 100644
+--- a/middleware/protocol/om_monitor/data_model/data_sys_performance_status.h
++++ b/middleware/protocol/om_monitor/data_model/data_sys_performance_status.h
+@@ -34,10 +34,9 @@ struct SysPerformanceData  : public afl::base::SerializableData
+     double mem = 999.999;
+     bool run_flag = false;
+ 
+-    std::string modules_need_run = "";
+-    std::string modules_now_run = "";
+-    std::string modules_no_run ="";
+-    std::vector<AirosMoudlesData> modules_head;
++    std::string container_name = "";
++    std::string container_start_time = "";
++    std::vector<AirosMoudlesData> modules_status;
+ 
+     double root_size = 999.999;
+     double root_avail = 999.999;
+@@ -54,10 +53,9 @@ struct SysPerformanceData  : public afl::base::SerializableData
+         JsonSerialize(mem, "mem", j, false);
+         JsonSerialize(run_flag, "run_flag", j, false);
+ 
+-        JsonSerialize(modules_need_run,              "modules_need_run",           j, false);
+-        JsonSerialize(modules_now_run,                "modules_now_run",            j, false);
+-        JsonSerialize(modules_no_run,                 "modules_no_run",             j, false);
+-        JsonSerialize(modules_head,                 "modules_head",             j, false);
++        JsonSerialize(container_name,                 "container_name",             j, false);
++        JsonSerialize(container_start_time,                 "container_start_time",             j, false);
++        JsonSerialize(modules_status,                 "modules_status",             j, false);
+ 
+         JsonSerialize(root_size, "root_size", j, false);
+         JsonSerialize(root_avail, "root_avail", j, false);
+@@ -75,10 +73,9 @@ struct SysPerformanceData  : public afl::base::SerializableData
+         JsonDeserialize(mem, "mem", j, noUse_isEmptyFlag);
+         JsonDeserialize(run_flag, "run_flag", j, noUse_isEmptyFlag);
+ 
+-        JsonDeserialize(modules_need_run,             "modules_need_run",           j, noUse_isEmptyFlag);
+-        JsonDeserialize(modules_now_run,               "modules_now_run",            j, noUse_isEmptyFlag);
+-        JsonDeserialize(modules_no_run,                "modules_no_run",             j, noUse_isEmptyFlag);
+-        JsonDeserialize(modules_head,                 "modules_head",             j, noUse_isEmptyFlag);
++        JsonDeserialize(container_name,                "container_name",             j, noUse_isEmptyFlag);
++        JsonDeserialize(container_start_time,                "container_start_time",             j, noUse_isEmptyFlag);
++        JsonDeserialize(modules_status,                 "modules_status",             j, noUse_isEmptyFlag);
+ 
+         JsonDeserialize(root_size, "root_size", j, noUse_isEmptyFlag);
+         JsonDeserialize(root_avail, "root_avail", j, noUse_isEmptyFlag);
+@@ -94,14 +91,12 @@ public:
+         ss << std::left << std::setw(40) << "mem_percent: "              << mem_percent << std::endl;
+         ss << std::left << std::setw(40) << "mem: "              << mem << std::endl;
+         ss << std::left << std::setw(40) << "run_flag: "         << (run_flag ? "true" : "false") << "\n";
+-
+-        ss << std::left << std::setw(40) << "modules_need_run: "          << modules_need_run << std::endl;
+-        ss << std::left << std::setw(40) << "modules_now_run: "           << modules_now_run << std::endl;
+-        ss << std::left << std::setw(40) << "modules_no_run: "            << modules_no_run << std::endl;
+-        ss << std::left << std::setw(40) << "modules_head: "  << std::endl;
+-        for(auto module_head : modules_head)
++        ss << std::left << std::setw(40) << "container_name: "            << container_name << std::endl;
++        ss << std::left << std::setw(40) << "container_start_time: "            << container_start_time << std::endl;
++        ss << std::left << std::setw(40) << "modules_status: "  << std::endl;
++        for(auto module_head : modules_status)
+         {
+-            ss << std::left << std::setw(40) << "module_head: " << module_head.to_string() << std::endl;
++            ss << std::left << std::setw(40) << "module_status: " << module_head.to_string() << std::endl;
+         }
+ 
+         ss << std::left << std::setw(40) << "root_size: "              << root_size << std::endl;
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.cc b/middleware/protocol/om_monitor/om_monitor_component.cc
+index 4fbef2c..6f59108 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.cc
++++ b/middleware/protocol/om_monitor/om_monitor_component.cc
+@@ -90,9 +90,6 @@ bool OM_MONITOR_COMPONENT::Proc(const std::shared_ptr<const  airos::usecase::Eve
+             m_MecCloudStatusData.mec_cloud_status.con_flag = mec_radar_cloud_status.radar_cloud_con_flag();
+             m_MecCloudStatusData.mec_cloud_status.v2x_up_flag = mec_radar_cloud_status.v2x_up_flag();
+             m_MecCloudStatusData.mec_cloud_status.dynamic_up_flag = mec_radar_cloud_status.dynamic_data_up_flag();
+-            OM_MONITOR_ERROR_PRINT << "con_flag:" << m_MecCloudStatusData.mec_cloud_status.con_flag;
+-            OM_MONITOR_ERROR_PRINT << "v2x_up_flag:" << m_MecCloudStatusData.mec_cloud_status.v2x_up_flag;
+-            OM_MONITOR_ERROR_PRINT << "dynamic_up_flag:" << m_MecCloudStatusData.mec_cloud_status.dynamic_up_flag;
+         }
+         catch (...)
+         {
+@@ -202,6 +199,7 @@ void OM_MONITOR_COMPONENT::monitorEventloopRunning()
+ 
+             if(getConfiger().configerEanbleMonitor.Enable_MonitorDockerStatus)
+             {
++                m_MonitorAirosContainerTimeOnce = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_container_time_once, this), 4, false);
+                 m_MonitorAirosModulesStatusOnce = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_airos_modules_status_once, this), 4, true);
+                 m_MonitorAirosModulesStatus = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_airos_modules_status, this),
+                                                               getConfiger().configerMonitorPeriod.periodMonitorAirosModulesStatus, true);
+@@ -224,6 +222,54 @@ void OM_MONITOR_COMPONENT::monitorEventloopRunning()
+ 
+ }
+ 
++bool OM_MONITOR_COMPONENT::period_query_container_time_once()
++{
++    SshInfo sshInfo;
++    sshInfo.host = "127.0.0.1";
++    OmWorkParamConfiger  omWorkParamConfiger;
++    WorkParam::getWorkParamFromFile(getConfiger().configerWorkParam.workParamFilePath, omWorkParamConfiger);
++    const char* docker_cmd = 
++        "docker inspect --format '{{.Name}} {{.State.StartedAt}}' $(docker ps -q) | "
++        "while read name time; do "
++        "  echo \"$name $(date -d \"$time\" \"+%a %b %d %H:%M %Y\")\"; "
++        "done";
++    sshInfo.user = omWorkParamConfiger.omPtpLogParamConfiger.localSshUserName;
++    sshInfo.password = omWorkParamConfiger.omPtpLogParamConfiger.localSshPassword;
++    sshInfo.execCmd = "echo " + sshInfo.password + " | " + docker_cmd;
++    int maxRetries = 3;
++    int retryCount = 0;  // 当前重试次数
++    bool cmdExecFlag = false;
++    while (retryCount < maxRetries)
++    {
++        if (DBUtils::sshExec(sshInfo))
++        {
++            // 成功执行，直接返回 true
++            cmdExecFlag = true;
++            break;
++        }
++
++        OM_MONITOR_ERROR_PRINT << "[error] Reboot device failure! Attempt " << (retryCount + 1) << " failed.\n";
++        retryCount++;
++    }
++
++    if(!cmdExecFlag)
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
++        return false;
++    }
++    else
++    {
++        m_ContainerTime = sshInfo.execRet;
++    }
++
++    if(getConfiger().enableDebugPrint)
++    {
++        OM_MONITOR_DEBUG_PRINT << "[execRet]" << sshInfo.execRet;
++    }
++    return true;
++
++}
++
+ 
+ void OM_MONITOR_COMPONENT::period_query_docker_status_once()
+ {
+@@ -518,14 +564,23 @@ bool OM_MONITOR_COMPONENT::period_query_airos_modules_status()
+     airosStatus.seqnum = "test";
+     airosStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+     airosStatus.device_esn = getConfiger().rscuEsn;
+-    std::string command = "ps aux --sort=-%mem | grep -E 'mainboard|python' | head -n 10";
++    if(m_ContainerTime != " ")
++    {
++        std::istringstream lineStream(m_ContainerTime);
++        std::string name, week, month, day, time, year;
++        lineStream >> name >> week >> month >> day >> time >> year;
++        airosStatus.data.container_name = name;
++        airosStatus.data.container_start_time = week + " " + month + " " + day + " " + time + " " + year;
++    }
++
++    std::string command = "ps -eo pid,comm,lstart,etime,%cpu,%mem,cmd --sort=-%mem | grep -E 'mainboard|python'| head -n 15";
+     std::vector<ProcessInfo> airosProcessInfos;
+     int maxRetries = 3;
+     int retryCount = 0;  // 当前重试次数
+     bool cmdExecFlag = false;
+     while (retryCount < maxRetries)
+     {
+-        if (getProcessInfo(command, airosProcessInfos))
++        if (getProcessInfo(command, airosProcessInfos)) // 查询mainboard启动的模块
+         {
+             // 成功执行，直接返回 true
+             cmdExecFlag = true;
+@@ -545,42 +600,108 @@ bool OM_MONITOR_COMPONENT::period_query_airos_modules_status()
+     {
+         for (const auto &processInfo : airosProcessInfos)
+         {
+-
+-            OM_MONITOR_DEBUG_PRINT << "[pid]" << processInfo.pid
+-                                << "[cpu]" << processInfo.cpu
+-                                << "[mem]" << processInfo.mem
+-                                << "[moudle_name]" << processInfo.moudle_name;
+-
+             AirosMoudlesData airosMoudlesData;
+-            airosMoudlesData.moudle_pid = std::to_string(processInfo.pid);
+-            airosMoudlesData.module_cpu = processInfo.cpu;
+-            airosMoudlesData.module_mem = processInfo.mem;
+-            airosMoudlesData.module_name = processInfo.moudle_name;
+-            airosStatus.data.modules_head.push_back(airosMoudlesData);
++            airosMoudlesData.pid = processInfo.pid;
++            airosMoudlesData.cpu = processInfo.cpu;
++            airosMoudlesData.mem = processInfo.mem;
++            airosMoudlesData.start_time = processInfo.lstart;
++            auto lastSlash = processInfo.cmd.find_last_of('/');
++            auto lastDot = processInfo.cmd.find_last_of('.');
++            if (lastSlash != std::string::npos && lastDot != std::string::npos && lastDot > lastSlash)
++            {
++                airosMoudlesData.name = processInfo.cmd.substr(lastSlash + 1, lastDot - lastSlash - 1);
++            }
++            if(airosMoudlesData.name != "")
++            {
++                airosStatus.data.modules_status.push_back(airosMoudlesData);
++            }
+         }
+-        std::string commandLaunchPs = "launch ps";
+-        std::vector<ProcessMoudlesNeedInfo> airosProcessMoudlesNeedInfos = getModulesNeedInfo(commandLaunchPs);
+-        std::vector<string> airosNowRunningModules;
+-        for(auto nowModule:airosProcessMoudlesNeedInfos)
++        std::string commandLaunchPs = "bash launch ps";
++        std::vector<ProcessMoudlesNeedInfo> airosProcessMoudlesNeedInfos = getModulesNeedInfo(commandLaunchPs); // 查询所有需要启动的模块
++        std::vector<std::string> otherModules;
++        bool exist = false;
++        int count = 0;
++        for(auto m : m_AirosNeedRunModules)
+         {
+-            airosNowRunningModules.push_back(nowModule.moudle_name);
++            for(unsigned int i = 0; i < airosStatus.data.modules_status.size(); i++)
++            {
++                count = 0;
++                exist = false;
++                if(airosStatus.data.modules_status[i].name != m)
++                {
++                    exist = false;
++                    
++                    continue;
++                }
++                else
++                {
++                    exist = true;
++                    count = i;
++                    break;
++                }
++                count = i;
++            }
++
++            if(exist == false && count == 0)
++            {
++                otherModules.push_back(m);
++            }
+         }
+-        for(auto module: m_AirosNeedRunModules)
++           
++        bool flag = false;
++        for(auto m : otherModules)
+         {
+-            airosStatus.data.modules_need_run.append(module);
+-            airosStatus.data.modules_need_run.append("|");
+-            if(contains(airosNowRunningModules, module))
++            flag = false;
++            for(auto nowModule : airosProcessMoudlesNeedInfos)
+             {
+-                airosStatus.data.modules_now_run.append(module);
+-                airosStatus.data.modules_now_run.append("|");
++                if(m == nowModule.moudle_name)
++                {
++                    AirosMoudlesData airosMoudlesData;
++                    airosMoudlesData.pid = nowModule.pid;
++                    airosMoudlesData.cpu = nowModule.cpu;
++                    airosMoudlesData.mem = 999.999;
++                    airosMoudlesData.name = nowModule.moudle_name;
++
++                    std::time_t now = std::time(nullptr);
++                    std::tm* localTime = std::localtime(&now);
++                    char buffer[80];
++                    std::strftime(buffer, sizeof(buffer), "%a %b %d %H:%M:%S %Y", localTime);
++
++                    // 时间秒级
++                    std::istringstream lineStream(buffer);
++                    std::string week, month, day, time, year;
++                    lineStream >>week >> month >> day >> time >> year;
++                    airosMoudlesData.start_time = week + " " + month + " " + day + " " + nowModule.start + ":00" + " " + year;
++
++                    airosStatus.data.modules_status.push_back(airosMoudlesData);
++                    flag = true;
++                }
+             }
+-            else
++
++            if(flag == false)
+             {
+-                airosStatus.data.modules_no_run.append(module);
+-                airosStatus.data.modules_no_run.append("|");
++                // 其它未启动的模块
++                AirosMoudlesData airosMoudlesData;
++                airosMoudlesData.pid = "";
++                airosMoudlesData.cpu = 999.999;
++                airosMoudlesData.mem = 999.999;
++                airosMoudlesData.name = m;
++                airosMoudlesData.start_time = "";
++
++                airosStatus.data.modules_status.push_back(airosMoudlesData);
+             }
+         }
+ 
++           
++       
++
++        for(auto i : airosStatus.data.modules_status)
++        {
++            OM_MONITOR_DEBUG_PRINT <<"module:" <<std::endl<< i.to_string();
++        }
++
++
++
+         try{
+             m_JsonAirosModulesStatus = airosStatus;
+             if(getConfiger().enableDebugPrint) {
+@@ -740,17 +861,21 @@ bool OM_MONITOR_COMPONENT::process_query_sys_performance_status(struct sockaddr_
+     if(((queryData.timestamp - airosStatus.timestamp)/1000) > getConfiger().configerMonitorPeriod.periodMonitorAirosModulesStatus)
+     {
+         OM_MONITOR_ERROR_PRINT << "[timeout]" << "msg_time_ms=" << airosStatus.timestamp;
+-        airosStatus.data.modules_need_run.clear();
+-        airosStatus.data.modules_now_run.clear();
+-        airosStatus.data.modules_no_run.clear();
+-        airosStatus.data.modules_head.clear();
++        airosStatus.data.container_name.clear();
++        airosStatus.data.container_start_time.clear();
++        airosStatus.data.modules_status.clear();
+     }
+     else
+     {
+-        sysPerformanceStatus.data.modules_need_run = airosStatus.data.modules_need_run;
+-        sysPerformanceStatus.data.modules_now_run = airosStatus.data.modules_now_run;
+-        sysPerformanceStatus.data.modules_no_run = airosStatus.data.modules_no_run;
+-        sysPerformanceStatus.data.modules_head = std::move(airosStatus.data.modules_head);
++        if(m_ContainerTime != " ")
++        {
++            std::istringstream lineStream(m_ContainerTime);
++            std::string name, week, month, day, time, year;
++            lineStream >> name >> week >> month >> day >> time >> year;
++            sysPerformanceStatus.data.container_name = name;
++            sysPerformanceStatus.data.container_start_time = week + " " + month + " " + day + " " + time + " " + year;
++        }
++        sysPerformanceStatus.data.modules_status = std::move(airosStatus.data.modules_status);
+     }
+ 
+     DiskStatus diskStatus;
+@@ -1013,25 +1138,17 @@ bool OM_MONITOR_COMPONENT::getProcessInfo(std::string& command,  std::vector<Pro
+     // 解析输出
+     std::istringstream stream(result);
+     std::string line;
+-
+     while (std::getline(stream, line))
+     {
+-//        OM_MONITOR_ERROR_PRINT << "[line]" << line;
++       // OM_MONITOR_ERROR_PRINT << "[line]" << line;
+         std::istringstream lineStream(line);
+         ProcessInfo process;
++        std::string week, month, day, time, year, cmd, xx, args;
+ 
+-        lineStream >> process.user >> process.pid >> process.cpu >> process.mem
+-                >> process.vsz >> process.rss >> process.tty >> process.stat
+-                >> process.start >> process.cpuTime >> process.command_name >> process.command_type >> process.moudle_name ;
+-
+-//        OM_MONITOR_ERROR_PRINT << "[lineStream]" << lineStream.str();
+-//        OM_MONITOR_ERROR_PRINT << "[ProcessInfo]" << process.to_string();
+-        std::size_t lastSlash =  process.moudle_name.find_last_of('/');
+-        std::size_t lastDot =  process.moudle_name.find_last_of('.');
+-        if (lastSlash != std::string::npos && lastDot != std::string::npos && lastDot > lastSlash) {
+-            std::string moudleName =  process.moudle_name.substr(lastSlash + 1, lastDot - lastSlash - 1);
+-            process.moudle_name = moudleName;
+-        }
++        lineStream >> process.pid >> process.comm >>week >> month >> day >> time >> year >> process.etime
++                >> process.cpu >> process.mem >> cmd >> xx >> args;
++                process.lstart=week+" "+ month + " " +day+" "+time+" "+year;
++                process.cmd = cmd + " " + xx + " " + args;
+         processes.push_back(process);
+     }
+ 
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.h b/middleware/protocol/om_monitor/om_monitor_component.h
+index 9547041..10dfee5 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.h
++++ b/middleware/protocol/om_monitor/om_monitor_component.h
+@@ -66,6 +66,7 @@ public:
+ 
+     bool period_query_airos_modules_status();
+     void period_query_airos_modules_status_once();
++    bool period_query_container_time_once();
+ 
+     bool period_discard_radar_cloud_data_status();
+     bool process_query_radar_cloud_data_status(struct sockaddr_in clientAddr,json& j);
+@@ -106,7 +107,7 @@ private:
+     SensorDataStatus                  m_SensorDataStatusData;
+     std::vector<string>             m_AirosNeedRunModules = {
+             "mec_service", "traffic_light_service", "v2x_codec", "rsu_service",  "rsap",  "airos_v2x_app",
+-            "airos_v2x_scenario", "om_device_status", "om",  "ccindex",
++            "airos_v2x_scenario", "om_device_status", "om",  "ccindex", "om_monitor"
+     };
+     int m_MonitorDockerAirosModulesStatus = -1;
+     int m_MonitorDockerStatus = -1;
+@@ -116,8 +117,10 @@ private:
+ 
+     int m_MonitorAirosModulesStatus = -1;
+     int m_MonitorAirosModulesStatusOnce = -1;
++    int m_MonitorAirosContainerTimeOnce = -1;
+     int m_MonitorAirosMOdulesStatusOnceCount = 0;
+     afl::base::json m_JsonAirosModulesStatus;
++    std::string m_ContainerTime = "";
+ 
+     int m_MonitorDiskAirosModulesStatus = -1;
+     int m_MonitorDiskStatus = -1;
+
+@@@C	tianchuan	ec8a3155fbda6d6b38bfc5c7241e0fb2130e27f3	2025-03-18	将信控监控及磁盘监控功能 移植到   新架构
+
+
+@@@C	tianchuan	24cd20ae08edb07926142f0e4a0fca03eaef08ab	2025-03-14	docker状态+模块状态+磁盘信息   合并
+diff --git a/middleware/protocol/om_monitor/configer_om_monitor.h b/middleware/protocol/om_monitor/configer_om_monitor.h
+index 431785b..47e460c 100644
+--- a/middleware/protocol/om_monitor/configer_om_monitor.h
++++ b/middleware/protocol/om_monitor/configer_om_monitor.h
+@@ -224,7 +224,7 @@ public:
+ struct UdpConfigerMonitor : public ConfigerData<UdpConfigerMonitor>
+ {
+     bool                                enableDebugPrint = true;
+-    int                                 udpPort = 50088;
++    int                                 udpPort = 50089;
+     WorkParamConfiger                   configerWorkParam;
+     std::string                         rscuEsn = "110220330";
+     NeedFilePathConfiger                needFilePathConfiger;
+diff --git a/middleware/protocol/om_monitor/data_model/data_airos_status.h b/middleware/protocol/om_monitor/data_model/data_airos_status.h
+index ab6020d..3845dc2 100644
+--- a/middleware/protocol/om_monitor/data_model/data_airos_status.h
++++ b/middleware/protocol/om_monitor/data_model/data_airos_status.h
+@@ -92,10 +92,10 @@ public:
+ 
+ struct AirosMoudlesData  : public afl::base::SerializableData
+ {
+-    std::string moudle_pid;
+-    double module_cpu;
+-    double module_mem;
+-    std::string module_name;
++    std::string moudle_pid = "";
++    double module_cpu = 999.999;
++    double module_mem = 999.999;
++    std::string module_name = "";
+     void serialize(json& j) override
+     {
+         JsonSerialize(moudle_pid,              "pid",           j, false);
+@@ -125,13 +125,13 @@ public:
+ 
+ struct AirosStatusData  : public afl::base::SerializableData
+ {
+-    std::string moudles_need_run;
++    std::string modules_need_run;
+     std::string modules_now_run;
+     std::string modules_no_run;
+     std::vector<AirosMoudlesData> modules_head;
+     void serialize(json& j) override
+     {
+-        JsonSerialize(moudles_need_run,              "modules_need_run",           j, false);
++        JsonSerialize(modules_need_run,              "modules_need_run",           j, false);
+         JsonSerialize(modules_now_run,                "modules_now_run",            j, false);
+         JsonSerialize(modules_no_run,                 "modules_no_run",             j, false);
+         JsonSerialize(modules_head,                 "modules_head",             j, false);
+@@ -139,7 +139,7 @@ struct AirosStatusData  : public afl::base::SerializableData
+ 
+     void deserialize(const json& j)  override
+     {
+-        JsonDeserialize(moudles_need_run,             "moudles_need_run",           j, noUse_isEmptyFlag);
++        JsonDeserialize(modules_need_run,             "modules_need_run",           j, noUse_isEmptyFlag);
+         JsonDeserialize(modules_now_run,               "modules_now_run",            j, noUse_isEmptyFlag);
+         JsonDeserialize(modules_no_run,                "modules_no_run",             j, noUse_isEmptyFlag);
+         JsonDeserialize(modules_head,                 "modules_head",             j, noUse_isEmptyFlag);
+@@ -147,7 +147,7 @@ struct AirosStatusData  : public afl::base::SerializableData
+ public:
+     std::string to_string() const {
+         std::stringstream ss;
+-        ss << std::left << std::setw(40) << "modules_need_run: "          << moudles_need_run << std::endl;
++        ss << std::left << std::setw(40) << "modules_need_run: "          << modules_need_run << std::endl;
+         ss << std::left << std::setw(40) << "modules_now_run: "           << modules_now_run << std::endl;
+         ss << std::left << std::setw(40) << "modules_no_run: "            << modules_no_run << std::endl;
+         ss << std::left << std::setw(40) << "modules_head: "  << std::endl;
+diff --git a/middleware/protocol/om_monitor/data_model/data_common.h b/middleware/protocol/om_monitor/data_model/data_common.h
+index c6c3957..e9b5e56 100644
+--- a/middleware/protocol/om_monitor/data_model/data_common.h
++++ b/middleware/protocol/om_monitor/data_model/data_common.h
+@@ -27,6 +27,7 @@ enum QUERY_MSG_TAG
+     QUARY_TAG_DOCKER_STA = 3011,
+     QUARY_TAG_AIROS_STA = 3012,
+     QUARY_TAG_DISK_STA = 3013,
++    QUARY_TAG_SYS_PERFORMANCE_STA = 3014,
+     QUARY_TAG_SENSOR_DATA_STA = 3021,
+     QUARY_TAG_RADAR_CLOUD_DATA_STA = 3023,
+     QUARY_TAG_CAMERA_PATAM_STA = 3032,
+diff --git a/middleware/protocol/om_monitor/data_model/data_disk_status.h b/middleware/protocol/om_monitor/data_model/data_disk_status.h
+index e9edef8..f2f4064 100644
+--- a/middleware/protocol/om_monitor/data_model/data_disk_status.h
++++ b/middleware/protocol/om_monitor/data_model/data_disk_status.h
+@@ -35,12 +35,12 @@ struct DiskInfo
+ 
+ struct DiskStatusData  : public afl::base::SerializableData
+ {
+-    double root_size;
+-    double root_avail;
+-    double root_avail_percent;
+-    double work_size;
+-    double work_avail;
+-    double work_avail_percent;
++    double root_size = 999.999;
++    double root_avail = 999.999;
++    double root_avail_percent = 999.999;
++    double work_size = 999.999;
++    double work_avail = 999.999;
++    double work_avail_percent = 999.999;
+ 
+     void serialize(json& j) override
+     {
+@@ -70,6 +70,7 @@ public:
+         ss << std::left << std::setw(40) << "work_size: "         << work_size << std::endl;
+         ss << std::left << std::setw(40) << "work_avail: "              << work_avail << std::endl;
+         ss << std::left << std::setw(40) << "work_avail_percent: "         << work_avail_percent << std::endl;
++        return ss.str();
+     }
+ };
+ 
+diff --git a/middleware/protocol/om_monitor/data_model/data_docker_status.h b/middleware/protocol/om_monitor/data_model/data_docker_status.h
+index 1984b46..9781537 100644
+--- a/middleware/protocol/om_monitor/data_model/data_docker_status.h
++++ b/middleware/protocol/om_monitor/data_model/data_docker_status.h
+@@ -33,10 +33,10 @@ struct ContainerInfo
+ 
+ struct DockerStatusData  : public afl::base::SerializableData
+ {
+-    double cpu;
+-    double mem_percent;
+-    double mem;
+-    bool run_flag;
++    double cpu = 999.999;
++    double mem_percent = 999.999;
++    double mem = 999.999;
++    bool run_flag = false;
+ 
+     void serialize(json& j) override
+     {
+diff --git a/middleware/protocol/om_monitor/data_model/data_sys_performance_status.h b/middleware/protocol/om_monitor/data_model/data_sys_performance_status.h
+new file mode 100644
+index 0000000..029c8f2
+--- /dev/null
++++ b/middleware/protocol/om_monitor/data_model/data_sys_performance_status.h
+@@ -0,0 +1,153 @@
++/*********************************************************************************
++ * @file		data_sys_performance_status.h
++ * @brief		data_sys_performance_status belongs to CICTCI
++ * @details		
++ * @author		alfred
++ * @email       xx.com
++ * @date		24-4-19
++ * @copyright	Copyright (c) 2024 Mec-Airos Division.
++ * @verbatim
++ *
++ *  Change History:
++ *  Date      Author    Version  ChangeId           Description
++ *  ------------------------------------------------------------------------------
++ *  	24-4-19  alfred       1.0       ————             Create this file
++ *
++ * @endverbatim
++ ********************************************************************************/
++#ifndef MQTT_CLIENT_MEC_OM_MONITOR_SYS_PERFORMANCE_STATUS_H
++#define MQTT_CLIENT_MEC_OM_MONITOR_SYS_PERFORMANCE_STATUS_H
++#include "middleware/protocol/om_common/namespace.h"
++#include "middleware/protocol/om_common/data_model/data_common.h"
++#include "middleware/protocol/om_monitor/data_model/data_docker_status.h"
++#include "middleware/protocol/om_monitor/data_model/data_airos_status.h"
++#include "middleware/protocol/om_monitor/data_model/data_disk_status.h"
++
++NAMESPACE_START_OM_COMPONENT_MONITOR
++using namespace afl::base;
++using namespace os::v2x::protocol::om::common;
++
++struct SysPerformanceData  : public afl::base::SerializableData
++{
++    double cpu = 999.999;
++    double mem_percent = 999.999;
++    double mem = 999.999;
++    bool run_flag = false;
++
++    std::string modules_need_run = "";
++    std::string modules_now_run = "";
++    std::string modules_no_run ="";
++    std::vector<AirosMoudlesData> modules_head;
++
++    double root_size = 999.999;
++    double root_avail = 999.999;
++    double root_avail_percent = 999.999;
++    double work_size = 999.999;
++    double work_avail = 999.999;
++    double work_avail_percent = 999.999;
++
++
++    void serialize(json& j) override
++    {
++        JsonSerialize(cpu, "cpu", j, false);
++        JsonSerialize(mem_percent, "mem_percent", j, false);
++        JsonSerialize(mem, "mem", j, false);
++        JsonSerialize(run_flag, "run_flag", j, false);
++
++        JsonSerialize(modules_need_run,              "modules_need_run",           j, false);
++        JsonSerialize(modules_now_run,                "modules_now_run",            j, false);
++        JsonSerialize(modules_no_run,                 "modules_no_run",             j, false);
++        JsonSerialize(modules_head,                 "modules_head",             j, false);
++
++        JsonSerialize(root_size, "root_size", j, false);
++        JsonSerialize(root_avail, "root_avail", j, false);
++        JsonSerialize(root_avail_percent, "root_avail_percent", j, false);
++        JsonSerialize(work_size, "work_size", j, false);
++        JsonSerialize(work_avail, "work_avail", j, false);
++        JsonSerialize(work_avail_percent, "work_avail_percent", j, false);
++
++    }
++
++    void deserialize(const json& j)  override
++    {
++        JsonDeserialize(cpu, "cpu", j, noUse_isEmptyFlag);
++        JsonDeserialize(mem_percent, "mem_percent", j, noUse_isEmptyFlag);
++        JsonDeserialize(mem, "mem", j, noUse_isEmptyFlag);
++        JsonDeserialize(run_flag, "run_flag", j, noUse_isEmptyFlag);
++
++        JsonDeserialize(modules_need_run,             "modules_need_run",           j, noUse_isEmptyFlag);
++        JsonDeserialize(modules_now_run,               "modules_now_run",            j, noUse_isEmptyFlag);
++        JsonDeserialize(modules_no_run,                "modules_no_run",             j, noUse_isEmptyFlag);
++        JsonDeserialize(modules_head,                 "modules_head",             j, noUse_isEmptyFlag);
++
++        JsonDeserialize(root_size, "root_size", j, noUse_isEmptyFlag);
++        JsonDeserialize(root_avail, "root_avail", j, noUse_isEmptyFlag);
++        JsonDeserialize(root_avail_percent, "root_avail_percent", j, noUse_isEmptyFlag);
++        JsonDeserialize(work_size, "work_size", j, noUse_isEmptyFlag);
++        JsonDeserialize(work_avail, "work_avail", j, noUse_isEmptyFlag);
++        JsonDeserialize(work_avail_percent, "work_avail_percent", j, noUse_isEmptyFlag);
++    }
++public:
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "cpu: "              << cpu << std::endl;
++        ss << std::left << std::setw(40) << "mem_percent: "              << mem_percent << std::endl;
++        ss << std::left << std::setw(40) << "mem: "              << mem << std::endl;
++        ss << std::left << std::setw(40) << "run_flag: "         << (run_flag ? "true" : "false") << "\n";
++
++        ss << std::left << std::setw(40) << "modules_need_run: "          << modules_need_run << std::endl;
++        ss << std::left << std::setw(40) << "modules_now_run: "           << modules_now_run << std::endl;
++        ss << std::left << std::setw(40) << "modules_no_run: "            << modules_no_run << std::endl;
++        ss << std::left << std::setw(40) << "modules_head: "  << std::endl;
++        for(auto module_head : modules_head)
++        {
++            ss << std::left << std::setw(40) << "module_head: " << module_head.to_string() << std::endl;
++        }
++
++        ss << std::left << std::setw(40) << "root_size: "              << root_size << std::endl;
++        ss << std::left << std::setw(40) << "root_avail: "              << root_avail << std::endl;
++        ss << std::left << std::setw(40) << "root_avail_percent: "              << root_avail_percent << std::endl;
++        ss << std::left << std::setw(40) << "work_size: "         << work_size << std::endl;
++        ss << std::left << std::setw(40) << "work_avail: "              << work_avail << std::endl;
++        ss << std::left << std::setw(40) << "work_avail_percent: "         << work_avail_percent << std::endl;
++
++        return ss.str();
++    }
++};
++
++struct SysPerformanceStatus : public afl::base::SerializableData
++{
++    QUERY_MSG_TAG tag; // 接口号
++    std::string seqnum; // 32位不重复的随机数
++    uint64_t timestamp; // utc时间戳，毫秒
++    std::string device_esn; // 设备esn号
++    SysPerformanceData data; // 消息结构
++
++    virtual void serialize(json& j) override {
++        JsonSerialize(tag, "tag", j, false);
++        JsonSerialize(seqnum, "seqnum", j, false);
++        JsonSerialize(timestamp, "timestamp", j, false);
++        JsonSerialize(device_esn, "device_esn", j, false);
++        JsonSerialize(data, "data", j, false);
++    }
++
++    virtual void deserialize(const json& j) override {
++        JsonDeserialize(tag, "tag", j, noUse_isEmptyFlag);
++        JsonDeserialize(seqnum, "seqnum", j, noUse_isEmptyFlag);
++        JsonDeserialize(timestamp, "timestamp", j, noUse_isEmptyFlag);
++        JsonDeserialize(device_esn, "device_esn", j, noUse_isEmptyFlag);
++        JsonDeserialize(data, "data", j, noUse_isEmptyFlag);
++    }
++public:
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "tag: "                     << tag << std::endl;
++        ss << std::left << std::setw(40) << "seqnum: "                 << seqnum << std::endl;
++        ss << std::left << std::setw(40) << "timestamp: "             << timestamp << std::endl;
++        ss << std::left << std::setw(40) << "device_esn: "            << device_esn << std::endl;
++        ss << std::left << std::setw(40) << "data: "              << data.to_string() << std::endl;
++        return ss.str();
++    }
++};
++NAMESPACE_ENDED_OM_COMPONENT_MONITOR
++#endif //NCS_MEC_ALARM_MANAGEMENT_DATA_H
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.cc b/middleware/protocol/om_monitor/om_monitor_component.cc
+index 5d2994a..70783b2 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.cc
++++ b/middleware/protocol/om_monitor/om_monitor_component.cc
+@@ -282,21 +282,19 @@ bool OM_MONITOR_COMPONENT::period_query_docker_status()
+             dockerStatus.seqnum = "period";
+             dockerStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+             dockerStatus.device_esn = getConfiger().rscuEsn;
+-            dockerStatus.data.cpu = 0;
+-            dockerStatus.data.mem_percent = 0;
+-            dockerStatus.data.mem = 0;
++            dockerStatus.data.cpu = 999.999;
++            dockerStatus.data.mem_percent = 999.999;
++            dockerStatus.data.mem = 999.999;
+             dockerStatus.data.run_flag = false;
+ 
+-            afl::base::json publishJson;
+             try{
+-                publishJson = dockerStatus;
++                m_JsonDockerStatus = dockerStatus;
+             }
+             catch (json::exception &e)
+             {
+                 OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+                 return false;
+             }
+-            m_QueueDockerStatus.push(publishJson);
+         }
+         else
+         {
+@@ -317,16 +315,14 @@ bool OM_MONITOR_COMPONENT::period_query_docker_status()
+                 dockerStatus.data.mem = container.memUsage;
+                 dockerStatus.data.run_flag = true;
+ 
+-                afl::base::json publishJson;
+                 try{
+-                    publishJson = dockerStatus;
++                    m_JsonDockerStatus = dockerStatus;
+                 }
+                 catch (json::exception &e)
+                 {
+                     OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+                     return false;
+                 }
+-                m_QueueDockerStatus.push(publishJson);
+             }
+         }
+     }
+@@ -408,29 +404,28 @@ bool OM_MONITOR_COMPONENT::period_query_disk_status()
+             diskStatus.seqnum = "period";
+             diskStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+             diskStatus.device_esn = getConfiger().rscuEsn;
+-            diskStatus.data.root_size = 0;
+-            diskStatus.data.root_avail = 0;
+-            diskStatus.data.root_avail_percent = 0;
+-            diskStatus.data.work_size = 0;
+-            diskStatus.data.work_avail = 0;
+-            diskStatus.data.work_avail_percent = 0;
++            diskStatus.data.root_size = 999.999;
++            diskStatus.data.root_avail = 999.999;
++            diskStatus.data.root_avail_percent = 999.999;
++            diskStatus.data.work_size = 999.999;
++            diskStatus.data.work_avail = 999.999;
++            diskStatus.data.work_avail_percent = 999.999;
+ 
+             afl::base::json publishJson;
+             try{
+-                publishJson = diskStatus;
++                m_JsonDiskStatus = diskStatus;
+             }
+             catch (json::exception &e)
+             {
+                 OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+                 return false;
+             }
+-            m_QueueDiskStatus.push(publishJson);
+         }
+         else
+         {
+             diskStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DISK_STA;
+             diskStatus.seqnum = "period";
+-            diskStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
++            diskStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();
+             diskStatus.device_esn = getConfiger().rscuEsn;
+             for (const auto &disk : diskInfos)
+             {
+@@ -459,16 +454,14 @@ bool OM_MONITOR_COMPONENT::period_query_disk_status()
+             }
+ 
+             
+-            afl::base::json publishJson;
+             try{
+-                publishJson = diskStatus;
++                m_JsonDiskStatus = diskStatus;
+             }
+             catch (json::exception &e)
+             {
+                 OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+                 return false;
+             }
+-            m_QueueDiskStatus.push(publishJson);
+         }
+     }
+ 
+@@ -562,8 +555,8 @@ bool OM_MONITOR_COMPONENT::period_query_airos_modules_status()
+         }
+         for(auto module: m_AirosNeedRunModules)
+         {
+-            airosStatus.data.moudles_need_run.append(module);
+-            airosStatus.data.moudles_need_run.append("|");
++            airosStatus.data.modules_need_run.append(module);
++            airosStatus.data.modules_need_run.append("|");
+             if(contains(airosNowRunningModules, module))
+             {
+                 airosStatus.data.modules_now_run.append(module);
+@@ -576,13 +569,11 @@ bool OM_MONITOR_COMPONENT::period_query_airos_modules_status()
+             }
+         }
+ 
+-        afl::base::json publishJson;
+         try{
+-            publishJson = airosStatus;
++            m_JsonAirosModulesStatus = airosStatus;
+             if(getConfiger().enableDebugPrint) {
+                 OM_MONITOR_DEBUG_PRINT << "[airosStatus]" << airosStatus.to_string();
+             }
+-            m_QueueAirosModulesStatus.push(publishJson);
+         }
+         catch (json::exception &e)
+         {
+@@ -664,6 +655,9 @@ void OM_MONITOR_COMPONENT::readUdpData()
+             case QUARY_TAG_DISK_STA: //3013
+                 process_query_disk_status(m_ClientAddr, j);
+                 break;
++            case QUARY_TAG_SYS_PERFORMANCE_STA: //3014
++                process_query_sys_performance_status(m_ClientAddr, j);
++                break;
+             case QUARY_TAG_SENSOR_DATA_STA: //3021
+                 process_query_sensor_data_status(m_ClientAddr, j);
+                 break;
+@@ -678,6 +672,132 @@ void OM_MONITOR_COMPONENT::readUdpData()
+     }
+ }
+ 
++bool OM_MONITOR_COMPONENT::process_query_sys_performance_status(struct sockaddr_in clientAddr, json& j)
++{
++    QueryData queryData;
++    try
++    {
++        queryData  = j;
++    }
++    catch(json::exception &e)
++    {
++        OM_MONITOR_ERROR_PRINT << "json par error " << e.what();
++        return false;
++    }
++    if(getConfiger().enableDebugPrint) {
++        OM_MONITOR_DEBUG_PRINT << "[rece-data]" << queryData.to_string();
++    }
++    if(queryData.tag != QUERY_MSG_TAG::QUARY_TAG_SYS_PERFORMANCE_STA)
++    {
++        OM_MONITOR_ERROR_PRINT << "tag error ";
++        return false;
++    }
++    if(queryData.device_esn != getConfiger().rscuEsn)
++    {
++        OM_MONITOR_ERROR_PRINT << "device-esn error! [query-esn]" << queryData.device_esn << "[rscuEsn]" << getConfiger().rscuEsn;
++        return false;
++    }
++
++    SysPerformanceStatus sysPerformanceStatus;
++    sysPerformanceStatus.tag = QUERY_MSG_TAG::QUARY_TAG_SYS_PERFORMANCE_STA;
++    sysPerformanceStatus.seqnum = "period";
++    sysPerformanceStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
++    sysPerformanceStatus.device_esn = getConfiger().rscuEsn;
++
++
++    DockerStatus dockerStatus;
++    m_JsonDockerStatus.get_to(dockerStatus);
++    if(((queryData.timestamp - dockerStatus.timestamp)/1000) > getConfiger().configerMonitorPeriod.periodMonitorDockerStatus)
++    {
++        OM_MONITOR_ERROR_PRINT << "[timeout]" << "msg_time_ms=" << dockerStatus.timestamp;
++        dockerStatus.data.cpu = 999.999;
++        dockerStatus.data.mem_percent = 999.999;
++        dockerStatus.data.mem = 999.999;
++        dockerStatus.data.run_flag = false;
++    }
++    else
++    {
++        sysPerformanceStatus.data.cpu = dockerStatus.data.cpu;
++        sysPerformanceStatus.data.mem_percent = dockerStatus.data.mem_percent;
++        sysPerformanceStatus.data.mem = dockerStatus.data.mem;
++        sysPerformanceStatus.data.run_flag = dockerStatus.data.run_flag;
++    }
++
++    AirosStatus airosStatus;
++    m_JsonAirosModulesStatus.get_to(airosStatus);
++    if(((queryData.timestamp - airosStatus.timestamp)/1000) > getConfiger().configerMonitorPeriod.periodMonitorAirosModulesStatus)
++    {
++        OM_MONITOR_ERROR_PRINT << "[timeout]" << "msg_time_ms=" << airosStatus.timestamp;
++        airosStatus.data.modules_need_run.clear();
++        airosStatus.data.modules_now_run.clear();
++        airosStatus.data.modules_no_run.clear();
++        airosStatus.data.modules_head.clear();
++    }
++    else
++    {
++        sysPerformanceStatus.data.modules_need_run = airosStatus.data.modules_need_run;
++        sysPerformanceStatus.data.modules_now_run = airosStatus.data.modules_now_run;
++        sysPerformanceStatus.data.modules_no_run = airosStatus.data.modules_no_run;
++        sysPerformanceStatus.data.modules_head = std::move(airosStatus.data.modules_head);
++    }
++
++    DiskStatus diskStatus;
++    m_JsonDiskStatus.get_to(diskStatus);
++    if(((queryData.timestamp - diskStatus.timestamp)/1000) > getConfiger().configerMonitorPeriod.periodMonitorDiskStatus)
++    {
++        OM_MONITOR_ERROR_PRINT << "[timeout]" << "msg_time_ms=" << diskStatus.timestamp;
++        diskStatus.data.root_size = 999.999;
++        diskStatus.data.root_avail = 999.999;
++        diskStatus.data.root_avail_percent = 999.999;
++        diskStatus.data.work_size = 999.999;
++        diskStatus.data.work_avail = 999.999;
++        diskStatus.data.work_avail_percent = 999.999;
++    }
++    else
++    {
++        sysPerformanceStatus.data.root_size = diskStatus.data.root_size;
++        sysPerformanceStatus.data.root_avail = diskStatus.data.root_avail;
++        sysPerformanceStatus.data.root_avail_percent = diskStatus.data.root_avail_percent;
++        sysPerformanceStatus.data.work_size = diskStatus.data.work_size;
++        sysPerformanceStatus.data.work_avail = diskStatus.data.work_avail;
++        sysPerformanceStatus.data.work_avail_percent = diskStatus.data.work_avail_percent;
++    }
++
++    afl::base::json publishJson;
++    try{
++        publishJson = sysPerformanceStatus;
++    }
++    catch (json::exception &e)
++    {
++        OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++        return false;
++    }
++
++    std::string querySeqNum = queryData.seqnum;
++    if(publishJson.find("seqnum") != publishJson.end())
++    {
++        publishJson["seqnum"] = querySeqNum;
++        std::string msg = publishJson.dump();
++        if(getConfiger().enableDebugPrint)
++        {
++            OM_MONITOR_DEBUG_PRINT << "[sysPerformance-status][response]" << msg;
++        }
++            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
++                                 (struct sockaddr*)&clientAddr, sizeof(clientAddr));
++            if (slen != msg.size())
++            {
++                OM_MONITOR_ERROR_PRINT << "[error]send sysPerformance-status msg error, reason:" << strerror(errno);
++                return false;
++            }
++        }
++        else
++        {
++            OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
++        }
++
++    return true;
++}
++
+ std::vector<ContainerInfo> OM_MONITOR_COMPONENT::extractAirosContainers(const std::string &output)
+ {
+     std::vector<ContainerInfo> containerList;
+@@ -735,99 +855,36 @@ bool OM_MONITOR_COMPONENT::process_query_docker_status(struct sockaddr_in client
+         return false;
+     }
+ 
+-    afl::base::json publishJson;
+-    if (!m_QueueDockerStatus.pop(publishJson)) {
++    DockerStatus dockerStatus;
++    m_JsonDockerStatus.get_to(dockerStatus);
++    if(((queryData.timestamp - dockerStatus.timestamp)/1000) > getConfiger().configerMonitorPeriod.periodMonitorDockerStatus)
++    {
++        OM_MONITOR_ERROR_PRINT << "[timeout]" << "msg_time_ms=" << dockerStatus.timestamp;
+         return false;
+     }
+-    else
++
++    std::string querySeqNum = queryData.seqnum;
++    if(m_JsonDockerStatus.find("seqnum") != m_JsonDockerStatus.end())
+     {
+-        if( m_QueueDockerStatus.size() == 0)
+-        {
+-            m_QueueDockerStatus.push(publishJson);
+-        }
+-        std::string querySeqNum = queryData.seqnum;
+-        if(publishJson.find("seqnum") != publishJson.end())
+-        {
+-            publishJson["seqnum"] = querySeqNum;
+-            std::string msg = publishJson.dump();
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[docker-status][response]" << msg;
+-            }
+-            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
+-                                 (struct sockaddr*)&clientAddr, sizeof(clientAddr));
+-            if (slen != msg.size())
+-            {
+-                OM_MONITOR_ERROR_PRINT << "[error]send docker-status msg error, reason:" << strerror(errno);
+-                return false;
+-            }
++        m_JsonDockerStatus["seqnum"] = querySeqNum;
++        std::string msg = m_JsonDockerStatus.dump();
++        if(getConfiger().enableDebugPrint) {
++            OM_MONITOR_DEBUG_PRINT << "[docker-status][response]" << msg;
+         }
+-        else
++        size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
++                                (struct sockaddr*)&clientAddr, sizeof(clientAddr));
++        if (slen != msg.size())
+         {
+-            OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
++            OM_MONITOR_ERROR_PRINT << "[error]send docker-status msg error, reason:" << strerror(errno);
++            return false;
+         }
+-
+-    }
+-#if 0
+-    DockerStatus dockerStatus;
+-
+-    SshInfo sshInfo;
+-    sshInfo.host = "127.0.0.1";
+-    OmWorkParamConfiger  omWorkParamConfiger;
+-    WorkParam::getWorkParamFromFile(getConfiger().configerWorkParam.workParamFilePath, omWorkParamConfiger);
+-    sshInfo.user = omWorkParamConfiger.omPtpLogParamConfiger.localSshUserName;
+-    sshInfo.password = omWorkParamConfiger.omPtpLogParamConfiger.localSshPassword;
+-    sshInfo.execCmd = "docker stats --no-stream";
+-    OM_MONITOR_ERROR_PRINT << "[sshInfo]" << sshInfo.to_string();
+-    if(!DBUtils::sshExec(sshInfo))
+-    {
+-        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
+-
+     }
+     else
+     {
+-        std::vector<ContainerInfo> airosContainers = extractAirosContainers(sshInfo.execRet);
+-        for (const auto &container : airosContainers)
+-        {
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[Container Name]" << container.name
+-                                       << "[CPU Usage] " << container.cpuUsage
+-                                       << "% [Memory Usage]" << container.memUsage << "MiB";
+-            }
+-            dockerStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DOCKER_STA;
+-            dockerStatus.seqnum = queryData.seqnum;
+-            dockerStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+-            dockerStatus.device_esn = getConfiger().rscuEsn;
+-            dockerStatus.data.cpu = container.cpuUsage;
+-            dockerStatus.data.mem_percent = container.memPercent;
+-            dockerStatus.data.mem = container.memUsage;
+-            afl::base::json publishJson;
+-            try{
+-                publishJson = dockerStatus;
+-            }
+-            catch (json::exception &e)
+-            {
+-                OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+-                return false;
+-            }
+-
+-            std::string msg = publishJson.dump();
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[upload-data]" << msg;
+-            }
+-            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
+-                                 (struct sockaddr*)&m_ClientAddr, sizeof(m_ClientAddr));
+-            if (slen != msg.size())
+-            {
+-                OM_MONITOR_ERROR_PRINT << "[error]send msg error, reason:" << strerror(errno);
+-                return false;
+-            }
+-        }
+-
++        OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
+     }
+-    OM_MONITOR_ERROR_PRINT << "[error]" << sshInfo.execRet;
+-#endif
+-    return true;
+ 
++    return true;
+ }
+ 
+ std::vector<DiskInfo> OM_MONITOR_COMPONENT::extractDiskInfos(const std::string &output)
+@@ -887,45 +944,35 @@ bool OM_MONITOR_COMPONENT::process_query_disk_status(struct sockaddr_in clientAd
+         return false;
+     }
+ 
+-    
+-    afl::base::json publishJson;
+-    if (!m_QueueDiskStatus.pop(publishJson))
++    DiskStatus diskStatus;
++    m_JsonDiskStatus.get_to(diskStatus);
++    if(((queryData.timestamp - diskStatus.timestamp)/1000) > getConfiger().configerMonitorPeriod.periodMonitorDiskStatus)
+     {
+-        if(getConfiger().enableDebugPrint)
+-        {
+-            OM_MONITOR_DEBUG_PRINT << "[disk-status]" << "pop failed";
+-        }
++        OM_MONITOR_ERROR_PRINT << "[timeout]" << "msg_time_ms=" << diskStatus.timestamp;
+         return false;
+     }
+-    else
++
++    std::string querySeqNum = queryData.seqnum;
++    if(m_JsonDiskStatus.find("seqnum") != m_JsonDiskStatus.end())
+     {
+-        if( m_QueueDiskStatus.size() == 0)
++        m_JsonDiskStatus["seqnum"] = querySeqNum;
++        std::string msg = m_JsonDiskStatus.dump();
++        if(getConfiger().enableDebugPrint)
+         {
+-            m_QueueDiskStatus.push(publishJson);
++            OM_MONITOR_DEBUG_PRINT << "[disk-status][response]" << msg;
+         }
+-        std::string querySeqNum = queryData.seqnum;
+-        if(publishJson.find("seqnum") != publishJson.end())
+-        {
+-            publishJson["seqnum"] = querySeqNum;
+-            std::string msg = publishJson.dump();
+-            if(getConfiger().enableDebugPrint)
+-            {
+-                OM_MONITOR_DEBUG_PRINT << "[disk-status][response]" << msg;
+-            }
+ 
+-            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
+-                                 (struct sockaddr*)&clientAddr, sizeof(clientAddr));
+-            if (slen != msg.size())
+-            {
+-                OM_MONITOR_ERROR_PRINT << "[error]send disk-status msg error, reason:" << strerror(errno);
+-                return false;
+-            }
+-        }
+-        else
++        size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
++                                (struct sockaddr*)&clientAddr, sizeof(clientAddr));
++        if (slen != msg.size())
+         {
+-            OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
++            OM_MONITOR_ERROR_PRINT << "[error]send disk-status msg error, reason:" << strerror(errno);
++            return false;
+         }
+-
++    }
++    else
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
+     }
+ 
+     return true;
+@@ -1091,117 +1138,38 @@ bool OM_MONITOR_COMPONENT::process_query_airos_status(struct sockaddr_in clientA
+         return false;
+     }
+ 
+-    afl::base::json publishJson;
+-    if (!m_QueueAirosModulesStatus.pop(publishJson)) {
+-        if(getConfiger().enableDebugPrint) {
+-            OM_MONITOR_DEBUG_PRINT << "[error]pop failure!";
+-        }
+-        return false;
+-    }
+-    else
++    AirosStatus airosStatus;
++    m_JsonAirosModulesStatus.get_to(airosStatus);
++    if(((queryData.timestamp - airosStatus.timestamp)/1000) > getConfiger().configerMonitorPeriod.periodMonitorDiskStatus)
+     {
+-        if( m_QueueAirosModulesStatus.size() == 0)
+-        {
+-            m_QueueAirosModulesStatus.push(publishJson);
+-        }
+-        std::string querySeqNum = queryData.seqnum;
+-
+-        if(publishJson.find("seqnum") != publishJson.end())
+-        {
+-            publishJson["seqnum"] = querySeqNum;
+-            std::string msg = publishJson.dump();
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[querySeqNum]" << querySeqNum;
+-            }
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[airos-modules][response]" << msg;
+-            }
+-            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
+-                                 (struct sockaddr*)&clientAddr, sizeof(clientAddr));
+-            if (slen != msg.size())
+-            {
+-                OM_MONITOR_ERROR_PRINT << "[error]send airos-modules msg error, reason:" << strerror(errno);
+-                return false;
+-            }
+-        }
+-        else
+-        {
+-            OM_MONITOR_ERROR_PRINT << "[error]no find airos-modules seqNum field!";
+-        }
+-
++        OM_MONITOR_ERROR_PRINT << "[timeout]" << "msg_time_ms=" << airosStatus.timestamp;
++        return false;
+     }
+ 
+-#if 0
+-    AirosStatus airosStatus;
+-    airosStatus.tag = QUERY_MSG_TAG::QUARY_TAG_AIROS_STA;
+-    airosStatus.seqnum = queryData.seqnum;
+-    airosStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+-    airosStatus.device_esn = getConfiger().rscuEsn;
+-    std::string command = "ps aux --sort=-%mem | grep -E 'mainboard|python' | head -n 10";
+-    std::vector<ProcessInfo> airosProcessInfos;
+-    if(getProcessInfo(command, airosProcessInfos))
++    std::string querySeqNum = queryData.seqnum;
++    if(m_JsonAirosModulesStatus.find("seqnum") != m_JsonAirosModulesStatus.end())
+     {
+-        for (const auto &processInfo : airosProcessInfos)
+-        {
+-
+-            OM_MONITOR_DEBUG_PRINT << "[pid]" << processInfo.pid
+-                                   << "[cpu]" << processInfo.cpu
+-                                   << "[mem]" << processInfo.mem
+-                                   << "[moudle_name]" << processInfo.moudle_name;
+-
+-            AirosMoudlesData airosMoudlesData;
+-            airosMoudlesData.moudle_pid = std::to_string(processInfo.pid);
+-            airosMoudlesData.module_cpu = processInfo.cpu;
+-            airosMoudlesData.module_mem = processInfo.mem;
+-            airosMoudlesData.module_name = processInfo.moudle_name;
+-            airosStatus.data.modules_head.push_back(airosMoudlesData);
+-        }
+-        std::string commandLaunchPs = "launch ps";
+-        std::vector<ProcessMoudlesNeedInfo> airosProcessMoudlesNeedInfos = getModulesNeedInfo(commandLaunchPs);
+-        std::vector<string> airosNowRunningModules;
+-        for(auto nowModule:airosProcessMoudlesNeedInfos)
+-        {
+-            airosNowRunningModules.push_back(nowModule.moudle_name);
+-        }
+-        for(auto module: m_AirosNeedRunModules)
+-        {
+-            airosStatus.data.moudles_need_run.append(module);
+-            airosStatus.data.moudles_need_run.append("|");
+-            if(contains(airosNowRunningModules, module))
+-            {
+-                airosStatus.data.modules_now_run.append(module);
+-                airosStatus.data.modules_now_run.append("|");
+-            }
+-            else
+-            {
+-                airosStatus.data.modules_no_run.append(module);
+-                airosStatus.data.modules_no_run.append("|");
+-            }
+-        }
+-
+-        afl::base::json publishJson;
+-        try{
+-            publishJson = airosStatus;
+-        }
+-        catch (json::exception &e)
+-        {
+-            OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+-            return false;
++         m_JsonAirosModulesStatus["seqnum"] = querySeqNum;
++        std::string msg = m_JsonAirosModulesStatus.dump();
++        if(getConfiger().enableDebugPrint) {
++            OM_MONITOR_DEBUG_PRINT << "[querySeqNum]" << querySeqNum;
+         }
+-
+-        std::string msg = publishJson.dump();
+         if(getConfiger().enableDebugPrint) {
+-            OM_MONITOR_DEBUG_PRINT << "[upload-data]" << msg;
++            OM_MONITOR_DEBUG_PRINT << "[airos-modules][response]" << msg;
+         }
+         size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
+-                             (struct sockaddr*)&m_ClientAddr, sizeof(m_ClientAddr));
++                                (struct sockaddr*)&clientAddr, sizeof(clientAddr));
+         if (slen != msg.size())
+         {
+-            OM_MONITOR_ERROR_PRINT << "[error]send msg error, reason:" << strerror(errno);
++            OM_MONITOR_ERROR_PRINT << "[error]send airos-modules msg error, reason:" << strerror(errno);
+             return false;
+         }
+     }
+-#endif
++    else
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]no find airos-modules seqNum field!";
++    }
++
+     return true;
+ }
+ 
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.h b/middleware/protocol/om_monitor/om_monitor_component.h
+index c282628..92d41d6 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.h
++++ b/middleware/protocol/om_monitor/om_monitor_component.h
+@@ -12,9 +12,8 @@
+ #include  "configer_om_monitor.h"
+ #include "base/common/network/print.h"
+ #include "middleware/protocol/om_monitor/data_model/data_common.h"
+-#include "middleware/protocol/om_monitor/data_model/data_airos_status.h"
+-#include "middleware/protocol/om_monitor/data_model/data_disk_status.h"
+-#include "middleware/protocol/om_monitor/data_model/data_docker_status.h"
++
++#include "middleware/protocol/om_monitor/data_model/data_sys_performance_status.h"
+ #include "middleware/protocol/om_monitor/data_model/data_sensor_data_status.h"
+ #include "middleware/protocol/om_monitor/data_model/data_radar_cloud_status.h"
+ NAMESPACE_START_OM_COMPONENT_MONITOR
+@@ -47,6 +46,7 @@ public:
+     bool udpInit();
+     void readUdpData();
+ 
++    bool process_query_sys_performance_status(struct sockaddr_in clientAddr,json& j);
+     bool process_query_docker_status(struct sockaddr_in clientAddr,json& j);
+     bool process_query_airos_status(struct sockaddr_in clientAddr,json& j);
+     bool process_query_disk_status(struct sockaddr_in clientAddr,json& j);
+@@ -114,18 +114,18 @@ private:
+     int m_MonitorDockerStatus = -1;
+     int m_MonitorDockerStatusOnce = -1;
+     int m_MonitorDockerStatusOnceCount = 0;
+-    FifoConcurrentQueue<json> m_QueueDockerStatus;
++    afl::base::json m_JsonDockerStatus;
+ 
+     int m_MonitorAirosModulesStatus = -1;
+     int m_MonitorAirosModulesStatusOnce = -1;
+     int m_MonitorAirosMOdulesStatusOnceCount = 0;
+-    FifoConcurrentQueue<json> m_QueueAirosModulesStatus;
++    afl::base::json m_JsonAirosModulesStatus;
+ 
+     int m_MonitorDiskAirosModulesStatus = -1;
+     int m_MonitorDiskStatus = -1;
+     int m_MonitorDiskStatusOnce = -1;
+     int m_MonitorDiskStatusOnceCount = 0;
+-    FifoConcurrentQueue<json> m_QueueDiskStatus;
++    afl::base::json m_JsonDiskStatus;
+ 
+     int m_MonitorMecRadarCloudStatus = -1;
+     MecRadarCloudStatus m_MecRadarCloudStatus;
+
+@@@C	tianchuan	9a7a0b21daad1b18d213852d94519837debbcfe6	2025-03-11	om_monitor:增加磁盘空间查询接口
+diff --git a/middleware/protocol/om_monitor/configer_om_monitor.h b/middleware/protocol/om_monitor/configer_om_monitor.h
+index 3756707..431785b 100644
+--- a/middleware/protocol/om_monitor/configer_om_monitor.h
++++ b/middleware/protocol/om_monitor/configer_om_monitor.h
+@@ -94,12 +94,14 @@ public:
+     double 	periodMonitorDockerStatus 		        = 300.0;
+     double 	periodMonitorAirosModulesStatus 		= 200.0;
+     double 	periodMonitorMecRadarCloudStatus        = 5.0;
++    double 	periodMonitorDiskStatus 		        = 360.0;
+ private:
+     virtual void serialize(afl::base::json &j) override
+     {
+         JsonSerialize(periodMonitorDockerStatus, "A_PeriodMonitorDockerStatus", j, false);
+         JsonSerialize(periodMonitorAirosModulesStatus, "B_PeriodMonitorAirosModulesStatus", j, false);
+         JsonSerialize(periodMonitorMecRadarCloudStatus, "C_PeriodMonitorMecRadarCloudStatus", j, false);
++        JsonSerialize(periodMonitorDiskStatus, "D_PeriodMonitorDiskStatus", j, false);
+     }
+ 
+     virtual void deserialize(const afl::base::json &j) override
+@@ -107,6 +109,7 @@ private:
+         JsonDeserialize(periodMonitorDockerStatus, "A_PeriodMonitorDockerStatus", j, noUse_isEmptyFlag);
+         JsonDeserialize(periodMonitorAirosModulesStatus, "B_PeriodMonitorAirosModulesStatus", j, noUse_isEmptyFlag);
+         JsonDeserialize(periodMonitorMecRadarCloudStatus, "C_PeriodMonitorMecRadarCloudStatus", j, noUse_isEmptyFlag);
++        JsonDeserialize(periodMonitorDiskStatus, "D_PeriodMonitorDiskStatus", j, noUse_isEmptyFlag);
+     }
+ public:
+     std::string to_string() const
+@@ -116,6 +119,7 @@ public:
+         ss << std::left << std::setw(40) << "A_PeriodMonitorDockerStatus: " << periodMonitorDockerStatus <<  std::endl;
+         ss << std::left << std::setw(40) << "B_PeriodMonitorAirosModulesStatus: " << periodMonitorAirosModulesStatus <<  std::endl;
+         ss << std::left << std::setw(40) << "C_PeriodMonitorMecRadarCloudStatus: " << periodMonitorMecRadarCloudStatus <<  std::endl;
++        ss << std::left << std::setw(40) << "D_PeriodMonitorDiskStatus: " << periodMonitorDiskStatus <<  std::endl;
+         return ss.str();
+     }
+ };
+@@ -128,12 +132,14 @@ public:
+     bool Enable_MonitorAirosModulesStatus = true;
+     bool Enable_MonitorSensorData = true;
+     bool Enable_MonitorMecRadarCloudData = true;
++    bool Enable_MonitorDiskStatus = true;
+     virtual void serialize(afl::base::json &j) override
+     {
+         JsonSerialize(Enable_MonitorDockerStatus,  "A_Enable_MonitorDockerStatus",  j, false);
+         JsonSerialize(Enable_MonitorAirosModulesStatus,  "B_Enable_MonitorAirosModulesStatus",  j, false);
+         JsonSerialize(Enable_MonitorSensorData,  "C_Enable_MonitorSensorData",  j, false);
+         JsonSerialize(Enable_MonitorMecRadarCloudData,  "D_Enable_MonitorMecRadarCloudData",  j, false);
++        JsonSerialize(Enable_MonitorDiskStatus,  "E_Enable_MonitorDiskStatus",  j, false);
+     }
+ 
+     virtual void deserialize(const afl::base::json &j) override
+@@ -143,6 +149,7 @@ public:
+         JsonDeserialize(Enable_MonitorAirosModulesStatus,  "B_Enable_MonitorAirosModulesStatus",  j, noUse_isEmptyFlag);
+         JsonDeserialize(Enable_MonitorSensorData,  "C_Enable_MonitorSensorData",  j, noUse_isEmptyFlag);
+         JsonDeserialize(Enable_MonitorMecRadarCloudData,  "D_Enable_MonitorMecRadarCloudData",  j, noUse_isEmptyFlag);
++        JsonDeserialize(Enable_MonitorDiskStatus,  "E_Enable_MonitorDiskStatus",  j, noUse_isEmptyFlag);
+ 
+     }
+ public:
+@@ -154,6 +161,7 @@ public:
+            ss << std::left << std::setw(40) << "Enable_MonitorAirosModulesStatus: " << (Enable_MonitorAirosModulesStatus ? "True" :  "False") <<  std::endl;
+            ss << std::left << std::setw(40) << "Enable_MonitorSensorData: " << (Enable_MonitorSensorData ? "True" :  "False") <<  std::endl;
+            ss << std::left << std::setw(40) << "Enable_MonitorMecRadarCloudData: " << (Enable_MonitorMecRadarCloudData ? "True" :  "False") <<  std::endl;
++           ss << std::left << std::setw(40) << "E_Enable_MonitorDiskStatus: " << (Enable_MonitorDiskStatus ? "True" :  "False") <<  std::endl;
+         return ss.str();
+     }
+ };
+diff --git a/middleware/protocol/om_monitor/data_model/data_common.h b/middleware/protocol/om_monitor/data_model/data_common.h
+index 8be213b..c6c3957 100644
+--- a/middleware/protocol/om_monitor/data_model/data_common.h
++++ b/middleware/protocol/om_monitor/data_model/data_common.h
+@@ -26,6 +26,7 @@ enum QUERY_MSG_TAG
+ {
+     QUARY_TAG_DOCKER_STA = 3011,
+     QUARY_TAG_AIROS_STA = 3012,
++    QUARY_TAG_DISK_STA = 3013,
+     QUARY_TAG_SENSOR_DATA_STA = 3021,
+     QUARY_TAG_RADAR_CLOUD_DATA_STA = 3023,
+     QUARY_TAG_CAMERA_PATAM_STA = 3032,
+diff --git a/middleware/protocol/om_monitor/data_model/data_disk_status.h b/middleware/protocol/om_monitor/data_model/data_disk_status.h
+new file mode 100644
+index 0000000..e9edef8
+--- /dev/null
++++ b/middleware/protocol/om_monitor/data_model/data_disk_status.h
+@@ -0,0 +1,111 @@
++/*********************************************************************************
++ * @file		alarm_management_data.h
++ * @brief		alarm_management_data belongs to CICTCI
++ * @details		
++ * @author		alfred
++ * @email       zhangenwei64@gmail.com
++ * @date		24-4-19
++ * @copyright	Copyright (c) 2024 Mec-Airos Division.
++ * @verbatim
++ *
++ *  Change History:
++ *  Date      Author    Version  ChangeId           Description
++ *  ------------------------------------------------------------------------------
++ *  	24-4-19  alfred       1.0       ————             Create this file
++ *
++ * @endverbatim
++ ********************************************************************************/
++#ifndef MQTT_CLIENT_MEC_OM_MONITOR_DATA_DISK_STATUS_H
++#define MQTT_CLIENT_MEC_OM_MONITOR_DATA_DISK_STATUS_H
++#include "middleware/protocol/om_common/namespace.h"
++#include "middleware/protocol/om_common/data_model/data_common.h"
++
++NAMESPACE_START_OM_COMPONENT_MONITOR
++using namespace afl::base;
++using namespace os::v2x::protocol::om::common;
++struct DiskInfo
++{
++    std::string fileSystem;
++    double size;
++    double used;
++    double avail;
++    double use;
++    std::string mountedOn;
++};
++
++struct DiskStatusData  : public afl::base::SerializableData
++{
++    double root_size;
++    double root_avail;
++    double root_avail_percent;
++    double work_size;
++    double work_avail;
++    double work_avail_percent;
++
++    void serialize(json& j) override
++    {
++        JsonSerialize(root_size, "root_size", j, false);
++        JsonSerialize(root_avail, "root_avail", j, false);
++        JsonSerialize(root_avail_percent, "root_avail_percent", j, false);
++        JsonSerialize(work_size, "work_size", j, false);
++        JsonSerialize(work_avail, "work_avail", j, false);
++        JsonSerialize(work_avail_percent, "work_avail_percent", j, false);
++    }
++
++    void deserialize(const json& j)  override
++    {
++        JsonDeserialize(root_size, "root_size", j, noUse_isEmptyFlag);
++        JsonDeserialize(root_avail, "root_avail", j, noUse_isEmptyFlag);
++        JsonDeserialize(root_avail_percent, "root_avail_percent", j, noUse_isEmptyFlag);
++        JsonDeserialize(work_size, "work_size", j, noUse_isEmptyFlag);
++        JsonDeserialize(work_avail, "work_avail", j, noUse_isEmptyFlag);
++        JsonDeserialize(work_avail_percent, "work_avail_percent", j, noUse_isEmptyFlag);
++    }
++public:
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "root_size: "              << root_size << std::endl;
++        ss << std::left << std::setw(40) << "root_avail: "              << root_avail << std::endl;
++        ss << std::left << std::setw(40) << "root_avail_percent: "              << root_avail_percent << std::endl;
++        ss << std::left << std::setw(40) << "work_size: "         << work_size << std::endl;
++        ss << std::left << std::setw(40) << "work_avail: "              << work_avail << std::endl;
++        ss << std::left << std::setw(40) << "work_avail_percent: "         << work_avail_percent << std::endl;
++    }
++};
++
++struct DiskStatus : public afl::base::SerializableData
++{
++    QUERY_MSG_TAG tag; // 接口号
++    std::string seqnum; // 32位不重复的随机数
++    uint64_t timestamp; // utc时间戳，毫秒
++    std::string device_esn; // 设备esn号
++    DiskStatusData data; // 消息结构
++
++    virtual void serialize(json& j) override {
++        JsonSerialize(tag, "tag", j, false);
++        JsonSerialize(seqnum, "seqnum", j, false);
++        JsonSerialize(timestamp, "timestamp", j, false);
++        JsonSerialize(device_esn, "device_esn", j, false);
++        JsonSerialize(data, "data", j, false);
++    }
++
++    virtual void deserialize(const json& j) override {
++        JsonDeserialize(tag, "tag", j, noUse_isEmptyFlag);
++        JsonDeserialize(seqnum, "seqnum", j, noUse_isEmptyFlag);
++        JsonDeserialize(timestamp, "timestamp", j, noUse_isEmptyFlag);
++        JsonDeserialize(device_esn, "device_esn", j, noUse_isEmptyFlag);
++        JsonDeserialize(data, "data", j, noUse_isEmptyFlag);
++    }
++public:
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "tag: "                     << tag << std::endl;
++        ss << std::left << std::setw(40) << "seqnum: "                 << seqnum << std::endl;
++        ss << std::left << std::setw(40) << "timestamp: "             << timestamp << std::endl;
++        ss << std::left << std::setw(40) << "device_esn: "            << device_esn << std::endl;
++        ss << std::left << std::setw(40) << "data: "              << data.to_string() << std::endl;
++        return ss.str();
++    }
++};
++NAMESPACE_ENDED_OM_COMPONENT_MONITOR
++#endif //NCS_MEC_ALARM_MANAGEMENT_DATA_H
+diff --git a/middleware/protocol/om_monitor/data_model/data_docker_status.h b/middleware/protocol/om_monitor/data_model/data_docker_status.h
+index 3c0e4c9..1984b46 100644
+--- a/middleware/protocol/om_monitor/data_model/data_docker_status.h
++++ b/middleware/protocol/om_monitor/data_model/data_docker_status.h
+@@ -30,6 +30,7 @@ struct ContainerInfo
+     double memUsage;
+     double memPercent;
+ };
++
+ struct DockerStatusData  : public afl::base::SerializableData
+ {
+     double cpu;
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.cc b/middleware/protocol/om_monitor/om_monitor_component.cc
+index 244d5e7..5d2994a 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.cc
++++ b/middleware/protocol/om_monitor/om_monitor_component.cc
+@@ -176,12 +176,18 @@ void OM_MONITOR_COMPONENT::monitorEventloopRunning()
+ 
+             if(getConfiger().configerEanbleMonitor.Enable_MonitorDockerStatus)
+             {
+-                period_query_docker_status();
+-                m_MonitorDockerStatusOnce = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_docker_status_once, this), 4, true);
++                m_MonitorDockerStatusOnce = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_docker_status_once, this), 4, false);
+                 m_MonitorDockerStatus = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_docker_status, this),
+                                                               getConfiger().configerMonitorPeriod.periodMonitorDockerStatus, true);
+             }
+ 
++            if(getConfiger().configerEanbleMonitor.Enable_MonitorDiskStatus)
++            {
++                m_MonitorDiskStatusOnce = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_disk_status_once, this), 4, false);
++                m_MonitorDiskStatus = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_disk_status, this),
++                                                              getConfiger().configerMonitorPeriod.periodMonitorDiskStatus, true);
++            }
++
+             if(getConfiger().configerEanbleMonitor.Enable_MonitorDockerStatus)
+             {
+                 m_MonitorAirosModulesStatusOnce = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_airos_modules_status_once, this), 4, true);
+@@ -206,6 +212,412 @@ void OM_MONITOR_COMPONENT::monitorEventloopRunning()
+ 
+ }
+ 
++
++void OM_MONITOR_COMPONENT::period_query_docker_status_once()
++{
++
++    if(m_MonitorDockerStatusOnceCount == 4)
++    {
++        if(m_MonitorDockerStatusOnce > 0)
++        {
++            m_Eventloop->cancelTimer(m_MonitorDockerStatusOnce);
++            m_MonitorDockerStatusOnce = -1;
++        }
++    }
++
++    if(period_query_docker_status())
++    {
++        if(m_MonitorDockerStatusOnce > 0)
++        {
++            m_Eventloop->cancelTimer(m_MonitorDockerStatusOnce);
++            m_MonitorDockerStatusOnce = -1;
++        }
++    }
++    else
++    {
++        m_MonitorDockerStatusOnceCount++;
++    }
++
++}
++
++bool OM_MONITOR_COMPONENT::period_query_docker_status()
++{
++
++    DockerStatus dockerStatus;
++    SshInfo sshInfo;
++    sshInfo.host = "127.0.0.1";
++    OmWorkParamConfiger  omWorkParamConfiger;
++    WorkParam::getWorkParamFromFile(getConfiger().configerWorkParam.workParamFilePath, omWorkParamConfiger);
++    sshInfo.user = omWorkParamConfiger.omPtpLogParamConfiger.localSshUserName;
++    sshInfo.password = omWorkParamConfiger.omPtpLogParamConfiger.localSshPassword;
++    sshInfo.execCmd = "echo " + sshInfo.password + "| sudo -S docker stats --no-stream";
++//    OM_MONITOR_ERROR_PRINT << "[sshInfo]" << sshInfo.to_string();
++    int maxRetries = 3;
++    int retryCount = 0;  // 当前重试次数
++    bool cmdExecFlag = false;
++    while (retryCount < maxRetries)
++    {
++        if (DBUtils::sshExec(sshInfo))
++        {
++            // 成功执行，直接返回 true
++            cmdExecFlag = true;
++            break;
++        }
++
++        OM_MONITOR_ERROR_PRINT << "[error] Reboot device failure! Attempt " << (retryCount + 1) << " failed.\n";
++        retryCount++;
++    }
++
++    if(!cmdExecFlag)
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
++        return false;
++    }
++    else
++    {
++        std::vector<ContainerInfo> airosContainers = extractAirosContainers(sshInfo.execRet);
++        if (airosContainers.size() == 0)
++        {
++            dockerStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DOCKER_STA;
++            dockerStatus.seqnum = "period";
++            dockerStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
++            dockerStatus.device_esn = getConfiger().rscuEsn;
++            dockerStatus.data.cpu = 0;
++            dockerStatus.data.mem_percent = 0;
++            dockerStatus.data.mem = 0;
++            dockerStatus.data.run_flag = false;
++
++            afl::base::json publishJson;
++            try{
++                publishJson = dockerStatus;
++            }
++            catch (json::exception &e)
++            {
++                OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++                return false;
++            }
++            m_QueueDockerStatus.push(publishJson);
++        }
++        else
++        {
++            for (const auto &container : airosContainers)
++            {
++                if(getConfiger().enableDebugPrint)
++                {
++                    OM_MONITOR_DEBUG_PRINT << "[Container Name]" << container.name
++                                           << "[CPU Usage] " << container.cpuUsage
++                                           << "% [Memory Usage]" << container.memUsage << "MiB";
++                }
++                dockerStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DOCKER_STA;
++                dockerStatus.seqnum = "period";
++                dockerStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
++                dockerStatus.device_esn = getConfiger().rscuEsn;
++                dockerStatus.data.cpu = container.cpuUsage;
++                dockerStatus.data.mem_percent = container.memPercent;
++                dockerStatus.data.mem = container.memUsage;
++                dockerStatus.data.run_flag = true;
++
++                afl::base::json publishJson;
++                try{
++                    publishJson = dockerStatus;
++                }
++                catch (json::exception &e)
++                {
++                    OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++                    return false;
++                }
++                m_QueueDockerStatus.push(publishJson);
++            }
++        }
++    }
++
++    if(getConfiger().enableDebugPrint)
++    {
++        OM_MONITOR_DEBUG_PRINT << "[execRet]" << sshInfo.execRet;
++    }
++    return true;
++
++}
++
++void OM_MONITOR_COMPONENT::period_query_disk_status_once()
++{
++
++    if(m_MonitorDiskStatusOnceCount == 4)
++    {
++        if(m_MonitorDiskStatusOnce > 0)
++        {
++            m_Eventloop->cancelTimer(m_MonitorDiskStatusOnce);
++            m_MonitorDiskStatusOnce = -1;
++        }
++    }
++
++    if(period_query_disk_status())
++    {
++        if(m_MonitorDiskStatusOnce > 0)
++        {
++            m_Eventloop->cancelTimer(m_MonitorDiskStatusOnce);
++            m_MonitorDiskStatusOnce = -1;
++        }
++    }
++    else
++    {
++        m_MonitorDiskStatusOnceCount++;
++    }
++
++}
++
++bool OM_MONITOR_COMPONENT::period_query_disk_status()
++{
++
++    DiskStatus diskStatus;
++    SshInfo sshInfo;
++    sshInfo.host = "127.0.0.1";
++    OmWorkParamConfiger  omWorkParamConfiger;
++    WorkParam::getWorkParamFromFile(getConfiger().configerWorkParam.workParamFilePath, omWorkParamConfiger);
++    sshInfo.user = omWorkParamConfiger.omPtpLogParamConfiger.localSshUserName;
++    sshInfo.password = omWorkParamConfiger.omPtpLogParamConfiger.localSshPassword;
++    sshInfo.execCmd = "echo " + sshInfo.password + "| sudo df -h /work /";
++
++    int maxRetries = 3;
++    int retryCount = 0;  // 当前重试次数
++    bool cmdExecFlag = false;
++    while (retryCount < maxRetries)
++    {
++        if (DBUtils::sshExec(sshInfo))
++        {
++            // 成功执行，直接返回 true
++            cmdExecFlag = true;
++            break;
++        }
++
++        OM_MONITOR_ERROR_PRINT << "[error] Reboot device failure! Attempt " << (retryCount + 1) << " failed.\n";
++        retryCount++;
++    }
++
++    if(!cmdExecFlag)
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
++        return false;
++    }
++    else
++    {
++        std::vector<DiskInfo> diskInfos = extractDiskInfos(sshInfo.execRet);
++        if (diskInfos.size() == 0)
++        {
++            diskStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DISK_STA;
++            diskStatus.seqnum = "period";
++            diskStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
++            diskStatus.device_esn = getConfiger().rscuEsn;
++            diskStatus.data.root_size = 0;
++            diskStatus.data.root_avail = 0;
++            diskStatus.data.root_avail_percent = 0;
++            diskStatus.data.work_size = 0;
++            diskStatus.data.work_avail = 0;
++            diskStatus.data.work_avail_percent = 0;
++
++            afl::base::json publishJson;
++            try{
++                publishJson = diskStatus;
++            }
++            catch (json::exception &e)
++            {
++                OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++                return false;
++            }
++            m_QueueDiskStatus.push(publishJson);
++        }
++        else
++        {
++            diskStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DISK_STA;
++            diskStatus.seqnum = "period";
++            diskStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
++            diskStatus.device_esn = getConfiger().rscuEsn;
++            for (const auto &disk : diskInfos)
++            {
++                if(getConfiger().enableDebugPrint)
++                {
++                    OM_MONITOR_DEBUG_PRINT << "[fileSystem]" << disk.fileSystem
++                                           << " [size]" << disk.size << "G"
++                                           << " [used]" << disk.used << "G"
++                                           << " [avail]" << disk.avail << "G"
++                                           << " [use]" << disk.use << "%"
++                                           << " [mountedOn]" << disk.mountedOn;
++                }
++
++                if(disk.mountedOn == "/")
++                {
++                    diskStatus.data.root_size = disk.size;
++                    diskStatus.data.root_avail = disk.avail;
++                    diskStatus.data.root_avail_percent = disk.use;
++                }
++                if(disk.mountedOn == "/work")
++                {
++                    diskStatus.data.work_size = disk.size;
++                    diskStatus.data.work_avail = disk.avail;
++                    diskStatus.data.work_avail_percent = disk.use;
++                }
++            }
++
++            
++            afl::base::json publishJson;
++            try{
++                publishJson = diskStatus;
++            }
++            catch (json::exception &e)
++            {
++                OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++                return false;
++            }
++            m_QueueDiskStatus.push(publishJson);
++        }
++    }
++
++    if(getConfiger().enableDebugPrint)
++    {
++        OM_MONITOR_DEBUG_PRINT << "[execRet]" << sshInfo.execRet;
++    }
++    return true;
++
++}
++
++void OM_MONITOR_COMPONENT::period_query_airos_modules_status_once()
++{
++    if(m_MonitorAirosMOdulesStatusOnceCount == 4)
++    {
++        if(m_MonitorAirosModulesStatusOnce > 0)
++        {
++            m_Eventloop->cancelTimer(m_MonitorAirosModulesStatusOnce);
++            m_MonitorAirosModulesStatusOnce = -1;
++        }
++    }
++
++    if(period_query_airos_modules_status())
++    {
++        if(m_MonitorAirosModulesStatusOnce > 0)
++        {
++            m_Eventloop->cancelTimer(m_MonitorAirosModulesStatusOnce);
++            m_MonitorAirosModulesStatusOnce = -1;
++        }
++    }
++    else
++    {
++        m_MonitorAirosMOdulesStatusOnceCount++;
++    }
++
++}
++
++bool OM_MONITOR_COMPONENT::period_query_airos_modules_status()
++{
++    AirosStatus airosStatus;
++    airosStatus.tag = QUERY_MSG_TAG::QUARY_TAG_AIROS_STA;
++    airosStatus.seqnum = "test";
++    airosStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
++    airosStatus.device_esn = getConfiger().rscuEsn;
++    std::string command = "ps aux --sort=-%mem | grep -E 'mainboard|python' | head -n 10";
++    std::vector<ProcessInfo> airosProcessInfos;
++    int maxRetries = 3;
++    int retryCount = 0;  // 当前重试次数
++    bool cmdExecFlag = false;
++    while (retryCount < maxRetries)
++    {
++        if (getProcessInfo(command, airosProcessInfos))
++        {
++            // 成功执行，直接返回 true
++            cmdExecFlag = true;
++            break;
++        }
++
++        OM_MONITOR_ERROR_PRINT << "[error] get airos-moduoles failure! Attempt " << (retryCount + 1) << " failed.\n";
++        retryCount++;
++    }
++
++    if(!cmdExecFlag)
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
++        return false;
++    }
++    else
++    {
++        for (const auto &processInfo : airosProcessInfos)
++        {
++
++            OM_MONITOR_DEBUG_PRINT << "[pid]" << processInfo.pid
++                                << "[cpu]" << processInfo.cpu
++                                << "[mem]" << processInfo.mem
++                                << "[moudle_name]" << processInfo.moudle_name;
++
++            AirosMoudlesData airosMoudlesData;
++            airosMoudlesData.moudle_pid = std::to_string(processInfo.pid);
++            airosMoudlesData.module_cpu = processInfo.cpu;
++            airosMoudlesData.module_mem = processInfo.mem;
++            airosMoudlesData.module_name = processInfo.moudle_name;
++            airosStatus.data.modules_head.push_back(airosMoudlesData);
++        }
++        std::string commandLaunchPs = "launch ps";
++        std::vector<ProcessMoudlesNeedInfo> airosProcessMoudlesNeedInfos = getModulesNeedInfo(commandLaunchPs);
++        std::vector<string> airosNowRunningModules;
++        for(auto nowModule:airosProcessMoudlesNeedInfos)
++        {
++            airosNowRunningModules.push_back(nowModule.moudle_name);
++        }
++        for(auto module: m_AirosNeedRunModules)
++        {
++            airosStatus.data.moudles_need_run.append(module);
++            airosStatus.data.moudles_need_run.append("|");
++            if(contains(airosNowRunningModules, module))
++            {
++                airosStatus.data.modules_now_run.append(module);
++                airosStatus.data.modules_now_run.append("|");
++            }
++            else
++            {
++                airosStatus.data.modules_no_run.append(module);
++                airosStatus.data.modules_no_run.append("|");
++            }
++        }
++
++        afl::base::json publishJson;
++        try{
++            publishJson = airosStatus;
++            if(getConfiger().enableDebugPrint) {
++                OM_MONITOR_DEBUG_PRINT << "[airosStatus]" << airosStatus.to_string();
++            }
++            m_QueueAirosModulesStatus.push(publishJson);
++        }
++        catch (json::exception &e)
++        {
++            OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++            return false;
++        }
++    }
++
++    return true;
++}
++
++
++bool OM_MONITOR_COMPONENT::period_discard_radar_cloud_data_status()
++{
++    m_RradarsV2xInFlag.store(false);
++    std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
++    std::time_t fiveSecondsAgo = currentTime - 5;
++ 
++    std::lock_guard<std::mutex> lock(m_MapMutex);
++    auto it = m_RadarDynamicDataMap.begin();
++    while (it != m_RadarDynamicDataMap.end())
++    {
++        if (it->second.first < fiveSecondsAgo)
++        {
++            it = m_RadarDynamicDataMap.erase(it); // 删除过时元素
++        } 
++        else 
++        {
++            ++it; // 继续检查下一个元素
++        }
++    }
++
++    return true;
++}
++
+ void OM_MONITOR_COMPONENT::readUdpData()
+ {
+     ssize_t recv_len = 0;
+@@ -249,6 +661,9 @@ void OM_MONITOR_COMPONENT::readUdpData()
+             case QUARY_TAG_AIROS_STA: //3012
+                 process_query_airos_status(m_ClientAddr, j);
+                 break;
++            case QUARY_TAG_DISK_STA: //3013
++                process_query_disk_status(m_ClientAddr, j);
++                break;
+             case QUARY_TAG_SENSOR_DATA_STA: //3021
+                 process_query_sensor_data_status(m_ClientAddr, j);
+                 break;
+@@ -348,145 +763,43 @@ bool OM_MONITOR_COMPONENT::process_query_docker_status(struct sockaddr_in client
+         }
+         else
+         {
+-            OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
+-        }
+-
+-    }
+-#if 0
+-    DockerStatus dockerStatus;
+-
+-    SshInfo sshInfo;
+-    sshInfo.host = "127.0.0.1";
+-    OmWorkParamConfiger  omWorkParamConfiger;
+-    WorkParam::getWorkParamFromFile(getConfiger().configerWorkParam.workParamFilePath, omWorkParamConfiger);
+-    sshInfo.user = omWorkParamConfiger.omPtpLogParamConfiger.localSshUserName;
+-    sshInfo.password = omWorkParamConfiger.omPtpLogParamConfiger.localSshPassword;
+-    sshInfo.execCmd = "docker stats --no-stream";
+-    OM_MONITOR_ERROR_PRINT << "[sshInfo]" << sshInfo.to_string();
+-    if(!DBUtils::sshExec(sshInfo))
+-    {
+-        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
+-
+-    }
+-    else
+-    {
+-        std::vector<ContainerInfo> airosContainers = extractAirosContainers(sshInfo.execRet);
+-        for (const auto &container : airosContainers)
+-        {
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[Container Name]" << container.name
+-                                       << "[CPU Usage] " << container.cpuUsage
+-                                       << "% [Memory Usage]" << container.memUsage << "MiB";
+-            }
+-            dockerStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DOCKER_STA;
+-            dockerStatus.seqnum = queryData.seqnum;
+-            dockerStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+-            dockerStatus.device_esn = getConfiger().rscuEsn;
+-            dockerStatus.data.cpu = container.cpuUsage;
+-            dockerStatus.data.mem_percent = container.memPercent;
+-            dockerStatus.data.mem = container.memUsage;
+-            afl::base::json publishJson;
+-            try{
+-                publishJson = dockerStatus;
+-            }
+-            catch (json::exception &e)
+-            {
+-                OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+-                return false;
+-            }
+-
+-            std::string msg = publishJson.dump();
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[upload-data]" << msg;
+-            }
+-            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
+-                                 (struct sockaddr*)&m_ClientAddr, sizeof(m_ClientAddr));
+-            if (slen != msg.size())
+-            {
+-                OM_MONITOR_ERROR_PRINT << "[error]send msg error, reason:" << strerror(errno);
+-                return false;
+-            }
+-        }
+-
+-    }
+-    OM_MONITOR_ERROR_PRINT << "[error]" << sshInfo.execRet;
+-#endif
+-    return true;
+-
+-}
+-void OM_MONITOR_COMPONENT::period_query_docker_status_once()
+-{
+-    if(m_MonitorDockerStatusOnceCount == 4)
+-    {
+-        if(m_MonitorDockerStatusOnce > 0)
+-        {
+-            m_Eventloop->cancelTimer(m_MonitorDockerStatusOnce);
+-            m_MonitorDockerStatusOnce = -1;
+-        }
+-    }
+-
+-    if(period_query_docker_status())
+-    {
+-        if(m_MonitorDockerStatusOnce > 0)
+-        {
+-            m_Eventloop->cancelTimer(m_MonitorDockerStatusOnce);
+-            m_MonitorDockerStatusOnce = -1;
++            OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
+         }
+-    }
+-    else
+-    {
+-        m_MonitorDockerStatusOnceCount++;
+-    }
+-
+-}
+-
+-bool OM_MONITOR_COMPONENT::period_query_docker_status()
+-{
+ 
++    }
++#if 0
+     DockerStatus dockerStatus;
++
+     SshInfo sshInfo;
+     sshInfo.host = "127.0.0.1";
+     OmWorkParamConfiger  omWorkParamConfiger;
+     WorkParam::getWorkParamFromFile(getConfiger().configerWorkParam.workParamFilePath, omWorkParamConfiger);
+     sshInfo.user = omWorkParamConfiger.omPtpLogParamConfiger.localSshUserName;
+     sshInfo.password = omWorkParamConfiger.omPtpLogParamConfiger.localSshPassword;
+-    sshInfo.execCmd = "echo " + sshInfo.password + "| sudo -S docker stats --no-stream";
+-//    OM_MONITOR_ERROR_PRINT << "[sshInfo]" << sshInfo.to_string();
+-    int maxRetries = 3;
+-    int retryCount = 0;  // 当前重试次数
+-    bool cmdExecFlag = false;
+-    while (retryCount < maxRetries)
+-    {
+-        if (DBUtils::sshExec(sshInfo))
+-        {
+-            // 成功执行，直接返回 true
+-            cmdExecFlag = true;
+-            break;
+-        }
+-
+-        OM_MONITOR_ERROR_PRINT << "[error] Reboot device failure! Attempt " << (retryCount + 1) << " failed.\n";
+-        retryCount++;
+-    }
+-
+-    if(!cmdExecFlag)
++    sshInfo.execCmd = "docker stats --no-stream";
++    OM_MONITOR_ERROR_PRINT << "[sshInfo]" << sshInfo.to_string();
++    if(!DBUtils::sshExec(sshInfo))
+     {
+         OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
+-        return false;
++
+     }
+     else
+     {
+         std::vector<ContainerInfo> airosContainers = extractAirosContainers(sshInfo.execRet);
+-        if (airosContainers.size() == 0)
++        for (const auto &container : airosContainers)
+         {
++            if(getConfiger().enableDebugPrint) {
++                OM_MONITOR_DEBUG_PRINT << "[Container Name]" << container.name
++                                       << "[CPU Usage] " << container.cpuUsage
++                                       << "% [Memory Usage]" << container.memUsage << "MiB";
++            }
+             dockerStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DOCKER_STA;
+-            dockerStatus.seqnum = "period";
++            dockerStatus.seqnum = queryData.seqnum;
+             dockerStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+             dockerStatus.device_esn = getConfiger().rscuEsn;
+-            dockerStatus.data.cpu = 0;
+-            dockerStatus.data.mem_percent = 0;
+-            dockerStatus.data.mem = 0;
+-            dockerStatus.data.run_flag = false;
+-
++            dockerStatus.data.cpu = container.cpuUsage;
++            dockerStatus.data.mem_percent = container.memPercent;
++            dockerStatus.data.mem = container.memUsage;
+             afl::base::json publishJson;
+             try{
+                 publishJson = dockerStatus;
+@@ -496,187 +809,129 @@ bool OM_MONITOR_COMPONENT::period_query_docker_status()
+                 OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+                 return false;
+             }
+-            m_QueueDockerStatus.push(publishJson);
+-        }
+-        else
+-        {
+-            for (const auto &container : airosContainers)
+-            {
+-                if(getConfiger().enableDebugPrint)
+-                {
+-                    OM_MONITOR_DEBUG_PRINT << "[Container Name]" << container.name
+-                                           << "[CPU Usage] " << container.cpuUsage
+-                                           << "% [Memory Usage]" << container.memUsage << "MiB";
+-                }
+-                dockerStatus.tag = QUERY_MSG_TAG::QUARY_TAG_DOCKER_STA;
+-                dockerStatus.seqnum = "period";
+-                dockerStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+-                dockerStatus.device_esn = getConfiger().rscuEsn;
+-                dockerStatus.data.cpu = container.cpuUsage;
+-                dockerStatus.data.mem_percent = container.memPercent;
+-                dockerStatus.data.mem = container.memUsage;
+-                dockerStatus.data.run_flag = true;
+ 
+-                afl::base::json publishJson;
+-                try{
+-                    publishJson = dockerStatus;
+-                }
+-                catch (json::exception &e)
+-                {
+-                    OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+-                    return false;
+-                }
+-                m_QueueDockerStatus.push(publishJson);
++            std::string msg = publishJson.dump();
++            if(getConfiger().enableDebugPrint) {
++                OM_MONITOR_DEBUG_PRINT << "[upload-data]" << msg;
++            }
++            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
++                                 (struct sockaddr*)&m_ClientAddr, sizeof(m_ClientAddr));
++            if (slen != msg.size())
++            {
++                OM_MONITOR_ERROR_PRINT << "[error]send msg error, reason:" << strerror(errno);
++                return false;
+             }
+         }
+-    }
+ 
+-    if(getConfiger().enableDebugPrint)
+-    {
+-        OM_MONITOR_DEBUG_PRINT << "[execRet]" << sshInfo.execRet;
+     }
++    OM_MONITOR_ERROR_PRINT << "[error]" << sshInfo.execRet;
++#endif
+     return true;
+ 
+ }
+ 
+-void OM_MONITOR_COMPONENT::period_query_airos_modules_status_once()
++std::vector<DiskInfo> OM_MONITOR_COMPONENT::extractDiskInfos(const std::string &output)
+ {
+-    if(m_MonitorAirosMOdulesStatusOnceCount == 4)
+-    {
+-        if(m_MonitorAirosModulesStatusOnce > 0)
+-        {
+-            m_Eventloop->cancelTimer(m_MonitorAirosModulesStatusOnce);
+-            m_MonitorAirosModulesStatusOnce = -1;
+-        }
+-    }
++    std::vector<DiskInfo> diskList;
++    std::istringstream stream(output);
++    std::string line;
+ 
+-    if(period_query_docker_status())
+-    {
+-        if(m_MonitorAirosModulesStatusOnce > 0)
+-        {
+-            m_Eventloop->cancelTimer(m_MonitorAirosModulesStatusOnce);
+-            m_MonitorAirosModulesStatusOnce = -1;
+-        }
+-    }
+-    else
++    // 跳过表头
++    std::getline(stream, line);
++
++    while (std::getline(stream, line))
+     {
+-        m_MonitorAirosMOdulesStatusOnceCount++;
++        std::istringstream lineStream(line);
++        std::string fileSystem, size, used, avail, use, mountedOn;
++
++        // 读取容器信息
++        lineStream >> fileSystem >> size >> used >> avail >> use >> mountedOn;
++
++        DiskInfo diskInfo;
++        diskInfo.fileSystem = fileSystem;
++        diskInfo.size = std::stod(size.substr(0, size.size() - 1)); // 去掉G并转换为double
++        diskInfo.used = std::stod(used.substr(0, used.size() - 1)); // 去掉G并转换为double
++        diskInfo.avail = std::stod(avail.substr(0, avail.size() - 1)); // 去掉G并转换为double
++        diskInfo.use = std::stod(use.substr(0, use.size() - 1)); // 去掉%并转换为double
++        diskInfo.mountedOn = mountedOn;
++
++        diskList.push_back(diskInfo);
+     }
+ 
++    return diskList;
+ }
+ 
+-bool OM_MONITOR_COMPONENT::period_query_airos_modules_status()
++bool OM_MONITOR_COMPONENT::process_query_disk_status(struct sockaddr_in clientAddr,json& j)
+ {
+-    AirosStatus airosStatus;
+-    airosStatus.tag = QUERY_MSG_TAG::QUARY_TAG_AIROS_STA;
+-    airosStatus.seqnum = "test";
+-    airosStatus.timestamp =  afl::util::TimeStamp::now(true).millSeconds();;
+-    airosStatus.device_esn = getConfiger().rscuEsn;
+-    std::string command = "ps aux --sort=-%mem | grep -E 'mainboard|python' | head -n 10";
+-    std::vector<ProcessInfo> airosProcessInfos;
+-    int maxRetries = 3;
+-    int retryCount = 0;  // 当前重试次数
+-    bool cmdExecFlag = false;
+-    while (retryCount < maxRetries)
++    QueryData queryData;
++    try
+     {
+-        if (getProcessInfo(command, airosProcessInfos))
+-        {
+-            // 成功执行，直接返回 true
+-            cmdExecFlag = true;
+-            break;
+-        }
+-
+-        OM_MONITOR_ERROR_PRINT << "[error] get airos-moduoles failure! Attempt " << (retryCount + 1) << " failed.\n";
+-        retryCount++;
++        queryData  = j;
+     }
+-
+-    if(!cmdExecFlag)
++    catch(json::exception &e)
+     {
+-        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
++        OM_MONITOR_ERROR_PRINT << "json par error " << e.what();
+         return false;
+     }
+-    else
++    if(getConfiger().enableDebugPrint) {
++        OM_MONITOR_DEBUG_PRINT << "[rece-data]" << queryData.to_string();
++    }
++    if(queryData.tag != QUERY_MSG_TAG::QUARY_TAG_DISK_STA)
+     {
+-        for (const auto &processInfo : airosProcessInfos)
+-        {
+-
+-            OM_MONITOR_DEBUG_PRINT << "[pid]" << processInfo.pid
+-                                << "[cpu]" << processInfo.cpu
+-                                << "[mem]" << processInfo.mem
+-                                << "[moudle_name]" << processInfo.moudle_name;
++        OM_MONITOR_ERROR_PRINT << "tag error ";
++        return false;
++    }
++    if(queryData.device_esn != getConfiger().rscuEsn)
++    {
++        OM_MONITOR_ERROR_PRINT << "device-esn error! [query-esn]" << queryData.device_esn << "[rscuEsn]" << getConfiger().rscuEsn;
++        return false;
++    }
+ 
+-            AirosMoudlesData airosMoudlesData;
+-            airosMoudlesData.moudle_pid = std::to_string(processInfo.pid);
+-            airosMoudlesData.module_cpu = processInfo.cpu;
+-            airosMoudlesData.module_mem = processInfo.mem;
+-            airosMoudlesData.module_name = processInfo.moudle_name;
+-            airosStatus.data.modules_head.push_back(airosMoudlesData);
++    
++    afl::base::json publishJson;
++    if (!m_QueueDiskStatus.pop(publishJson))
++    {
++        if(getConfiger().enableDebugPrint)
++        {
++            OM_MONITOR_DEBUG_PRINT << "[disk-status]" << "pop failed";
+         }
+-        std::string commandLaunchPs = "launch ps";
+-        std::vector<ProcessMoudlesNeedInfo> airosProcessMoudlesNeedInfos = getModulesNeedInfo(commandLaunchPs);
+-        std::vector<string> airosNowRunningModules;
+-        for(auto nowModule:airosProcessMoudlesNeedInfos)
++        return false;
++    }
++    else
++    {
++        if( m_QueueDiskStatus.size() == 0)
+         {
+-            airosNowRunningModules.push_back(nowModule.moudle_name);
++            m_QueueDiskStatus.push(publishJson);
+         }
+-        for(auto module: m_AirosNeedRunModules)
++        std::string querySeqNum = queryData.seqnum;
++        if(publishJson.find("seqnum") != publishJson.end())
+         {
+-            airosStatus.data.moudles_need_run.append(module);
+-            airosStatus.data.moudles_need_run.append("|");
+-            if(contains(airosNowRunningModules, module))
+-            {
+-                airosStatus.data.modules_now_run.append(module);
+-                airosStatus.data.modules_now_run.append("|");
+-            }
+-            else
++            publishJson["seqnum"] = querySeqNum;
++            std::string msg = publishJson.dump();
++            if(getConfiger().enableDebugPrint)
+             {
+-                airosStatus.data.modules_no_run.append(module);
+-                airosStatus.data.modules_no_run.append("|");
++                OM_MONITOR_DEBUG_PRINT << "[disk-status][response]" << msg;
+             }
+-        }
+ 
+-        afl::base::json publishJson;
+-        try{
+-            publishJson = airosStatus;
+-            if(getConfiger().enableDebugPrint) {
+-                OM_MONITOR_DEBUG_PRINT << "[airosStatus]" << airosStatus.to_string();
++            size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
++                                 (struct sockaddr*)&clientAddr, sizeof(clientAddr));
++            if (slen != msg.size())
++            {
++                OM_MONITOR_ERROR_PRINT << "[error]send disk-status msg error, reason:" << strerror(errno);
++                return false;
+             }
+-            m_QueueAirosModulesStatus.push(publishJson);
+         }
+-        catch (json::exception &e)
++        else
+         {
+-            OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+-            return false;
++            OM_MONITOR_ERROR_PRINT << "[error]no find seqNum field!";
+         }
+-    }
+ 
+-    return true;
+-}
+-
+-
+-bool OM_MONITOR_COMPONENT::period_discard_radar_cloud_data_status()
+-{
+-    m_RradarsV2xInFlag.store(false);
+-    std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+-    std::time_t fiveSecondsAgo = currentTime - 5;
+- 
+-    std::lock_guard<std::mutex> lock(m_MapMutex);
+-    auto it = m_RadarDynamicDataMap.begin();
+-    while (it != m_RadarDynamicDataMap.end())
+-    {
+-        if (it->second.first < fiveSecondsAgo)
+-        {
+-            it = m_RadarDynamicDataMap.erase(it); // 删除过时元素
+-        } 
+-        else 
+-        {
+-            ++it; // 继续检查下一个元素
+-        }
+     }
+ 
+     return true;
+ }
+ 
++
+ bool OM_MONITOR_COMPONENT::getProcessInfo(std::string& command,  std::vector<ProcessInfo> &processes)
+ {
+     // 使用popen执行命令并读取输出
+@@ -1191,7 +1446,7 @@ bool OM_MONITOR_COMPONENT::mqttInitConnOpts()
+     m_MqttConnOpts.context = this;
+ 
+     std::string sMqttCommunicationMethod = getConfiger().clientConfigerRadarMonitor.configerMqtt.mqttBrokerUrl;
+-    OM_MONITOR_DEBUG_PRINT << " 111sMqttCommunicationMethod:"<<sMqttCommunicationMethod;
++    OM_MONITOR_DEBUG_PRINT << " sMqttCommunicationMethod:"<<sMqttCommunicationMethod;
+     return true;
+ }
+ 
+@@ -1251,7 +1506,7 @@ void OM_MONITOR_COMPONENT::mqttDeinit()
+ 
+ void OM_MONITOR_COMPONENT::mqttOnConnect(void *context, MQTTAsync_successData *response)
+ {
+-    OM_MONITOR_ERROR_PRINT << "[sucess]connect sucess!";
++
+     auto thiz = (OM_MONITOR_COMPONENT *) context;
+     thiz->m_MqttConnected = true;
+     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.h b/middleware/protocol/om_monitor/om_monitor_component.h
+index 0106c09..c282628 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.h
++++ b/middleware/protocol/om_monitor/om_monitor_component.h
+@@ -13,6 +13,7 @@
+ #include "base/common/network/print.h"
+ #include "middleware/protocol/om_monitor/data_model/data_common.h"
+ #include "middleware/protocol/om_monitor/data_model/data_airos_status.h"
++#include "middleware/protocol/om_monitor/data_model/data_disk_status.h"
+ #include "middleware/protocol/om_monitor/data_model/data_docker_status.h"
+ #include "middleware/protocol/om_monitor/data_model/data_sensor_data_status.h"
+ #include "middleware/protocol/om_monitor/data_model/data_radar_cloud_status.h"
+@@ -48,14 +49,22 @@ public:
+ 
+     bool process_query_docker_status(struct sockaddr_in clientAddr,json& j);
+     bool process_query_airos_status(struct sockaddr_in clientAddr,json& j);
++    bool process_query_disk_status(struct sockaddr_in clientAddr,json& j);
+     bool process_query_sensor_data_status(struct sockaddr_in clientAddr,json& j);
+     void monitorEventloopRunning();
++
+     std::vector<ContainerInfo> extractAirosContainers(const std::string &output);
+     bool getProcessInfo(std::string& command,  std::vector<ProcessInfo> &processes);
+     std::vector<ProcessMoudlesNeedInfo> getModulesNeedInfo(std::string& command);
++
++    std::vector<DiskInfo> extractDiskInfos(const std::string &output);
++
+     bool period_query_docker_status();
+     void period_query_docker_status_once();
+ 
++    bool period_query_disk_status();
++    void period_query_disk_status_once();
++
+     bool period_query_airos_modules_status();
+     void period_query_airos_modules_status_once();
+ 
+@@ -112,6 +121,12 @@ private:
+     int m_MonitorAirosMOdulesStatusOnceCount = 0;
+     FifoConcurrentQueue<json> m_QueueAirosModulesStatus;
+ 
++    int m_MonitorDiskAirosModulesStatus = -1;
++    int m_MonitorDiskStatus = -1;
++    int m_MonitorDiskStatusOnce = -1;
++    int m_MonitorDiskStatusOnceCount = 0;
++    FifoConcurrentQueue<json> m_QueueDiskStatus;
++
+     int m_MonitorMecRadarCloudStatus = -1;
+     MecRadarCloudStatus m_MecRadarCloudStatus;
+     static std::atomic<bool> m_RradarsV2xInFlag;   // 缓存雷达有无发送指标数据状态
+
+@@@C	tianchuan	5e9b2869a07834da652626f0a09cf55120cca820	2025-03-07	雷达信控监控功能
+diff --git a/air_service/framework/proto/airos_usecase.proto b/air_service/framework/proto/airos_usecase.proto
+index fbc01c3..50bf2da 100644
+--- a/air_service/framework/proto/airos_usecase.proto
++++ b/air_service/framework/proto/airos_usecase.proto
+@@ -238,6 +238,12 @@ message MecTrafficFlow{
+     repeated MecSingleTrafficFlow trafficflow_list = 7;
+ }
+ 
++message MecRadarCloudStatus{
++    optional bool radar_cloud_con_flag = 1 [default = false];  //信控上云模块连接云控是否正常，true：连接正常，false：连接不正常
++    optional bool dynamic_data_up_flag = 2 [default = false];  //是否有动态数据发送给云控，true：是，false：否
++    optional bool v2x_up_flag = 3 [default = false];           //是否有V2X指标数据发送给云控，true：是，false：否
++}
++
+ //////////////////////////////////////////////////////////////////
+ message EventOutputResult {
+     repeated EventInformation events = 1;                                  // 事件集合
+@@ -249,4 +255,6 @@ message EventOutputResult {
+     optional MecTrafficlightList mec_trafficlight_list = 7;  //add hezhiyong 2024-8-19
+     optional EventOutputMonitorResult mec_sensor_data_monitor = 8;  //add hezhiyong 2024-11-15
+     optional MecTrafficFlow mec_trafficflow = 9;  //add hezhiyong 2024-11-13
++
++    optional MecRadarCloudStatus mec_radar_cloud_status = 10;  
+ }
+\ No newline at end of file
+diff --git a/middleware/protocol/om_monitor/configer_om_monitor.h b/middleware/protocol/om_monitor/configer_om_monitor.h
+index 42640d8..3756707 100644
+--- a/middleware/protocol/om_monitor/configer_om_monitor.h
++++ b/middleware/protocol/om_monitor/configer_om_monitor.h
+@@ -20,6 +20,7 @@
+ #define AIROS2_0_CONFIGER_OM_OM_MONITOR_COMPONENT_H
+ #include "middleware/protocol/om_common/namespace.h"
+ #include "middleware/protocol/om_common/configer_common.h"
++#include "middleware/protocol/om_common/configer_topic_ccindex.h"
+ #include "base/work_param/configer_om_work_param.h"
+ #include "middleware/protocol/om_common/configer_work_param.h"
+ #include "middleware/protocol/om_common/configer_work_param.h"
+@@ -33,6 +34,7 @@ using namespace airos::base::workparam;
+ using namespace afl::net;
+ using namespace os::v2x::protocol;
+ using namespace os::v2x::protocol::om::common;
++using namespace os::v2x::protocol::ccindex;
+ struct SensorIpPortData: public afl::base::SerializableData
+ {
+     std::string sensor_data_in_port;               // 感知数据接收端口
+@@ -91,17 +93,20 @@ struct MonitorPeriod: public afl::base::SerializableData
+ public:
+     double 	periodMonitorDockerStatus 		        = 300.0;
+     double 	periodMonitorAirosModulesStatus 		= 200.0;
++    double 	periodMonitorMecRadarCloudStatus        = 5.0;
+ private:
+     virtual void serialize(afl::base::json &j) override
+     {
+         JsonSerialize(periodMonitorDockerStatus, "A_PeriodMonitorDockerStatus", j, false);
+         JsonSerialize(periodMonitorAirosModulesStatus, "B_PeriodMonitorAirosModulesStatus", j, false);
++        JsonSerialize(periodMonitorMecRadarCloudStatus, "C_PeriodMonitorMecRadarCloudStatus", j, false);
+     }
+ 
+     virtual void deserialize(const afl::base::json &j) override
+     {
+         JsonDeserialize(periodMonitorDockerStatus, "A_PeriodMonitorDockerStatus", j, noUse_isEmptyFlag);
+         JsonDeserialize(periodMonitorAirosModulesStatus, "B_PeriodMonitorAirosModulesStatus", j, noUse_isEmptyFlag);
++        JsonDeserialize(periodMonitorMecRadarCloudStatus, "C_PeriodMonitorMecRadarCloudStatus", j, noUse_isEmptyFlag);
+     }
+ public:
+     std::string to_string() const
+@@ -110,6 +115,7 @@ public:
+         ss << std::endl;
+         ss << std::left << std::setw(40) << "A_PeriodMonitorDockerStatus: " << periodMonitorDockerStatus <<  std::endl;
+         ss << std::left << std::setw(40) << "B_PeriodMonitorAirosModulesStatus: " << periodMonitorAirosModulesStatus <<  std::endl;
++        ss << std::left << std::setw(40) << "C_PeriodMonitorMecRadarCloudStatus: " << periodMonitorMecRadarCloudStatus <<  std::endl;
+         return ss.str();
+     }
+ };
+@@ -121,11 +127,13 @@ public:
+     bool Enable_MonitorDockerStatus = true;
+     bool Enable_MonitorAirosModulesStatus = true;
+     bool Enable_MonitorSensorData = true;
++    bool Enable_MonitorMecRadarCloudData = true;
+     virtual void serialize(afl::base::json &j) override
+     {
+         JsonSerialize(Enable_MonitorDockerStatus,  "A_Enable_MonitorDockerStatus",  j, false);
+         JsonSerialize(Enable_MonitorAirosModulesStatus,  "B_Enable_MonitorAirosModulesStatus",  j, false);
+         JsonSerialize(Enable_MonitorSensorData,  "C_Enable_MonitorSensorData",  j, false);
++        JsonSerialize(Enable_MonitorMecRadarCloudData,  "D_Enable_MonitorMecRadarCloudData",  j, false);
+     }
+ 
+     virtual void deserialize(const afl::base::json &j) override
+@@ -134,6 +142,7 @@ public:
+         JsonDeserialize(Enable_MonitorDockerStatus,  "A_Enable_MonitorDockerStatus",  j, noUse_isEmptyFlag);
+         JsonDeserialize(Enable_MonitorAirosModulesStatus,  "B_Enable_MonitorAirosModulesStatus",  j, noUse_isEmptyFlag);
+         JsonDeserialize(Enable_MonitorSensorData,  "C_Enable_MonitorSensorData",  j, noUse_isEmptyFlag);
++        JsonDeserialize(Enable_MonitorMecRadarCloudData,  "D_Enable_MonitorMecRadarCloudData",  j, noUse_isEmptyFlag);
+ 
+     }
+ public:
+@@ -144,6 +153,61 @@ public:
+         ss << std::left << std::setw(40) << "Enable_MonitorDockerStatus: " << (Enable_MonitorDockerStatus ? "True" :  "False") <<  std::endl;
+            ss << std::left << std::setw(40) << "Enable_MonitorAirosModulesStatus: " << (Enable_MonitorAirosModulesStatus ? "True" :  "False") <<  std::endl;
+            ss << std::left << std::setw(40) << "Enable_MonitorSensorData: " << (Enable_MonitorSensorData ? "True" :  "False") <<  std::endl;
++           ss << std::left << std::setw(40) << "Enable_MonitorMecRadarCloudData: " << (Enable_MonitorMecRadarCloudData ? "True" :  "False") <<  std::endl;
++        return ss.str();
++    }
++};
++
++//mqtt客户端配置
++struct MqttClientConfigerRadarMonitor :  public afl::base::SerializableData
++{
++    bool                                enableDebugPrint = true;
++    bool                                enableDebugPrintProto = true;
++    std::string                         rscuEsn = "";
++    bool                                hasInited = false;
++    std::string                         mqttClientId = "mqtt_client";
++    MqttTopicConfigerRadarID            configerTopicRadarID;
++    MqttConfigerCommon                  configerMqtt;
++    ////////////////////////////////////////////////////////
++    MqttTopicConfigerCCIndex            configerTopicCCIndex;
++
++private:
++    virtual void serialize(afl::base::json &j) override
++    {
++        JsonSerialize(enableDebugPrint, "A_enableDebugPrint", j, false);
++        JsonSerialize(enableDebugPrintProto, "B_enableDebugPrintProto", j, false);
++        JsonSerialize(rscuEsn, "C_rscuEsn", j, false);
++        JsonSerialize(hasInited, "D_hasInited", j, false);
++        JsonSerialize(mqttClientId, "E_mqttClientId", j, false);
++        JsonSerialize(configerTopicRadarID, "F_configerTopicRadarID", j, false);
++        JsonSerialize(configerMqtt, "H_configerMqtt", j, false);
++        JsonSerialize(configerTopicCCIndex, "K_configerTopicCCIndex", j, false);
++    }
++
++    virtual void deserialize(const afl::base::json &j) override
++    {
++        JsonDeserialize(enableDebugPrint, "A_enableDebugPrint", j, noUse_isEmptyFlag);
++        JsonDeserialize(enableDebugPrintProto, "B_enableDebugPrintProto", j, noUse_isEmptyFlag);
++        JsonDeserialize(rscuEsn, "C_rscuEsn", j, noUse_isEmptyFlag);
++        JsonDeserialize(hasInited, "D_hasInited", j, noUse_isEmptyFlag);
++        JsonDeserialize(mqttClientId, "E_mqttClientId", j, noUse_isEmptyFlag);
++        JsonDeserialize(configerTopicRadarID, "F_configerTopicRadarID", j, noUse_isEmptyFlag);
++        JsonDeserialize(configerMqtt, "H_configerMqtt", j, noUse_isEmptyFlag);
++        JsonDeserialize(configerTopicCCIndex, "K_configerTopicCCIndex", j, noUse_isEmptyFlag);
++    }
++
++public:
++    std::string to_string() const
++    {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "enableDebugPrint: " << (enableDebugPrint ? "True" : "False") << std::endl;
++        ss << std::left << std::setw(40) << "enableDebugPrintProto: " << (enableDebugPrintProto ? "True" : "False") << std::endl;
++        ss << std::left << std::setw(40) << "rscuEsn: " << rscuEsn << std::endl;
++        ss << std::left << std::setw(40) << "hasInited: " << (hasInited ? "True" : "False") << std::endl;
++        ss << std::left << std::setw(40) << "mqttClientId: " << mqttClientId << std::endl;
++        ss << std::left << std::setw(40) << "configerTopicRadarID:" << std::endl << configerTopicRadarID.to_string() << std::endl;
++        ss << std::left << std::setw(40) << "configerMqtt:" << std::endl<< configerMqtt.to_string() << std::endl;
++        ss << std::left << std::setw(40) << "configerTopicCCIndex:" << std::endl << configerTopicCCIndex.to_string() << std::endl;
+         return ss.str();
+     }
+ };
+@@ -158,6 +222,9 @@ struct UdpConfigerMonitor : public ConfigerData<UdpConfigerMonitor>
+     NeedFilePathConfiger                needFilePathConfiger;
+     MonitorPeriod                       configerMonitorPeriod;
+     MonitorEnableConfiger               configerEanbleMonitor;
++
++    //mqtt客户端配置
++    MqttClientConfigerRadarMonitor      clientConfigerRadarMonitor;
+ private:
+     virtual void writeToFile(ConfigBlock &j) override
+     {
+@@ -168,6 +235,7 @@ private:
+         JsonSerialize(needFilePathConfiger,                   "E_needFilePathConfiger",                   j, false);
+         JsonSerialize(configerMonitorPeriod,                   "F_configerMonitorPeriod",                   j, false);
+         JsonSerialize(configerEanbleMonitor,                   "G_configerEanbleMonitor",                   j, false);
++        JsonSerialize(clientConfigerRadarMonitor,              "H_clientConfigerRadarMonitor",                   j, false);
+     }
+ 
+     virtual void readFromFile(const ConfigBlock &j) override
+@@ -178,8 +246,8 @@ private:
+         JsonDeserialize(rscuEsn,                   "D_rscuEsn",                   j, noUse_isEmptyFlag);
+         JsonDeserialize(needFilePathConfiger,                   "E_needFilePathConfiger",                   j, noUse_isEmptyFlag);
+         JsonDeserialize(configerMonitorPeriod,                   "F_configerMonitorPeriod",                   j, noUse_isEmptyFlag);
+-
+         JsonDeserialize(configerEanbleMonitor,                   "G_configerEanbleMonitor",                   j, noUse_isEmptyFlag);
++        JsonDeserialize(clientConfigerRadarMonitor,              "H_clientConfigerRadarMonitor",                   j, noUse_isEmptyFlag);
+     }
+ 
+ public:
+@@ -194,8 +262,11 @@ public:
+         ss << std::left << std::setw(40) << "E_needFilePathConfiger: " << needFilePathConfiger.to_string() <<  std::endl;
+         ss << std::left << std::setw(40) << "F_configerMonitorPeriod: " << configerMonitorPeriod.to_string() <<  std::endl;
+         ss << std::left << std::setw(40) << "G_configerEanbleMonitor: " << configerEanbleMonitor.to_string() <<  std::endl;
++        ss << std::left << std::setw(40) << "H_clientConfigerRadarMonitor: " << clientConfigerRadarMonitor.to_string() <<  std::endl;
+         return ss.str();
+     }
+ };
++
++
+ NAMESPACE_ENDED_OM_COMPONENT_MONITOR
+ #endif //AIROS2_0_CONFIGER_OM_CAMERA_H
+diff --git a/middleware/protocol/om_monitor/data_model/data_common.h b/middleware/protocol/om_monitor/data_model/data_common.h
+index 28a8a59..8be213b 100644
+--- a/middleware/protocol/om_monitor/data_model/data_common.h
++++ b/middleware/protocol/om_monitor/data_model/data_common.h
+@@ -27,6 +27,7 @@ enum QUERY_MSG_TAG
+     QUARY_TAG_DOCKER_STA = 3011,
+     QUARY_TAG_AIROS_STA = 3012,
+     QUARY_TAG_SENSOR_DATA_STA = 3021,
++    QUARY_TAG_RADAR_CLOUD_DATA_STA = 3023,
+     QUARY_TAG_CAMERA_PATAM_STA = 3032,
+ };
+ 
+diff --git a/middleware/protocol/om_monitor/data_model/data_radar_cloud_status.h b/middleware/protocol/om_monitor/data_model/data_radar_cloud_status.h
+new file mode 100644
+index 0000000..1cf2c25
+--- /dev/null
++++ b/middleware/protocol/om_monitor/data_model/data_radar_cloud_status.h
+@@ -0,0 +1,153 @@
++/*********************************************************************************
++ * @file		alarm_management_data.h
++ * @brief		alarm_management_data belongs to CICTCI
++ * @details		
++ * @author		alfred
++ * @email       zhangenwei64@gmail.com
++ * @date		24-4-19
++ * @copyright	Copyright (c) 2024 Mec-Airos Division.
++ * @verbatim
++ *
++ *  Change History:
++ *  Date      Author    Version  ChangeId           Description
++ *  ------------------------------------------------------------------------------
++ *  	24-4-19  alfred       1.0       ————             Create this file
++ *
++ * @endverbatim
++ ********************************************************************************/
++
++#ifndef MQTT_CLIENT_MEC_OM_MONITOR_DATA_RADAR_CLOUD_STATUS_H
++#define MQTT_CLIENT_MEC_OM_MONITOR_DATA_RADAR_CLOUD_STATUS_H
++#include "middleware/protocol/om_common/namespace.h"
++#include "middleware/protocol/om_common/data_model/data_common.h"
++
++NAMESPACE_START_OM_COMPONENT_MONITOR
++using namespace afl::base;
++using namespace os::v2x::protocol::om::common;
++struct MecCloudStatus: public afl::base::SerializableData
++{
++    bool con_flag;                            //信控上云模块连接云控是否正常，true：连接正常，false：连接不正常
++    bool dynamic_up_flag;                     //是否有动态数据发送给云控，true：是，false：否
++    bool v2x_up_flag;                        //是否有V2X指标数据发送给云控，true：是，false：否
++
++    // 序列化函数
++    void serialize(json &j) override {
++        JsonSerialize(con_flag,              "con_flag",              j, false);
++        JsonSerialize(dynamic_up_flag,       "dynamic_up_flag",       j, false);
++        JsonSerialize(v2x_up_flag,           "v2x_up_flag",           j, false);
++
++    }
++
++    // 反序列化函数
++    void deserialize(const json &j) override {
++        JsonDeserialize(con_flag,              "con_flag",                     j, noUse_isEmptyFlag);
++        JsonDeserialize(dynamic_up_flag,       "dynamic_up_flag",              j, noUse_isEmptyFlag);
++        JsonDeserialize(v2x_up_flag,           "v2x_up_flag",                  j, noUse_isEmptyFlag);
++    }
++
++    // 转换为字符串
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "con_flag: "         << (con_flag ? "true" : "false") << std::endl;
++        ss << std::left << std::setw(40) << "dynamic_up_flag: "         << (dynamic_up_flag ? "true" : "false") << std::endl;
++        ss << std::left << std::setw(40) << "v2x_up_flag: "         << (v2x_up_flag ? "true" : "false") << std::endl;
++        return ss.str();
++    }
++};
++
++struct MecRadarDynamicData : public afl::base::SerializableData {
++    std::string device_id;                           // 雷达设备esn
++    bool dynamic_up_flag;                            // MEC接收雷达动态信控数据是否成功，true:成功，false：失败
++
++    // 序列化函数
++    virtual void serialize(json &j) override {
++        JsonSerialize(device_id,                    "device_id",                    j, false);
++        JsonSerialize(dynamic_up_flag,                  "dynamic_up_flag",                  j, false);
++    }
++
++    // 反序列化函数
++    virtual void deserialize(const json &j) override {
++        JsonDeserialize(device_id,                    "device_id",                    j, noUse_isEmptyFlag);
++        JsonDeserialize(dynamic_up_flag,                  "dynamic_up_flag",                  j, noUse_isEmptyFlag);
++    }
++
++    // 转换为字符串
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "device_id: "                      << device_id << std::endl;
++        ss << std::left << std::setw(40) << "dynamic_up_flag: "                   << dynamic_up_flag << std::endl;
++        return ss.str();
++    }
++};
++
++struct MecRadarCloudStatusData : public afl::base::SerializableData {
++    MecCloudStatus mec_cloud_status;                // MEC与云的状态
++    bool mec_radars_v2x_in_flag;                    // MEC接收雷达指标数据是否成功，true:成功，false：失败
++    std::vector<struct MecRadarDynamicData> mec_radars_dynamic_data; // MEC与各雷达的动态数据传输状态
++
++    // 序列化函数
++    virtual void serialize(json &j) override {
++        JsonSerialize(mec_cloud_status,                        "mec_cloud_status",                        j, false);
++        JsonSerialize(mec_radars_v2x_in_flag,                  "mec_radars_v2x_in_flag",                    j, false);
++        JsonSerialize(mec_radars_dynamic_data,                 "mec_radars_dynamic_data",                  j, false);
++    }
++
++    // 反序列化函数
++    virtual void deserialize(const json &j) override {
++        JsonDeserialize(mec_cloud_status,                        "mec_cloud_status",                        j, noUse_isEmptyFlag);
++        JsonDeserialize(mec_radars_v2x_in_flag,                  "mec_radars_v2x_in_flag",                    j, noUse_isEmptyFlag);
++        JsonDeserialize(mec_radars_dynamic_data,                 "mec_radars_dynamic_data",                  j, noUse_isEmptyFlag);
++    }
++
++    // 转换为字符串
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "mec_cloud_status: "                         << mec_cloud_status.to_string() << std::endl;
++        ss << std::left << std::setw(40) << "mec_radars_v2x_in_flag: "                      << mec_radars_v2x_in_flag << std::endl;
++        ss << std::left << std::setw(40) << "mec_radars_dynamic_data: "  << std::endl;
++        for(auto dynamic_data : mec_radars_dynamic_data)
++        {
++            ss << std::left << std::setw(40) << "dynamic_data: " << dynamic_data.to_string() << std::endl;
++        }
++        return ss.str();
++    }
++};
++
++struct MecRadarCloudStatus : public afl::base::SerializableData {
++    QUERY_MSG_TAG tag;                             // 接口号
++    std::string seqnum;                            // 32位不重复的随机数
++    uint64_t timestamp;                            // utc时间戳，毫秒
++    std::string device_esn;                        // 设备esn号
++    MecRadarCloudStatusData data;                  // 消息结构
++
++    // 序列化函数
++    virtual void serialize(json &j) override {
++        JsonSerialize(tag,                        "tag",                        j, false);
++        JsonSerialize(seqnum,                    "seqnum",                    j, false);
++        JsonSerialize(timestamp,                  "timestamp",                  j, false);
++        JsonSerialize(device_esn,                 "device_esn",                 j, false);
++        JsonSerialize(data,                 "data",                 j, false);
++    }
++
++    // 反序列化函数
++    virtual void deserialize(const json &j) override {
++        JsonDeserialize(tag,                        "tag",                        j, noUse_isEmptyFlag);
++        JsonDeserialize(seqnum,                    "seqnum",                    j, noUse_isEmptyFlag);
++        JsonDeserialize(timestamp,                  "timestamp",                  j, noUse_isEmptyFlag);
++        JsonDeserialize(device_esn,                 "device_esn",                 j, noUse_isEmptyFlag);
++        JsonDeserialize(data,                 "data",                 j, noUse_isEmptyFlag);
++    }
++
++    // 转换为字符串
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "tag: "                         << tag << std::endl;
++        ss << std::left << std::setw(40) << "seqnum: "                      << seqnum << std::endl;
++        ss << std::left << std::setw(40) << "timestamp: "                   << timestamp << std::endl;
++        ss << std::left << std::setw(40) << "device_esn: "                  << device_esn << std::endl;
++        ss << std::left << std::setw(40) << "data: "                  << data.to_string() << std::endl;
++        return ss.str();
++    }
++};
++NAMESPACE_ENDED_OM_COMPONENT_MONITOR
++#endif //NCS_MEC_ALARM_MANAGEMENT_DATA_H
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.cc b/middleware/protocol/om_monitor/om_monitor_component.cc
+index 7fbe6c7..244d5e7 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.cc
++++ b/middleware/protocol/om_monitor/om_monitor_component.cc
+@@ -77,6 +77,27 @@ bool OM_MONITOR_COMPONENT::Proc(const std::shared_ptr<const  airos::usecase::Eve
+         }
+     }
+ 
++    if (recv_data->has_mec_radar_cloud_status())
++    {
++        if(!getConfiger().configerEanbleMonitor.Enable_MonitorMecRadarCloudData)
++        {
++            return false;
++        }
++
++        try
++        {
++            const auto& mec_radar_cloud_status = recv_data->mec_radar_cloud_status();
++            m_MecCloudStatusData.mec_cloud_status.con_flag = mec_radar_cloud_status.radar_cloud_con_flag();
++            m_MecCloudStatusData.mec_cloud_status.v2x_up_flag = mec_radar_cloud_status.v2x_up_flag();
++            m_MecCloudStatusData.mec_cloud_status.dynamic_up_flag = mec_radar_cloud_status.dynamic_data_up_flag();
++        }
++        catch (...)
++        {
++            OM_MONITOR_ERROR_PRINT << "[error]" << "parse protobuf failure!";
++            return false;
++        }
++    }
++
+    return true;
+ }
+ 
+@@ -102,6 +123,13 @@ bool OM_MONITOR_COMPONENT::getWorkParamFromFile()
+ void OM_MONITOR_COMPONENT::doBaiscWork()
+ {
+     getWorkParamFromFile();
++
++    // mqtt配置
++    getMqttConfigerMsg();
++    if (!mqttInit())
++    {
++        OM_MONITOR_DEBUG_PRINT << "[error]mqttInit failure! ignore!";
++    }
+ }
+ bool contains(const std::vector<std::string>& vec, const std::string& str)
+ {
+@@ -160,6 +188,14 @@ void OM_MONITOR_COMPONENT::monitorEventloopRunning()
+                 m_MonitorAirosModulesStatus = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_query_airos_modules_status, this),
+                                                               getConfiger().configerMonitorPeriod.periodMonitorAirosModulesStatus, true);
+             }
++
++            if(getConfiger().configerEanbleMonitor.Enable_MonitorMecRadarCloudData)
++            {
++                m_MonitorMecRadarCloudStatus = m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::period_discard_radar_cloud_data_status, this),
++                                                              getConfiger().configerMonitorPeriod.periodMonitorMecRadarCloudStatus, true);
++
++            }
++
+             if(m_EventloopIsRunning > 0)
+             {
+                 m_Eventloop->cancelTimer(m_EventloopIsRunning);
+@@ -216,6 +252,9 @@ void OM_MONITOR_COMPONENT::readUdpData()
+             case QUARY_TAG_SENSOR_DATA_STA: //3021
+                 process_query_sensor_data_status(m_ClientAddr, j);
+                 break;
++            case QUARY_TAG_RADAR_CLOUD_DATA_STA: //3023
++                process_query_radar_cloud_data_status(m_ClientAddr, j);
++                break;
+             default:
+                 break;
+         }
+@@ -375,7 +414,7 @@ bool OM_MONITOR_COMPONENT::process_query_docker_status(struct sockaddr_in client
+     return true;
+ 
+ }
+-bool OM_MONITOR_COMPONENT::period_query_docker_status_once()
++void OM_MONITOR_COMPONENT::period_query_docker_status_once()
+ {
+     if(m_MonitorDockerStatusOnceCount == 4)
+     {
+@@ -500,7 +539,7 @@ bool OM_MONITOR_COMPONENT::period_query_docker_status()
+ 
+ }
+ 
+-bool OM_MONITOR_COMPONENT::period_query_airos_modules_status_once()
++void OM_MONITOR_COMPONENT::period_query_airos_modules_status_once()
+ {
+     if(m_MonitorAirosMOdulesStatusOnceCount == 4)
+     {
+@@ -551,57 +590,88 @@ bool OM_MONITOR_COMPONENT::period_query_airos_modules_status()
+         retryCount++;
+     }
+ 
+-
+-    for (const auto &processInfo : airosProcessInfos)
+-    {
+-
+-        OM_MONITOR_DEBUG_PRINT << "[pid]" << processInfo.pid
+-                               << "[cpu]" << processInfo.cpu
+-                               << "[mem]" << processInfo.mem
+-                               << "[moudle_name]" << processInfo.moudle_name;
+-
+-        AirosMoudlesData airosMoudlesData;
+-        airosMoudlesData.moudle_pid = std::to_string(processInfo.pid);
+-        airosMoudlesData.module_cpu = processInfo.cpu;
+-        airosMoudlesData.module_mem = processInfo.mem;
+-        airosMoudlesData.module_name = processInfo.moudle_name;
+-        airosStatus.data.modules_head.push_back(airosMoudlesData);
+-    }
+-    std::string commandLaunchPs = "launch ps";
+-    std::vector<ProcessMoudlesNeedInfo> airosProcessMoudlesNeedInfos = getModulesNeedInfo(commandLaunchPs);
+-    std::vector<string> airosNowRunningModules;
+-    for(auto nowModule:airosProcessMoudlesNeedInfos)
++    if(!cmdExecFlag)
+     {
+-        airosNowRunningModules.push_back(nowModule.moudle_name);
++        OM_MONITOR_ERROR_PRINT << "[error]reboot device failure!";
++        return false;
+     }
+-    for(auto module: m_AirosNeedRunModules)
++    else
+     {
+-        airosStatus.data.moudles_need_run.append(module);
+-        airosStatus.data.moudles_need_run.append("|");
+-        if(contains(airosNowRunningModules, module))
++        for (const auto &processInfo : airosProcessInfos)
+         {
+-            airosStatus.data.modules_now_run.append(module);
+-            airosStatus.data.modules_now_run.append("|");
++
++            OM_MONITOR_DEBUG_PRINT << "[pid]" << processInfo.pid
++                                << "[cpu]" << processInfo.cpu
++                                << "[mem]" << processInfo.mem
++                                << "[moudle_name]" << processInfo.moudle_name;
++
++            AirosMoudlesData airosMoudlesData;
++            airosMoudlesData.moudle_pid = std::to_string(processInfo.pid);
++            airosMoudlesData.module_cpu = processInfo.cpu;
++            airosMoudlesData.module_mem = processInfo.mem;
++            airosMoudlesData.module_name = processInfo.moudle_name;
++            airosStatus.data.modules_head.push_back(airosMoudlesData);
+         }
+-        else
++        std::string commandLaunchPs = "launch ps";
++        std::vector<ProcessMoudlesNeedInfo> airosProcessMoudlesNeedInfos = getModulesNeedInfo(commandLaunchPs);
++        std::vector<string> airosNowRunningModules;
++        for(auto nowModule:airosProcessMoudlesNeedInfos)
+         {
+-            airosStatus.data.modules_no_run.append(module);
+-            airosStatus.data.modules_no_run.append("|");
++            airosNowRunningModules.push_back(nowModule.moudle_name);
++        }
++        for(auto module: m_AirosNeedRunModules)
++        {
++            airosStatus.data.moudles_need_run.append(module);
++            airosStatus.data.moudles_need_run.append("|");
++            if(contains(airosNowRunningModules, module))
++            {
++                airosStatus.data.modules_now_run.append(module);
++                airosStatus.data.modules_now_run.append("|");
++            }
++            else
++            {
++                airosStatus.data.modules_no_run.append(module);
++                airosStatus.data.modules_no_run.append("|");
++            }
+         }
+-    }
+ 
+-    afl::base::json publishJson;
+-    try{
+-        publishJson = airosStatus;
+-        if(getConfiger().enableDebugPrint) {
+-            OM_MONITOR_DEBUG_PRINT << "[airosStatus]" << airosStatus.to_string();
++        afl::base::json publishJson;
++        try{
++            publishJson = airosStatus;
++            if(getConfiger().enableDebugPrint) {
++                OM_MONITOR_DEBUG_PRINT << "[airosStatus]" << airosStatus.to_string();
++            }
++            m_QueueAirosModulesStatus.push(publishJson);
++        }
++        catch (json::exception &e)
++        {
++            OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++            return false;
+         }
+-        m_QueueAirosModulesStatus.push(publishJson);
+     }
+-    catch (json::exception &e)
++
++    return true;
++}
++
++
++bool OM_MONITOR_COMPONENT::period_discard_radar_cloud_data_status()
++{
++    m_RradarsV2xInFlag.store(false);
++    std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
++    std::time_t fiveSecondsAgo = currentTime - 5;
++ 
++    std::lock_guard<std::mutex> lock(m_MapMutex);
++    auto it = m_RadarDynamicDataMap.begin();
++    while (it != m_RadarDynamicDataMap.end())
+     {
+-        OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
+-        return false;
++        if (it->second.first < fiveSecondsAgo)
++        {
++            it = m_RadarDynamicDataMap.erase(it); // 删除过时元素
++        } 
++        else 
++        {
++            ++it; // 继续检查下一个元素
++        }
+     }
+ 
+     return true;
+@@ -1005,4 +1075,325 @@ bool OM_MONITOR_COMPONENT::process_query_sensor_data_status(struct sockaddr_in c
+     return true;
+ }
+ 
++
++bool OM_MONITOR_COMPONENT::process_query_radar_cloud_data_status(struct sockaddr_in clientAddr,json& j)
++{
++    QueryData queryData;
++    try
++    {
++        queryData  = j;
++    }
++    catch(json::exception &e)
++    {
++        OM_MONITOR_ERROR_PRINT << "json par error " << e.what();
++        return false;
++    }
++    if(getConfiger().enableDebugPrint) {
++        OM_MONITOR_DEBUG_PRINT << "[rece-data]" << queryData.to_string();
++    }
++    if(queryData.tag != QUERY_MSG_TAG::QUARY_TAG_RADAR_CLOUD_DATA_STA)
++    {
++        OM_MONITOR_ERROR_PRINT << "tag error ";
++        return false;
++    }
++    if(queryData.device_esn != getConfiger().rscuEsn)
++    {
++        OM_MONITOR_ERROR_PRINT << "device-esn error! [query-esn]" << queryData.device_esn << "[rscuEsn]" << getConfiger().rscuEsn;
++        return false;
++    }
++
++    m_MecRadarCloudStatus.data.mec_radars_dynamic_data.clear();
++    m_MecRadarCloudStatus.tag = QUERY_MSG_TAG::QUARY_TAG_RADAR_CLOUD_DATA_STA;
++    m_MecRadarCloudStatus.seqnum = queryData.seqnum;
++    m_MecRadarCloudStatus.timestamp = afl::util::TimeStamp::now(true).millSeconds();
++    m_MecRadarCloudStatus.device_esn = getConfiger().rscuEsn;
++    auto tmp_MecCloudStatusData = m_MecCloudStatusData;
++    m_MecRadarCloudStatus.data.mec_cloud_status.con_flag = tmp_MecCloudStatusData.mec_cloud_status.con_flag;
++    m_MecRadarCloudStatus.data.mec_cloud_status.dynamic_up_flag = tmp_MecCloudStatusData.mec_cloud_status.dynamic_up_flag;
++    m_MecRadarCloudStatus.data.mec_cloud_status.v2x_up_flag = tmp_MecCloudStatusData.mec_cloud_status.v2x_up_flag;
++
++    m_MecRadarCloudStatus.data.mec_radars_v2x_in_flag = m_RradarsV2xInFlag.load();
++
++    auto tmp = m_RadarDynamicDataMap;
++    for(const auto& data : tmp)
++    {
++        struct MecRadarDynamicData dynamicData;
++        std::string fullPath = data.first;
++        OM_MONITOR_ERROR_PRINT << "111:"<<fullPath;
++        std::string esn = (fullPath.find_last_of('/') != std::string::npos && fullPath.find_last_of('/') + 1 < fullPath.size()) ? fullPath.substr(fullPath.find_last_of('/') + 1) : "";
++        dynamicData.device_id = esn;
++        dynamicData.dynamic_up_flag = true;
++        m_MecRadarCloudStatus.data.mec_radars_dynamic_data.push_back(dynamicData);
++    }
++
++    afl::base::json publishJson;
++    try{
++        publishJson = m_MecRadarCloudStatus;
++    }
++    catch (json::exception &e)
++    {
++        OM_MONITOR_ERROR_PRINT << "[what]" << e.what() << " [json-exception-id]" << e.id;
++        return false;
++    }
++
++    std::string msg = publishJson.dump();
++    if(getConfiger().enableDebugPrint) {
++        OM_MONITOR_DEBUG_PRINT << "[mec_radar_cloud][response]" << msg;
++    }
++    size_t slen = sendto(m_Udpfd, msg.c_str(), msg.size(), 0,
++                         (struct sockaddr*)&clientAddr, sizeof(clientAddr));
++    if (slen != msg.size())
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]send mec_radar_cloud msg error, reason:" << strerror(errno);
++        return false;
++    }
++    return true;
++}
++
++
++
++/////////////////////////////////////////////////////
++bool OM_MONITOR_COMPONENT::getMqttConfigerMsg()
++{
++    //订阅
++    memset(&m_MqttClientConfig.configerMqtt.mqttSubscribeTopics, 0, sizeof(m_MqttClientConfig.configerMqtt.mqttSubscribeTopics));
++    m_MqttClientConfig.configerMqtt.mqttRealSubscribeTopicNum = 0; // 1个指标数据 + 10个动态数据
++    m_MqttClientConfig.configerTopicCCIndex.Topic_Tc = getConfiger().clientConfigerRadarMonitor.configerTopicCCIndex.Topic_Tc;
++    m_MqttClientConfig.configerTopicCCIndex.Topic_Profix = getConfiger().clientConfigerRadarMonitor.configerTopicCCIndex.Topic_Profix + "#";
++    //
++    m_MqttClientConfig.configerMqtt.mqttSubscribeTopics[m_MqttClientConfig.configerMqtt.mqttRealSubscribeTopicNum++] = (char *) strdup(m_MqttClientConfig.configerTopicCCIndex.Topic_Tc.c_str());
++    m_MqttClientConfig.configerMqtt.mqttSubscribeTopics[m_MqttClientConfig.configerMqtt.mqttRealSubscribeTopicNum++] = (char *) strdup(m_MqttClientConfig.configerTopicCCIndex.Topic_Profix.c_str());
++    for (uint32_t i = 0; i < m_MqttClientConfig.configerMqtt.mqttRealSubscribeTopicNum; i++)
++    {
++        m_MqttClientConfig.configerMqtt.mqttSubscribeQoss[i] =  m_MqttClientConfig.configerMqtt.mqttSubScribeQos;
++        OM_MONITOR_DEBUG_PRINT << i << "      "<<m_MqttClientConfig.configerMqtt.mqttSubscribeTopics[i];
++    }
++    if(getConfiger().enableDebugPrint) {
++        OM_MONITOR_DEBUG_PRINT << "[configer]" << std::endl << m_MqttClientConfig.to_string().c_str();
++    }
++
++    return true;
++}
++
++
++
++bool OM_MONITOR_COMPONENT::mqttInitConnOpts()
++{
++    m_MqttConnOpts = MQTTAsync_connectOptions_initializer;
++    m_MqttConnOpts.connectTimeout = m_MqttClientConfig.configerMqtt.mqttConnectTimeOut;
++    m_MqttConnOpts.keepAliveInterval = m_MqttClientConfig.configerMqtt.mqttKeepAliveInterval;
++    m_MqttConnOpts.cleansession = m_MqttClientConfig.configerMqtt.mqttCleanSession;
++    m_MqttConnOpts.MQTTVersion = m_MqttClientConfig.configerMqtt.mqttVersion;
++    m_MqttConnOpts.username = m_MqttClientConfig.configerMqtt.mqttUserName.c_str();
++    m_MqttConnOpts.password = m_MqttClientConfig.configerMqtt.mqttPassword.c_str();
++    m_MqttConnOpts.onSuccess = mqttOnConnect;
++    m_MqttConnOpts.onFailure = mqttOnConnectFailure;
++    m_MqttConnOpts.context = this;
++
++    std::string sMqttCommunicationMethod = getConfiger().clientConfigerRadarMonitor.configerMqtt.mqttBrokerUrl;
++    OM_MONITOR_DEBUG_PRINT << " 111sMqttCommunicationMethod:"<<sMqttCommunicationMethod;
++    return true;
++}
++
++bool OM_MONITOR_COMPONENT::mqttInit()
++{
++    m_MqttClient = nullptr;
++    m_MqttConnected = false;
++
++    mqttInitConnOpts();
++    std::string clientIdTemp = m_MqttClientConfig.mqttClientId + ":" +
++                               std::to_string(afl::util::TimeStamp::now(true).microSeconds());
++    if(getConfiger().enableDebugPrint) {
++        OM_MONITOR_DEBUG_PRINT << "[mqttBroker-Url]" << m_MqttClientConfig.configerMqtt.mqttBrokerUrl.c_str()
++                            << " [client-id]" << clientIdTemp.c_str()
++                            << " [username]" << m_MqttClientConfig.configerMqtt.mqttUserName.c_str()
++                            << " [passwd]" << m_MqttClientConfig.configerMqtt.mqttPassword.c_str();
++    }
++    if (MQTTASYNC_SUCCESS != MQTTAsync_create(&m_MqttClient, m_MqttClientConfig.configerMqtt.mqttBrokerUrl.c_str(),
++                                              clientIdTemp.c_str(), MQTTCLIENT_PERSISTENCE_NONE, NULL))
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]create connectiont failure!";
++        return false;
++    }
++
++    MQTTAsync_setCallbacks(m_MqttClient, this, mqttConnlost, mqttSubscribeMsgArrvd, NULL);
++
++    if (!mqttConnect())
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]Connect Failure!";
++        return false;
++    }
++
++    return true;
++}
++
++void OM_MONITOR_COMPONENT::mqttDeinit()
++{
++    if (m_MqttClient)
++    {
++        MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
++        opts.onSuccess = mqttOnDisconnect;
++        opts.context = m_MqttClient;
++        MQTTAsync_disconnect(m_MqttClient, &opts);
++
++        int cnt = 0;
++        while (m_MqttConnected && (cnt < 30))
++        {
++            usleep(10000L);
++            cnt++;
++        }
++
++        MQTTAsync_destroy(&m_MqttClient);
++        m_MqttClient = nullptr;
++        m_MqttConnected = false;
++    }
++}
++
++void OM_MONITOR_COMPONENT::mqttOnConnect(void *context, MQTTAsync_successData *response)
++{
++    OM_MONITOR_ERROR_PRINT << "[sucess]connect sucess!";
++    auto thiz = (OM_MONITOR_COMPONENT *) context;
++    thiz->m_MqttConnected = true;
++    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
++    opts.onSuccess = mqttOnSubscribe;
++    opts.onFailure = mqttOnSubscribeFailure;
++    opts.context = thiz;
++
++
++    if(thiz->m_MqttClientConfig.configerMqtt.mqttRealSubscribeTopicNum > 0)
++    {
++        if (MQTTAsync_subscribeMany(thiz->m_MqttClient, thiz->m_MqttClientConfig.configerMqtt.mqttRealSubscribeTopicNum,
++                                    thiz->m_MqttClientConfig.configerMqtt.mqttSubscribeTopics,
++                                    thiz->m_MqttClientConfig.configerMqtt.mqttSubscribeQoss,
++                                    &opts) != MQTTASYNC_SUCCESS)
++        {
++            OM_MONITOR_ERROR_PRINT << "[error]subscribe error";
++        }
++    }
++}
++
++void OM_MONITOR_COMPONENT::mqttOnConnectFailure(void *context, MQTTAsync_failureData *response)
++{
++    if (response)
++    {
++        if (response->message)
++        {
++            OM_MONITOR_ERROR_PRINT << "[error]connect error [error-code]" << response->code << "[error-msg]" << response->message;
++        } else
++        {
++            OM_MONITOR_ERROR_PRINT << "[error]connect error [error-code]" << response->code << " [error-msg]" << response->message;
++        }
++    } else
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]connect error!";
++    }
++
++    auto thiz = (OM_MONITOR_COMPONENT *) context;
++    thiz->mqttReconnect();
++}
++
++
++bool OM_MONITOR_COMPONENT::mqttConnect()
++{
++    int rc;
++    if (MQTTASYNC_SUCCESS != (rc = MQTTAsync_connect(m_MqttClient, &m_MqttConnOpts)))
++    {
++        OM_MONITOR_ERROR_PRINT << "[error]connect error!";
++        m_MqttConnected = false;
++        return false;
++    }
++    return true;
++}
++
++bool OM_MONITOR_COMPONENT::mqttReconnect()
++{
++    OM_MONITOR_ERROR_PRINT << "[notice]mqtt reconnect!" << "mqttReconnectInterval" << m_MqttClientConfig.configerMqtt.mqttReconnectInterval;
++
++    m_Eventloop->addTimer(std::bind(&OM_MONITOR_COMPONENT::mqttConnect, this), m_MqttClientConfig.configerMqtt.mqttReconnectInterval, false);
++
++    return true;
++}
++
++void OM_MONITOR_COMPONENT::mqttConnlost(void *context, char *cause)
++{
++    auto thiz = (OM_MONITOR_COMPONENT *) context;
++    thiz->m_MqttConnected = false;
++    OM_MONITOR_ERROR_PRINT << "[error]connect lost! [cause]" << cause;
++    thiz->mqttReconnect();
++}
++
++void OM_MONITOR_COMPONENT::mqttOnDisconnect(void *context, MQTTAsync_successData *response)
++{
++    OM_MONITOR_ERROR_PRINT << "[notice]disconnect!";
++    auto thiz = (OM_MONITOR_COMPONENT *) context;
++    thiz->m_MqttConnected = false;
++}
++
++void OM_MONITOR_COMPONENT::mqttOnSubscribe(void *context, MQTTAsync_successData *response)
++{
++    OM_MONITOR_DEBUG_PRINT << "[sucess]" << "subscribe sucess!";
++}
++
++void OM_MONITOR_COMPONENT::mqttOnSubscribeFailure(void *context, MQTTAsync_failureData *response)
++{
++    OM_MONITOR_ERROR_PRINT << "[error]subscribe failure!";
++}
++
++std::mutex OM_MONITOR_COMPONENT::m_MapMutex;
++std::map<std::string,std::pair<long,std::string>> OM_MONITOR_COMPONENT::m_RadarDynamicDataMap;
++std::atomic<bool> OM_MONITOR_COMPONENT::m_RradarsV2xInFlag{false};
++int OM_MONITOR_COMPONENT::mqttSubscribeMsgArrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message)
++{
++    int ret = 1;
++    auto thiz = (OM_MONITOR_COMPONENT *) context;
++    if (message->payloadlen)
++    {
++        std::string topic(topicName, topicLen);
++        std::string topicProfix = topic.substr(0, topic.find("/"));
++        if(thiz->getConfiger().enableDebugPrint)
++        {
++            OM_MONITOR_DEBUG_PRINT << "radar >>>>>>> om_monitor[topic=" << topicName << "]" << " [payloadlen=" << message->payloadlen << "]";
++        }
++
++        if(topicProfix == "upload")
++        {
++            std::string topic(topicName, topicLen);
++            if (topic.size() <= 0)
++            {
++                OM_MONITOR_ERROR_PRINT << "[Inter][error]topic empty!";
++            }
++            else
++            {
++                m_RradarsV2xInFlag.store(true);
++            }
++        }
++        else if(topicProfix == "trafficMetrics")
++        {
++            std::string topic(topicName, topicLen);
++            if (topic.size() <= 0)
++            {
++                OM_MONITOR_ERROR_PRINT << "[Inter][error]topic empty!";
++            }
++            else
++            {
++                std::string msg((char*)message->payload, message->payloadlen);
++                auto now = std::chrono::system_clock::now();
++                std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
++                std::lock_guard<std::mutex> lock(m_MapMutex);
++                m_RadarDynamicDataMap[topic] = std::make_pair(now_time_t, msg);
++            }
++        }
++        else
++        {
++
++        }
++    }
++
++    MQTTAsync_freeMessage(&message);
++    MQTTAsync_free(topicName);
++
++    return ret;
++}
++
++
+ NAMESPACE_ENDED_OM_COMPONENT_MONITOR
+diff --git a/middleware/protocol/om_monitor/om_monitor_component.h b/middleware/protocol/om_monitor/om_monitor_component.h
+index 335bd8d..0106c09 100644
+--- a/middleware/protocol/om_monitor/om_monitor_component.h
++++ b/middleware/protocol/om_monitor/om_monitor_component.h
+@@ -15,6 +15,7 @@
+ #include "middleware/protocol/om_monitor/data_model/data_airos_status.h"
+ #include "middleware/protocol/om_monitor/data_model/data_docker_status.h"
+ #include "middleware/protocol/om_monitor/data_model/data_sensor_data_status.h"
++#include "middleware/protocol/om_monitor/data_model/data_radar_cloud_status.h"
+ NAMESPACE_START_OM_COMPONENT_MONITOR
+ #define OM_MONITOR_COMPONENT AIROS_COMPONENT_CLASS_NAME(OmMonitorComponent)
+ using namespace os::v2x::protocol;
+@@ -53,15 +54,39 @@ public:
+     bool getProcessInfo(std::string& command,  std::vector<ProcessInfo> &processes);
+     std::vector<ProcessMoudlesNeedInfo> getModulesNeedInfo(std::string& command);
+     bool period_query_docker_status();
+-    bool period_query_docker_status_once();
++    void period_query_docker_status_once();
+ 
+     bool period_query_airos_modules_status();
+-    bool period_query_airos_modules_status_once();
++    void period_query_airos_modules_status_once();
++
++    bool period_discard_radar_cloud_data_status();
++    bool process_query_radar_cloud_data_status(struct sockaddr_in clientAddr,json& j);
++
++private:
++    bool mqttInit();
++    void mqttDeinit();
++    bool mqttInitConnOpts();
++    bool mqttConnect();
++    bool mqttReconnect();
++    bool getMqttConfigerMsg();
++    static void mqttConnlost(void *context, char *cause);
++    static void mqttOnDisconnect(void *context, MQTTAsync_successData *response);
++    static void mqttOnConnect(void *context, MQTTAsync_successData *response);
++    static void mqttOnConnectFailure(void *context, MQTTAsync_failureData *response);
++    static void mqttOnSubscribe(void *context, MQTTAsync_successData *response);
++    static void mqttOnSubscribeFailure(void *context, MQTTAsync_failureData *response);
++    static int mqttSubscribeMsgArrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message);
++
+ private:
+     std::unique_ptr<std::thread>    m_Task;
+     /////////////////////////////////////////////////////////////
+     std::shared_ptr<afl::net::EventLoop>    m_Eventloop;
+     std::unique_ptr<afl::net::Channel>      m_UdpChnl;
++    MQTTAsync_connectOptions        m_MqttConnOpts;
++    MQTTAsync                       m_MqttClient;
++    bool                            m_MqttConnected = false;
++    MqttClientConfigerRadarMonitor 	       m_MqttClientConfig;
++
+     int m_Udpfd = -1;
+     int m_EventloopIsRunning = -1;
+     std::unique_ptr<afl::net::ByteBuffer> m_UdpBuffer;
+@@ -86,6 +111,14 @@ private:
+     int m_MonitorAirosModulesStatusOnce = -1;
+     int m_MonitorAirosMOdulesStatusOnceCount = 0;
+     FifoConcurrentQueue<json> m_QueueAirosModulesStatus;
++
++    int m_MonitorMecRadarCloudStatus = -1;
++    MecRadarCloudStatus m_MecRadarCloudStatus;
++    static std::atomic<bool> m_RradarsV2xInFlag;   // 缓存雷达有无发送指标数据状态
++    MecRadarCloudStatusData m_MecCloudStatusData;  // 缓存mec与云的信息
++
++    static std::mutex m_MapMutex;
++    static std::map<std::string,std::pair<long,std::string>> m_RadarDynamicDataMap; //(topic,(timestamp,data))
+ };
+ 
+ REGISTER_AIROS_COMPONENT_CLASS(OmMonitorComponent, airos::usecase::EventOutputResult);
+diff --git a/middleware/protocol/radar_cloud/radar_cloud_component.cc b/middleware/protocol/radar_cloud/radar_cloud_component.cc
+index 0117a83..27eaed3 100644
+--- a/middleware/protocol/radar_cloud/radar_cloud_component.cc
++++ b/middleware/protocol/radar_cloud/radar_cloud_component.cc
+@@ -35,9 +35,27 @@ bool RADAR_CLOUD_COMPONENT::Init()
+ bool RADAR_CLOUD_COMPONENT::initEventLoop()
+ {
+     m_Eventloop = std::make_shared<afl::net::EventLoop>();
++    
++    if(m_Eventloop)
++    {
++        m_timer_mec_radar_cloud_fd = m_Eventloop->addTimer(std::bind(&RADAR_CLOUD_COMPONENT::periodMonitorRadarCloudStatus, this), 5, true);
++    }
+     m_Eventloop->loop();
+     return true;
+ }
++
++void RADAR_CLOUD_COMPONENT::periodMonitorRadarCloudStatus()
++{
++    if(m_MECRadarCloudStatus)
++        m_MECRadarCloudStatus->Clear();
++    auto* mec_radar_cloud_status =  m_MECRadarCloudStatus->mutable_mec_radar_cloud_status();
++    mec_radar_cloud_status->set_radar_cloud_con_flag(this->m_MqttConnected);
++    mec_radar_cloud_status->set_v2x_up_flag(this->m_TcFlag);
++    mec_radar_cloud_status->set_dynamic_data_up_flag(this->m_TrafficMetrics_Flag);
++    
++    Send("/v2x/usecase/monitor", m_MECRadarCloudStatus);
++}
++
+ bool RADAR_CLOUD_COMPONENT::processTcChannelData()
+ {
+     auto reader = node_->CreateReader<os::v2x::device::CloudData>(
+@@ -55,6 +73,9 @@ bool RADAR_CLOUD_COMPONENT::processTrafficMetricsChannelData()
+ 
+ bool RADAR_CLOUD_COMPONENT::processTcChannelDataImpl(const std::shared_ptr<const  os::v2x::device::CloudData>& recv_data)
+ {
++    bool tc_data_flag = false;    // 用于判断是否有发送指标数据到云控
++    this->m_TcFlag = false;
++
+     if (!recv_data)
+     {
+         RADAR_CLOUD_ERROR_PRINT << "Received  channel failed!";
+@@ -110,7 +131,7 @@ bool RADAR_CLOUD_COMPONENT::processTcChannelDataImpl(const std::shared_ptr<const
+         // 根据消息计数判断是偶数还是奇数
+         if (message_count_tc_channel % 2 == 0) // 偶数
+         {
+-            m_Eventloop->runInLoop([this, topic, payload, hint, tis]()
++            m_Eventloop->runInLoop([this, topic, payload, hint, tis, &tc_data_flag]()
+            {
+                if (!this->mqttPushStringMsg2Broker(topic, payload, hint))
+                {
+@@ -122,12 +143,13 @@ bool RADAR_CLOUD_COMPONENT::processTcChannelDataImpl(const std::shared_ptr<const
+                    {
+                        RADAR_CLOUD_DEBUG_PRINT << "[sucess]Publish tc success! parse tc proto:" << std::endl << tis.DebugString();
+                    }
++                   tc_data_flag = true;
+                }
+            });
+         }
+         else // 奇数
+         {
+-            m_Eventloop->runInLoop([this, topic, payload, hint, tis]()
++            m_Eventloop->runInLoop([this, topic, payload, hint, tis, &tc_data_flag]()
+            {
+                if (!this->mqttPushStringMsg2Broker(topic, payload, hint))
+                {
+@@ -139,6 +161,7 @@ bool RADAR_CLOUD_COMPONENT::processTcChannelDataImpl(const std::shared_ptr<const
+                    {
+                        RADAR_CLOUD_DEBUG_PRINT << "[sucess]Publish tc success! parse tc proto:" << std::endl << tis.DebugString();
+                    }
++                   tc_data_flag = true;
+                }
+            });
+         }
+@@ -151,9 +174,15 @@ bool RADAR_CLOUD_COMPONENT::processTcChannelDataImpl(const std::shared_ptr<const
+             message_count_tc_channel++;
+         }
+     }
++    
++    // 更新标志位
++    this->m_TcFlag = tc_data_flag;
+ }
+ bool RADAR_CLOUD_COMPONENT::processTrafficMetricsChannelDataImpl(const std::shared_ptr<const  os::v2x::device::CloudData>& recv_data)
+ {
++    bool TrafficMetrics_data_flag = false;    // 用于判断是否有发送动态数据到云控
++    this->m_TrafficMetrics_Flag = false;
++
+     if (!recv_data)
+     {
+         RADAR_CLOUD_ERROR_PRINT << "Received  channel failed!";
+@@ -180,7 +209,7 @@ bool RADAR_CLOUD_COMPONENT::processTrafficMetricsChannelDataImpl(const std::shar
+         // 根据消息计数判断是偶数还是奇数
+         if (message_count_trafficMetrics_channel % 2 == 0) // 偶数
+         {
+-            m_Eventloop->runInLoop([this, topic, payload, hint]()
++            m_Eventloop->runInLoop([this, topic, payload, hint, &TrafficMetrics_data_flag]()
+            {
+                if (!this->mqttPushStringMsg2Broker(topic, payload, hint))
+                {
+@@ -192,12 +221,13 @@ bool RADAR_CLOUD_COMPONENT::processTrafficMetricsChannelDataImpl(const std::shar
+                    {
+                        RADAR_CLOUD_DEBUG_PRINT << "[sucess]Publish success!";
+                    }
++                   TrafficMetrics_data_flag = true;
+                }
+            });
+         }
+         else // 奇数
+         {
+-            m_Eventloop->runInLoop([this, topic, payload, hint]()
++            m_Eventloop->runInLoop([this, topic, payload, hint, &TrafficMetrics_data_flag]()
+            {
+                if (!this->mqttPushStringMsg2Broker(topic, payload, hint))
+                {
+@@ -209,6 +239,7 @@ bool RADAR_CLOUD_COMPONENT::processTrafficMetricsChannelDataImpl(const std::shar
+                    {
+                        RADAR_CLOUD_DEBUG_PRINT << "[sucess]Publish success!";
+                    }
++                   TrafficMetrics_data_flag = true;
+                }
+            });
+         }
+@@ -221,6 +252,8 @@ bool RADAR_CLOUD_COMPONENT::processTrafficMetricsChannelDataImpl(const std::shar
+             message_count_trafficMetrics_channel++;
+         }
+     }
++    // 更新标志位
++    this->m_TrafficMetrics_Flag = m_TrafficMetrics_Flag;
+ }
+ bool RADAR_CLOUD_COMPONENT::Proc(const std::shared_ptr<const  os::v2x::device::CloudData>& recv_data)
+ {
+diff --git a/middleware/protocol/radar_cloud/radar_cloud_component.h b/middleware/protocol/radar_cloud/radar_cloud_component.h
+index 085c75e..9418372 100644
+--- a/middleware/protocol/radar_cloud/radar_cloud_component.h
++++ b/middleware/protocol/radar_cloud/radar_cloud_component.h
+@@ -44,6 +44,7 @@ public:
+     RADAR_CLOUD_COMPONENT() : Configurable<MqttClientConfigerRadarCloud>(MODULE_NAME, MODULE_CONFIG_DIR, MODULE_CFG_NAME)
+     {
+         m_CloudDataPtr = std::make_shared<os::v2x::device::CloudData>();
++        m_MECRadarCloudStatus = std::make_shared<airos::usecase::EventOutputResult>();
+     };
+ 
+     virtual ~RADAR_CLOUD_COMPONENT() override
+@@ -128,6 +129,7 @@ private:
+         return true;
+     }
+ 
++    void periodMonitorRadarCloudStatus();
+ private:
+     std::unique_ptr<std::thread>    m_Task;
+ 
+@@ -145,9 +147,13 @@ private:
+     MQTTAsync_connectOptions        m_MqttConnOpts;
+     MQTTAsync                       m_MqttClient;
+     bool                            m_MqttConnected = false;
++    bool                            m_TcFlag = false;
++    bool                            m_TrafficMetrics_Flag = false;
+     MqttClientConfigerRadarCloud 	            m_MqttClientConfig;
+     uint64_t m_MqttReconnectCount = 0;
+     std::shared_ptr <os::v2x::device::CloudData> m_CloudDataPtr = nullptr;
++    std::shared_ptr <airos::usecase::EventOutputResult> m_MECRadarCloudStatus = nullptr;
++    int m_timer_mec_radar_cloud_fd = -1;
+     bool m_HasSendOnce = false;
+ 	int    m_ConfigeUpdateTimer = -1;
+ 
+

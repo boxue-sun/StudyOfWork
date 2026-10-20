@@ -1,0 +1,1836 @@
+# 作者: root
+# 提交数: 14
+# 来源: 193 机 /work/sunboxue/airos2.0 (--all)
+
+@@@C	root	0ee3e4c79b492e3ea61992c0baffee3c4e08024b	2026-09-02	feat(traffic_light): 支持通过工参表配置信号机 local_port
+diff --git a/base/work_param/configer_om_work_param.h b/base/work_param/configer_om_work_param.h
+index 95cc689..6e941b6 100644
+--- a/base/work_param/configer_om_work_param.h
++++ b/base/work_param/configer_om_work_param.h
+@@ -653,8 +653,60 @@ public:
+ //        ss << std::left << std::setw(40) << "httpPath:" << httpPath << std::endl;
+         return ss.str();
+     }
++
++    bool operator<(const CameraEventParamConfiger& other) const {
++        return std::tie(tcpIp, tcpPort) <
++               std::tie(other.tcpIp, other.tcpPort);
++    }
+ };
+ 
++struct TrafficLightParamConfiger : public afl::base::SerializableData
++{
++public:
++    std::string serverIp = "127.0.0.1";
++    int serverPort = 10023;
++    std::string peerIp = "127.0.0.1";
++    int peerPort = 50807;
++    int localPort  =  10050;
++
++private:
++    virtual void serialize(json &j) override
++    {
++        JsonSerialize(serverIp, "A_serverIp", j, false);
++        JsonSerialize(serverPort, "B_serverPort", j, false);
++        JsonSerialize(peerIp, "C_peerIp", j, false);
++        JsonSerialize(peerPort, "D_peerPort", j, false);
++        JsonSerialize(localPort, "E_localPort", j, false);
++        
++    }
++
++    virtual void deserialize(const json &j) override
++    {
++        JsonDeserialize(serverIp, "A_serverIp", j, noUse_isEmptyFlag);
++        JsonDeserialize(serverPort, "B_serverPort", j, noUse_isEmptyFlag);
++        JsonDeserialize(peerIp, "C_peerIp", j, noUse_isEmptyFlag);
++        JsonDeserialize(peerPort, "D_peerPort", j, noUse_isEmptyFlag);
++        JsonDeserialize(localPort, "E_localPort", j, noUse_isEmptyFlag);
++    }
++
++public:
++    std::string to_string() const {
++        std::stringstream ss;
++        ss << std::left << std::setw(40) << "serverIp:" << serverIp << std::endl;
++        ss << std::left << std::setw(40) << "serverPort:" << serverPort << std::endl;
++        ss << std::left << std::setw(40) << "peerIp:" << peerIp << std::endl;
++        ss << std::left << std::setw(40) << "peerPort:" << peerPort << std::endl;
++        ss << std::left << std::setw(40) << "localPort:" << localPort << std::endl;
++        return ss.str();
++    }
++
++    bool operator<(const TrafficLightParamConfiger& other) const {
++        return std::tie(serverIp, serverPort, peerIp, peerPort, localPort) <
++               std::tie(other.serverIp, other.serverPort, other.peerIp, other.peerPort, other.localPort);
++    }
++};
++
++
+ struct RadarStaticHttpConfiger : public afl::base::SerializableData
+ {
+     //本机作为server
+@@ -718,6 +770,7 @@ public:
+     CCInexWorkParam ccInexWorkParam;
+     OmPtpLogParamConfiger omPtpLogParamConfiger;
+     CameraEventParamConfiger cameraEventParamConfiger;
++    TrafficLightParamConfiger trafficLightParamConfiger;
+ //    RadarStaticHttpConfiger radarStaticHttpConfiger;
+ private:
+     virtual void serialize(json &j) override
+@@ -729,7 +782,8 @@ private:
+         JsonSerialize(ccInexWorkParam, "E_ccInexWorkParam", j, false);
+         JsonSerialize(omPtpLogParamConfiger, "F_ptpLogParam", j, false);
+         JsonSerialize(cameraEventParamConfiger, "G_cameraEventParam", j, false);
+-//        JsonSerialize(radarStaticHttpConfiger, "H_radarStaticHttpConfiger", j, false);
++        JsonSerialize(trafficLightParamConfiger, "H_trafficLightParam", j, false);
++        //        JsonSerialize(radarStaticHttpConfiger, "H_radarStaticHttpConfiger", j, false);
+     }
+ 
+     virtual void deserialize(const json &j) override
+@@ -741,7 +795,8 @@ private:
+         JsonDeserialize(ccInexWorkParam, "E_ccInexWorkParam", j, noUse_isEmptyFlag);
+         JsonDeserialize(omPtpLogParamConfiger, "F_ptpLogParam", j, noUse_isEmptyFlag);
+         JsonDeserialize(cameraEventParamConfiger, "G_cameraEventParam", j, noUse_isEmptyFlag);
+-//        JsonDeserialize(radarStaticHttpConfiger, "H_radarStaticHttpConfiger", j, noUse_isEmptyFlag);
++        JsonDeserialize(trafficLightParamConfiger, "H_trafficLightParam", j, noUse_isEmptyFlag);
++        //        JsonDeserialize(radarStaticHttpConfiger, "H_radarStaticHttpConfiger", j, noUse_isEmptyFlag);
+     }
+ 
+ public:
+@@ -764,13 +819,14 @@ public:
+         ss << ccInexWorkParam.to_string() << std::endl;
+         ss << std::left << std::setw(40) << "OmPtpLogParamConfiger:" << omPtpLogParamConfiger.to_string()<< std::endl;
+         ss << std::left << std::setw(40) << "cameraEventParamConfiger:" << cameraEventParamConfiger.to_string()<< std::endl;
+-//        ss << std::left << std::setw(40) << "radarStaticHttpConfiger:" << radarStaticHttpConfiger.to_string()<< std::endl;
++        ss << std::left << std::setw(40) << "trafficLightParamConfiger:" << trafficLightParamConfiger.to_string()<< std::endl;
++        //        ss << std::left << std::setw(40) << "radarStaticHttpConfiger:" << radarStaticHttpConfiger.to_string()<< std::endl;
+         return ss.str();
+     }
+     bool operator<(const OmWorkParamConfiger& other) const {
+-        return std::tie(hasedInit, mecDeviceWorkParam, sensorDeviceNum, sensorDeviceWorkParamList, ccInexWorkParam, omPtpLogParamConfiger) <
++        return std::tie(hasedInit, mecDeviceWorkParam, sensorDeviceNum, sensorDeviceWorkParamList, ccInexWorkParam, omPtpLogParamConfiger, cameraEventParamConfiger, trafficLightParamConfiger) <
+                std::tie(other.hasedInit, other.mecDeviceWorkParam, other.sensorDeviceNum, other.sensorDeviceWorkParamList,
+-                        other.ccInexWorkParam, other.omPtpLogParamConfiger);
++                        other.ccInexWorkParam, other.omPtpLogParamConfiger, other.cameraEventParamConfiger, other.trafficLightParamConfiger);
+     }
+ };
+ 
+diff --git a/middleware/device_service/framework/traffic_light/traffic_light_component.cc b/middleware/device_service/framework/traffic_light/traffic_light_component.cc
+index c6b413e..75b62f8 100644
+--- a/middleware/device_service/framework/traffic_light/traffic_light_component.cc
++++ b/middleware/device_service/framework/traffic_light/traffic_light_component.cc
+@@ -44,6 +44,7 @@ bool AIROS_COMPONENT_CLASS_NAME(TrafficLightComponent)::Init() {
+     exit(1);
+   }
+ #endif
++  WriteBackFromCommParam();
+ 
+   if (!LoadConfig(&conf_)) {
+     TRAFFIC_LIFGT_SERVICE_LOG_ERROR << "load component proto config error";
+@@ -186,6 +187,33 @@ void AIROS_COMPONENT_CLASS_NAME(TrafficLightComponent)::CallBack(
+     }
+ }
+ 
++void AIROS_COMPONENT_CLASS_NAME(TrafficLightComponent)::WriteBackFromCommParam() {
++  auto omWorkParamConfiger =
++      airos::base::workparam::WorkParam::getWorkParamFromFile();
++
++  std::string filePath = "/home/airos/param/device/traffic_light/gat_device/device.yaml";
++
++  YAML::Node config = YAML::LoadFile(filePath);
++  config["ip"] = omWorkParamConfiger.trafficLightParamConfiger.serverIp;
++  config["port"] = omWorkParamConfiger.trafficLightParamConfiger.serverPort;
++  config["local_port"] = omWorkParamConfiger.trafficLightParamConfiger.localPort;
++  if (config["peerAddresslist"] && config["peerAddresslist"].size() > 0) {
++    config["peerAddresslist"][0]["peer_ip"] = omWorkParamConfiger.trafficLightParamConfiger.peerIp;
++    config["peerAddresslist"][0]["peer_port"] = omWorkParamConfiger.trafficLightParamConfiger.peerPort;
++  }
++
++  std::ofstream fout(filePath);
++  fout << config;
++  TRAFFIC_LIFGT_SERVICE_LOG_INFO << "TrafficLight server ip: " << config["ip"]
++        << ", port: " << config["port"]
++        << ", local_port: " << config["local_port"]
++        << ", peer ip: " << config["peerAddresslist"][0]["peer_ip"]
++        << ", peer port: " << config["peerAddresslist"][0]["peer_port"];
++  TRAFFIC_LIFGT_SERVICE_LOG_INFO << "TrafficLight configuration updated and saved to " << filePath;
++}
++
++
++
+ }  // namespace device
+ }  // namespace v2x
+ }  // namespace os
+diff --git a/middleware/device_service/framework/traffic_light/traffic_light_component.h b/middleware/device_service/framework/traffic_light/traffic_light_component.h
+index ecf542d..4eb6e11 100644
+--- a/middleware/device_service/framework/traffic_light/traffic_light_component.h
++++ b/middleware/device_service/framework/traffic_light/traffic_light_component.h
+@@ -52,7 +52,7 @@ class AIROS_COMPONENT_CLASS_NAME(TrafficLightComponent)
+       const std::shared_ptr<const os::v2x::device::CloudData>& data);
+   void OnRadarStatisticData(
+       const std::shared_ptr<const os::v2x::device::CloudData>& data);
+-
++  void WriteBackFromCommParam();
+  private:
+   std::unique_ptr<TrafficLightDevice> device_;
+   std::unique_ptr<std::thread> task_;
+
+@@@C	root	0c0e685dacb092d5941197110593b1ea42b2eba9	2026-08-27	fix:mem-total mem-used mem-free 修复单位为B
+diff --git a/middleware/protocol/om_common/performence_utils.cc b/middleware/protocol/om_common/performence_utils.cc
+index dd79282..3274371 100644
+--- a/middleware/protocol/om_common/performence_utils.cc
++++ b/middleware/protocol/om_common/performence_utils.cc
+@@ -705,9 +705,9 @@ bool PerformenceUtils::getMemInfo(MemInfo &memInfo)
+     memInfo.used = (double) usedMem * ByteUnit;
+     memInfo.free = (double) availableMem * ByteUnit;
+     if(printInfo) {
+-        ss << std::left << std::setw(20) << "mem-total:" << memInfo.total << "MB" << std::endl;
+-        ss << std::left << std::setw(20) << "mem-used:" << memInfo.used << "MB" << std::endl;
+-        ss << std::left << std::setw(20) << "mem-free:" << memInfo.free << "MB" << std::endl;
++        ss << std::left << std::setw(20) << "mem-total:" << memInfo.total << "B" << std::endl;
++        ss << std::left << std::setw(20) << "mem-used:" << memInfo.used << "B" << std::endl;
++        ss << std::left << std::setw(20) << "mem-free:" << memInfo.free << "B" << std::endl;
+ 
+         // 输出到标准输出
+         OM_DS_DEBUG_PRINT << ss.str() ;
+
+@@@C	root	8f1db57d3f0c1eb73dbb02e138647287d3d2fbd6	2026-08-19	Merge branch 'optimization' of http://10.255.10.29/cv2x_application/airos2.0 into optimization
+
+
+@@@C	root	f6c59f313dccf759a3ad8b337c7ff0b198199096	2026-08-19	feat: 增加GPU load、temp、smem、pmen、uti获取功能 修改了dokcer中的配置：增加了挂载和镜像文件
+diff --git a/docker/scripts/docker_start.sh b/docker/scripts/docker_start.sh
+index 4976b41..4733642 100755
+--- a/docker/scripts/docker_start.sh
++++ b/docker/scripts/docker_start.sh
+@@ -19,7 +19,8 @@ readonly CONFIG_DOCKER_IMG_REPO_AARCH64="cictci/airos"
+ # readonly CONFIG_DOCKER_IMG_REPO_AARCH64="registry.baidubce.com/zhiluos/airos"
+ readonly CONFIG_DOCKER_IMG_REPO="registry.baidubce.com/zhiluos/airos"
+ readonly CONFIG_DOCKER_IMG_VERSION_X86_64="dev-amd64-20231208"
+-readonly CONFIG_DOCKER_IMG_VERSION_AARCH64="dev-arm64-20240710-inter"
++readonly CONFIG_DOCKER_IMG_VERSION_AARCH64="airos_2_0_test_platform_202606251743"
++#readonly CONFIG_DOCKER_IMG_VERSION_AARCH64="dev-arm64-20240710-inter"
+ # readonly CONFIG_DOCKER_IMG_VERSION_AARCH64="dev-arm64-20240605"
+ # readonly CONFIG_DOCKER_IMG_VERSION_AARCH64="dev-arm64-20240625"
+ readonly CONFIG_DOCKER_SDK_IMG_VERSION_X86_64="dev-amd64-20231208-sdk"
+@@ -105,6 +106,7 @@ function main_dev() {
+         -v "/etc/localtime:/etc/localtime:ro"
+         -v "/usr/src:/usr/src:ro"
+         -v "/lib/modules:/lib/modules:ro"
++        -v "/sys/kernel/debug:/sys/kernel/debug:ro"
+         #        "-v" "/dev:/dev"
+         #        "-v" "/etc/v2x/:/etc/v2x"
+         #        "-v" "/usr/local/var/db/openedge/calibration/:/calibration"
+diff --git a/middleware/protocol/om/om_component.cc b/middleware/protocol/om/om_component.cc
+index 5aade8f..a6d1fab 100644
+--- a/middleware/protocol/om/om_component.cc
++++ b/middleware/protocol/om/om_component.cc
+@@ -5624,6 +5624,13 @@ void OM_COMPONENT::alarmMonitor()
+         {
+             OM_MEC_ERROR_PRINT << "[error]get disk-info failure!";
+         }
++        //gpu
++         if(!PerformenceUtils::getGpuInfo(runningInfo.gpuInfo))
++        {
++            OM_MEC_ERROR_PRINT << "[error]get gpu-info failure!";
++        }
++
++
+         //cpu信息
+ 
+         if(runningInfo.cpuInfo.temp > getConfiger().configerMec.configAlarmThresholdValue.TV_CPU_Tem)
+@@ -7599,6 +7606,11 @@ void OM_COMPONENT::getPerformanceData()
+         OM_MEC_ERROR_PRINT << "[error]get disk-info failure!";
+     }
+ 
++    if(!PerformenceUtils::getGpuInfo(runningInfo.gpuInfo))
++    {
++        OM_MEC_ERROR_PRINT << "[error]get gpu-info failure!";
++    }
++
+     OmWorkParamConfiger  omWorkParamConfiger;
+     WorkParam::getWorkParamFromFile(getConfiger().configerWorkParam.workParamFilePath, omWorkParamConfiger);
+     std::string nic = omWorkParamConfiger.mecDeviceWorkParam.nic;
+@@ -7671,6 +7683,12 @@ void OM_COMPONENT::publishPerformenceData(DeviceBaseInfoQueryData deviceBaseInfo
+     {
+         OM_MEC_ERROR_PRINT << "[error]get disk-info failure!";
+     }
++
++     if(!PerformenceUtils::getGpuInfo(runningInfo.gpuInfo))
++    {
++        OM_MEC_ERROR_PRINT << "[error]get gpu-info failure!";
++    }
++    
+     std::string nic = m_OmWorkParamConfiger.mecDeviceWorkParam.nic;
+     OM_MEC_ERROR_PRINT << "[nic]" << nic;
+     if(!PerformenceUtils::getNetInfo(runningInfo.netInfo, nic))
+diff --git a/middleware/protocol/om_common/performence_utils.cc b/middleware/protocol/om_common/performence_utils.cc
+index 8ee9464..dd79282 100644
+--- a/middleware/protocol/om_common/performence_utils.cc
++++ b/middleware/protocol/om_common/performence_utils.cc
+@@ -17,6 +17,9 @@
+ ********************************************************************************/
+ 
+ #include "performence_utils.h"
++#include <cuda_runtime.h>
++#include <cstdio>
++#include <cstring>
+ NAMESPACE_START_OM_COMPONENT_COMMON
+ bool PerformenceUtils::printInfo = true;
+ std::string PerformenceUtils::m_RootDirName = "/media";
+@@ -959,4 +962,166 @@ bool PerformenceUtils::getCpuInfo(CpuInfo &cpuInfo)
+   
+     return true;
+ }
++
++bool PerformenceUtils::getGpuInfo(GpuInfo& gpuInfo)
++{   //初始化默认值
++    gpuInfo.load = -1.0;
++    gpuInfo.smem= -1.0;
++    gpuInfo.pmen = -1.0;
++    gpuInfo.temp = -1.0;
++    gpuInfo.uti = "";
++
++   {//获取负载率
++        const char* load_paths[] = {
++            "/sys/devices/gpu.0/load",
++            "/sys/devices/57000000.gpu/load"
++        };
++        for (auto p : load_paths) {
++            std::ifstream load_file(p);
++            if (load_file.is_open()) {
++                int load_val = 0;
++                load_file >> load_val;
++                gpuInfo.load = (double)load_val / 1000.0 * 100.0;
++                load_file.close();
++                break;
++            }
++        }
++
++        if (gpuInfo.load >= 0) {
++            gpuInfo.uti = std::to_string(gpuInfo.load) + "%";
++        }
++
++        if (printInfo) {
++            OM_DS_DEBUG_PRINT << "[GPU] load=" << gpuInfo.load << "%, uti=" << gpuInfo.uti;
++        }
++    }
++
++    {//获取共享内存占用量
++        FILE* fp = popen("cat /sys/kernel/debug/nvmap/iovmm/maps 2>/dev/null", "r");
++        if (fp) {
++            char line[512];
++            long long total_kb = -1;
++
++            while (fgets(line, sizeof(line), fp)) {
++                if (strstr(line, "total") != NULL) {
++                    sscanf(line, "%*s %lldK", &total_kb);
++                    break;
++                }
++                if (strstr(line, "CLIENT") != NULL || strstr(line, "BASE") != NULL) {
++                    continue;
++                }
++                char user[64] = {0};
++                char process[128] = {0};
++                int pid = 0;
++                long long size_kb = 0;
++                int matched = sscanf(line, "%s %s %d %lldK", user, process, &pid, &size_kb);
++                if (matched == 4 && size_kb > 0) {
++                    total_kb += size_kb;
++                }
++            }
++            pclose(fp);
++
++            if (total_kb > 0) {
++                gpuInfo.smem = total_kb / 1024.0;
++                if (printInfo) {
++                    OM_DS_DEBUG_PRINT << "[GPU] smem=" << gpuInfo.smem << " MB (from nvmap)";
++                }
++            } else {
++                if (printInfo) {
++                    OM_DS_WARN_PRINT << "[GPU] nvmap: no valid data found";
++                }
++            }
++        } else {
++            if (printInfo) {
++                OM_DS_WARN_PRINT << "[GPU] nvmap: popen failed, maybe need sudo or not available";
++            }
++        }
++    }
++
++    
++
++    {//获取共享内存占用率
++          if (gpuInfo.smem >= 0) {
++            size_t free_mem = 0, total_mem = 0;
++            cudaError_t err = cudaMemGetInfo(&free_mem, &total_mem);
++            if (err == cudaSuccess && total_mem > 0) {
++                double total_mb = total_mem / (1024.0 * 1024.0);
++                gpuInfo.pmen = (gpuInfo.smem / total_mb) * 100.0;
++                if (printInfo) {
++                    OM_DS_DEBUG_PRINT << "[GPU] pmen=" << gpuInfo.pmen
++                                      << "% (smem=" << gpuInfo.smem
++                                      << "MB, total=" << total_mb << "MB)";
++                }
++            } else {
++                if (printInfo) {
++                    OM_DS_WARN_PRINT << "[GPU] pmen: cudaMemGetInfo failed, pmen remains -1";
++                }
++            }
++        }
++    }
++
++    {
++
++    //获取GPU温度：
++        int gpu_zone = -1;
++        //遍历所有的thermal_zone 
++
++        for(int i = 0;i<10;i++){
++            std::string type_path = "/sys/class/thermal/thermal_zone"+std::to_string(i)+"/type";
++            std::ifstream type_file(type_path);
++            if(!type_file.is_open()){
++                
++                continue;
++            }
++
++            std::string type;
++            //读出来
++            std::getline(type_file,type);
++
++            //再检查一遍是不是gpu的
++            if(type.find("GPU") != std::string::npos){
++                gpu_zone = i;
++                break;
++            }
++
++            //关闭
++            type_file.close();
++        }
++
++        //找到了GPU zone 就读温度值
++        if(gpu_zone>=0){
++            std::string temp_path =  "/sys/class/thermal/thermal_zone"+std::to_string(gpu_zone)+"/temp";
++            std::ifstream temp_file(temp_path);
++
++           if (temp_file.is_open()) {
++                int temp_milli_celsius = 0;  // 千分之一摄氏度
++                temp_file >> temp_milli_celsius;
++                
++                gpuInfo.temp = temp_milli_celsius / 1000.0f;  // 转换成摄氏度
++                
++                temp_file.close();
++                
++                if(printInfo) {
++                    OM_DS_DEBUG_PRINT << "[GPU] Temperature found: " << gpuInfo.temp << "℃ (zone" << gpu_zone << ")";
++                }
++            } else {
++                if(printInfo) {
++                    OM_DS_ERROR_PRINT << "[GPU] Cannot open temp file at zone " << gpu_zone;
++                }
++            }
++        } else {
++            if(printInfo) {
++                OM_DS_WARN_PRINT << "[GPU] GPU thermal zone not found!";
++            }
++        }
++
++     
++    // 温度读取成功就返回true
++    return (gpuInfo.temp >= 0.0);
++
++    }
++    
++
++
++    }
+ NAMESPACE_ENDED_OM_COMPONENT_COMMON
+\ No newline at end of file
+diff --git a/middleware/protocol/om_common/performence_utils.h b/middleware/protocol/om_common/performence_utils.h
+index c4ea88a..ab68a9a 100644
+--- a/middleware/protocol/om_common/performence_utils.h
++++ b/middleware/protocol/om_common/performence_utils.h
+@@ -43,6 +43,9 @@ public:
+     static bool getDiskCapacityInfo(DisksInfoSt &disksInfoSt);
+     static bool getDiskIOStats(DisksInfoSt &disksInfoSt);
+     static std::string formatBytes(double bytes);
++
++    static bool getGpuInfo(GpuInfo& gpuInfo);
++
+     public:
+     static bool    printInfo ;
+     static int     ByteUnit;
+
+@@@C	root	054f8bbe766c8e6dee4a91d220fac8d15ddcd21a	2025-07-11	feat(服务)【FAR202505-00064】record 转RTSP功能实现
+diff --git a/middleware/protocol/rtsp_tool/BUILD b/middleware/protocol/rtsp_tool/BUILD
+index 0f67fef..ef9738e 100644
+--- a/middleware/protocol/rtsp_tool/BUILD
++++ b/middleware/protocol/rtsp_tool/BUILD
+@@ -6,6 +6,8 @@ cc_binary(
+         "rtsp_tool.cc",
+         "rtsp_pusher.cc",
+         "rtsp_pusher.h",
++        "channel_data_processor.cc",
++        "channel_data_processor.h",
+     ],
+     copts = [
+         "-std=c++14",
+diff --git a/middleware/protocol/rtsp_tool/channel_data_processor.cc b/middleware/protocol/rtsp_tool/channel_data_processor.cc
+new file mode 100644
+index 0000000..a54886d
+--- /dev/null
++++ b/middleware/protocol/rtsp_tool/channel_data_processor.cc
+@@ -0,0 +1,95 @@
++#include "middleware/protocol/rtsp_tool/channel_data_processor.h"
++
++#include <iostream>
++#include <chrono>
++#include <iomanip>
++
++ChannelDataProcessor::ChannelDataProcessor(const std::string& rtsp_url, double fps, bool debug)
++    : debug_(debug),
++      rtsp_pusher_(std::make_unique<RTSPPusher>(rtsp_url, fps)) {
++    if (!rtsp_pusher_->Start()) {
++        throw std::runtime_error("Failed to start RTSP pusher");
++    }
++}
++
++ChannelDataProcessor::~ChannelDataProcessor() {
++    if (rtsp_pusher_) {
++        rtsp_pusher_->Stop();
++    }
++}
++
++void ChannelDataProcessor::ProcessData(const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg) {
++    if (!msg) {
++        return;
++    }
++    PushToRTSP(msg);
++
++    if (debug_) {
++        PrintInfo(msg);
++        try {
++            current_frame_id_ = std::stoull(msg->frame_id());
++            has_frame_id_ = true;
++        } catch (const std::exception& e) {
++            current_frame_id_ = 0;
++            last_frame_id_ = 0;
++            has_frame_id_ = false;
++            std::cout << "Failed to parse frame ID: " << msg->frame_id() << std::endl;
++        }
++        if(received_first_key_frame) {
++            total_frames_++;
++            if(has_frame_id_) {
++                if(current_frame_id_ ==last_frame_id_ + 1){
++                    // DEBUGPRINT("normal frame, current_frame_id: %lu, last_frame_id: %lu", current_frame_id_, last_frame_id_);
++                } else if(current_frame_id_ > last_frame_id_ + 1) {
++                    dropped_frames_ += (current_frame_id_ - last_frame_id_ - 1);
++                } else {
++                    if(current_frame_id_ == last_frame_id_) {
++                        DEBUGPRINT("duplicate frame, current_frame_id: %lu, last_frame_id: %lu", current_frame_id_, last_frame_id_);
++                    } else {
++                        DEBUGPRINT("out of order frame, current_frame_id: %lu, last_frame_id: %lu", current_frame_id_, last_frame_id_);
++                        out_of_order_frames_++;
++                    }
++                }
++                last_frame_id_ = current_frame_id_;
++            }
++
++            if (total_frames_ % 100 == 0) {
++                PrintStatistics();
++            }
++        } else {
++            if(has_frame_id_) {
++                last_frame_id_ = current_frame_id_;
++            } 
++        }
++    }
++}
++
++void ChannelDataProcessor::PrintInfo(const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg) {
++
++    std::string frame_type = "普通帧";
++    if(msg->frame_type() == 1) {
++        received_first_key_frame = true;
++        frame_type = "关键帧";
++    }
++    // DEBUGPRINT("Processing frame: format:%s, type:%s, size:%lu Bytes", msg->format().c_str(), frame_type.c_str(), msg->data().size());
++}
++
++void ChannelDataProcessor::PrintStatistics() {
++    DEBUGPRINT("===++++++++++++ 统计信息 ++++++++++++++===");
++    DEBUGPRINT("total_frames: %lu, dropped_frames: %lu, out_of_order_frames: %lu",
++               total_frames_, dropped_frames_, out_of_order_frames_);
++    DEBUGPRINT("lost rate: %.2f%%, out_of_order_rate: %.2f%%",
++               (dropped_frames_ * 100.0) / total_frames_,
++               (out_of_order_frames_ * 100.0) / total_frames_);
++    DEBUGPRINT("==========================================");
++}
++
++void ChannelDataProcessor::PushToRTSP(const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg) {
++    if (rtsp_pusher_) {
++        const uint8_t* frame_data = reinterpret_cast<const uint8_t*>(msg->data().data());
++        int frame_size = msg->data().size();
++        if (!rtsp_pusher_->PushFrame(frame_data, frame_size)) {
++            std::cout << "Failed to push frame to RTSP" << std::endl;
++        }
++    }
++}
+\ No newline at end of file
+diff --git a/middleware/protocol/rtsp_tool/channel_data_processor.h b/middleware/protocol/rtsp_tool/channel_data_processor.h
+new file mode 100644
+index 0000000..2b64e4e
+--- /dev/null
++++ b/middleware/protocol/rtsp_tool/channel_data_processor.h
+@@ -0,0 +1,59 @@
++#ifndef CHANNEL_DATA_PROCESSOR_H
++#define CHANNEL_DATA_PROCESSOR_H
++
++#include "base/device_connect/proto/ipcamera.pb.h"
++#include "middleware/protocol/rtsp_tool/rtsp_pusher.h"
++
++#include <memory>
++#include <string>
++#include <map>
++
++class ChannelDataProcessor {
++public:
++    ChannelDataProcessor(const std::string& rtsp_url, double fps = 25.0, bool debug = false);
++    ~ChannelDataProcessor();
++
++    /**
++     * @brief 处理接收到的压缩图像数据
++     * @param msg 接收到的压缩图像消息
++     */
++    void ProcessData(const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg);
++
++    /**
++     * @brief 停止RTSP推流器
++     */
++    void Stop() {
++        if (rtsp_pusher_) {
++            rtsp_pusher_->Stop();
++        }
++    }
++
++private:
++    /**
++     * @brief 打印当前时间和图像信息
++     * @param frame_id 帧ID
++     * @param msg 压缩图像消息
++     */
++    void PrintInfo(const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg);
++    /**
++     * @brief 打印统计信息
++     */
++    void PrintStatistics();
++    /**
++     * @brief 推送压缩图像数据到RTSP服务器
++     * @param msg 压缩图像消息
++     */
++    void PushToRTSP(const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg);
++
++    bool debug_ = false;                        ///< 是否启用调试模式
++    std::unique_ptr<RTSPPusher> rtsp_pusher_;   ///< RTSP推流器
++    bool has_frame_id_ = false;                 ///< 是否有帧ID
++    uint64_t current_frame_id_ = 0;             ///< 当前帧ID
++    uint64_t last_frame_id_ = 0;                ///< 上一帧ID
++    uint64_t total_frames_ = 0;                 ///< 总帧数
++    uint64_t dropped_frames_ = 0;               ///< 丢包数
++    uint64_t out_of_order_frames_ = 0;          ///< 乱序帧数
++    bool received_first_key_frame = false;      ///< 收到关键帧开始计数
++};
++
++#endif // CHANNEL_DATA_PROCESSOR_H
+\ No newline at end of file
+diff --git a/middleware/protocol/rtsp_tool/rtsp_pusher.cc b/middleware/protocol/rtsp_tool/rtsp_pusher.cc
+index 72c016b..544e1e2 100644
+--- a/middleware/protocol/rtsp_tool/rtsp_pusher.cc
++++ b/middleware/protocol/rtsp_tool/rtsp_pusher.cc
+@@ -9,7 +9,7 @@ RTSPPusher::RTSPPusher(const std::string& rtsp_url, double fps)
+       running_(false) {
+ 
+     // 初始化 FFmpeg 库
+-    av_register_all();
++    // av_register_all();
+     avformat_network_init();
+     DEBUGPRINT("RTSPPusher initialized");
+ }
+@@ -94,10 +94,17 @@ bool RTSPPusher::PushFrame(const uint8_t* frame_data, int frame_size) {
+         DEBUGPRINT("Pusher is not running, cannot push frame");
+         return false;
+     }
+-    if(!find_idr_)
+-    {
++    if(!find_idr_) {
++        if(frame_rs_.size() >= MAX_QUEUE_SIZE) {
++            DEBUGPRINT("frame_rs queue is full, clearing old");
++            frame_rs_.clear();
++        }
+         frame_rs_.push_back(GetCurrentTimeMs());
+     }
++    if(frame_queue_.size() >= MAX_QUEUE_SIZE) {
++        DEBUGPRINT("Frame queue is full, clearing old frames, size: %lu", frame_queue_.size());
++        frame_queue_ = std::queue<std::unique_ptr<Frame>>(); // 清空队列
++    }
+     frame_queue_.push(std::make_unique<Frame>(frame_data, frame_size));
+     cond_var_.notify_one();
+     // DEBUGPRINT("Frame pushed to queue (size: %d bytes), queue size:%lu", frame_size, frame_queue_.size());
+@@ -152,7 +159,7 @@ void RTSPPusher::HandleFrame(std::unique_ptr<Frame> frame) {
+         }
+         const uint8_t* data = frame->data.data();
+         int size = frame->size;
+-        while (size > 0){
++        while (size > 0 && find_idr_ == false) {
+             // record 中的数据每个元素都是一个完整的 H.264 NALU
+ 			int parsed_size = av_parser_parse2(pCodecParserCtx_, pCodecCtx_, 
+ 					&pkt.data, &pkt.size,      // 输出
+@@ -220,7 +227,7 @@ void RTSPPusher::HandleFrame(std::unique_ptr<Frame> frame) {
+                         DEBUGPRINT("Failed to write header");
+                         find_idr_ = false; // 重置状态
+                         if (output_ctx->pb) avio_closep(&output_ctx->pb);
+-                        break;
++                            break;
+                     }else{
+                         DEBUGPRINT("Header written successfully");
+                         average_interval_ = static_cast<int64_t>((1000.0 / fps_) * 90); // 计算平均间隔时间
+@@ -240,7 +247,6 @@ void RTSPPusher::HandleFrame(std::unique_ptr<Frame> frame) {
+     pkt.stream_index = 0;   // 视频目前只有一个流，索引为0
+     // 生成时间戳
+     pkt.dts = last_dts_ + average_interval_;
+-    std::cout << "average_interval_: " << average_interval_ << std::endl;
+     pkt.pts = pkt.dts;
+     last_dts_ = pkt.dts;
+ 
+@@ -285,11 +291,13 @@ void RTSPPusher::PushLoop() {
+ }
+ 
+ void RTSPPusher::Stop() {
+-    DEBUGPRINT("Stopping RTSP pusher...");
+     {
+         std::lock_guard<std::mutex> lock(mutex_);
+-        running_ = false;
+-        frame_queue_ = std::queue<std::unique_ptr<Frame>>(); // 清空队列
++        if(running_) {
++            DEBUGPRINT("Stopping RTSP pusher...");
++            running_ = false;
++            frame_queue_ = std::queue<std::unique_ptr<Frame>>(); // 清空队列
++        } 
+     }
+     cond_var_.notify_all();
+     
+@@ -303,8 +311,6 @@ void RTSPPusher::Stop() {
+         avformat_free_context(output_ctx);
+         output_ctx = nullptr;
+     }
+-
+-    DEBUGPRINT("RTSP pusher stopped");
+ }
+ 
+ 
+diff --git a/middleware/protocol/rtsp_tool/rtsp_pusher.h b/middleware/protocol/rtsp_tool/rtsp_pusher.h
+index 354c6e5..9f25bc6 100644
+--- a/middleware/protocol/rtsp_tool/rtsp_pusher.h
++++ b/middleware/protocol/rtsp_tool/rtsp_pusher.h
+@@ -36,11 +36,13 @@ extern "C" {
+     file = basename(file);\
+     assert(file);\
+     std::ostringstream oss;\
+-    oss << "[" << buffer << " | " << file << "(" << __LINE__ << ")]:";\
++    oss << "[" << buffer << " | " << file << "(" << __LINE__ << ") | " \
++        << "Thread:0x" << std::hex << std::this_thread::get_id() << "]:"; \
+     std::string header = oss.str();\
+     printf("%s" format "\n", header.c_str(), ##__VA_ARGS__);\
+ }
+-	
++
++#define MAX_QUEUE_SIZE 256 ///< 最大队列大小，防止内存溢出
+ 
+ class RTSPPusher {
+ public:
+diff --git a/middleware/protocol/rtsp_tool/rtsp_tool.cc b/middleware/protocol/rtsp_tool/rtsp_tool.cc
+index a4a40a6..cc35041 100644
+--- a/middleware/protocol/rtsp_tool/rtsp_tool.cc
++++ b/middleware/protocol/rtsp_tool/rtsp_tool.cc
+@@ -1,181 +1,338 @@
+-
+-#include "base/device_connect/proto/ipcamera.pb.h"
+-#include "cyber/cyber.h"
+-#include "middleware/protocol/rtsp_tool/rtsp_pusher.h"
+-
+ #include <iostream>
+ #include <memory>
+ #include <string>
+ #include <map>
+-#include <chrono>
+-#include <iomanip>
++#include <vector>
++#include <set>
++#include <algorithm>
++#include <mutex>
+ 
+-// 全局RTSP推流器
+-std::unique_ptr<RTSPPusher> g_rtsp_pusher;
++#include "cyber/cyber.h"
++#include "cyber/service_discovery/topology_manager.h"
++#include "cyber/service_discovery/specific_manager/channel_manager.h"
+ 
+-// 序号检测相关变量
+-std::map<std::string, uint64_t> g_last_frame_ids;  // 每路流的最后帧ID
+-std::map<std::string, int64_t> g_total_frames;     // 每路流的总帧数
+-std::map<std::string, int64_t> g_dropped_frames;   // 每路流的丢包数
+-std::map<std::string, int64_t> g_out_of_order_frames; // 每路流的乱序帧数
++#include "middleware/protocol/rtsp_tool/channel_data_processor.h"
+ 
+-void ImageCallback(const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg) {
+-    if (!msg) {
+-        return;
+-    }
+-    
+-    // 获取当前时间戳
+-    auto now = std::chrono::system_clock::now();
+-    auto now_c = std::chrono::system_clock::to_time_t(now);
+-    std::tm tm_now = *std::localtime(&now_c);
+-    
+-    // 解析帧ID
+-    uint64_t current_frame_id = 0;
+-    try {
+-        current_frame_id = std::stoull(msg->frame_id());
+-    } catch (const std::exception& e) {
+-        std::cout << "Failed to parse frame ID: " << msg->frame_id() << std::endl;
+-        current_frame_id = 0;
+-    }
+-    
+-    // 获取流标识（使用话题名称作为流ID）
+-    std::string stream_id = "default";
+-    if (msg->has_header() && msg->header().has_module_name()) {
+-        stream_id = msg->header().module_name();
+-    }
++using apollo::cyber::service_discovery::TopologyManager;
++using apollo::cyber::service_discovery::ChannelManager;
++
++// 配置结构
++struct AppConfig {
++    bool debug = false;
++    bool show_help = false;
++    double fps = 25.0; // 默认帧率
++    std::vector<std::string> channels;
++    std::string keyword = "h264"; // 默认关键字为 h264
++    std::string ip_address = "127.0.0.1"; // IP地址
++    uint16_t port = 8554; // 端口号
++};
++
++struct ChannelProcessor {
++    std::shared_ptr<ChannelDataProcessor> processor;
++    std::shared_ptr<apollo::cyber::Reader<os::v2x::device::ipcamera::CompressedImage>> reader;
++};
++
++void PrintHelp(const char* program_name) {
++    std::cout << "\nRTSP Tool - CyberRT Camera Channel Transfer to RTSP Server Utility\n"
++              << "Version: 1.0\n\n"
++              << "Usage: " << program_name << " [OPTIONS]\n\n"
++              << "Options:\n"
++              << "  -h, --help            Show this help information\n"
++              << "  -d, --debug           Enable debug mode (detailed output)\n"
++              << "  -c, --channels LIST   Monitor specific channels (comma-separated<,>)\n"
++              << "  -k, --keyword KEY     Filter channels containing keyword\n"
++              << "  -f, --fps             Camera video fps, default is 25, 0 means dynamic detect\n"
++              << "  -i, --ip IP           Specify the IP address, default is 127.0.0.1\n"
++              << "  -p, --port PORT       Specify the port number, default is 8554\n\n"
++              << "Monitoring Modes:\n"
++              << "  Default mode:         Monitor all channels in the system, keyword default is h264\n"
++              << "  Specific channels:    Monitor only specified channels (-c option)\n"
++              << "  Keyword filtering:    Monitor channels containing keyword (-k option)\n\n"
++              << "Examples:\n"
++              << "  " << program_name << "                                                                            # Monitor all channels\n"
++              << "  " << program_name << " -d                                                                         # Enable debug mode\n"
++              << "  " << program_name << " -c /sensor/ipcamera/h264/172_20_65_196,/sensor/ipcamera/h264/172_20_65_195 # Monitor specific channels\n"
++              << "  " << program_name << " -k ipcamera                                                                # Monitor channels with 'ipcamera'\n"
++              << "  " << program_name << " -c /rtsp/stream -d                                                         # Debug mode for specific channel\n"
++              << "  " << program_name << " -i 192.168.1.100 -p 8554                                                   # Specify IP and port\n\n"
++              << std::endl;
++}
++
++// 解析命令行参数
++AppConfig ParseArguments(int argc, char* argv[]) {
++    AppConfig config;
+     
+-    // 序号检测和丢包判断
+-    std::string status = "正常";
+-    if (g_total_frames[stream_id] == 0) {
+-        // 第一帧
+-        g_last_frame_ids[stream_id] = current_frame_id;
+-        status = "首帧";
+-    } else {
+-        uint64_t last_frame_id = g_last_frame_ids[stream_id];
+-        uint64_t expected_next = last_frame_id + 1;  // 64位递增
++    for (int i = 1; i < argc; ++i) {
++        const char* arg = argv[i];
+         
+-        if (current_frame_id == expected_next) {
+-            // 正常情况：序号连续
+-            status = "正常";
+-        } else if (current_frame_id == last_frame_id) {
+-            // 重复帧
+-            status = "重复";
+-        } else if (current_frame_id > last_frame_id) {
+-            // 丢包情况
+-            uint64_t diff = current_frame_id - last_frame_id;
+-            if (diff > 1) {
+-                g_dropped_frames[stream_id] += (diff - 1);
+-                status = "丢包(" + std::to_string(diff - 1) + "帧)";
++        // 帮助选项
++        if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
++            config.show_help = true;
++        }
++        // 调试模式
++        else if (strcmp(arg, "-d") == 0 || strcmp(arg, "--debug") == 0) {
++            config.debug = true;
++        }
++        // 指定通道
++        else if (strcmp(arg, "-c") == 0 || strcmp(arg, "--channels") == 0) {
++            if (i + 1 >= argc) {
++                std::cerr << "Error: Missing argument for -c/--channels option\n";
++                config.show_help = true;
++                break;
+             }
+-        } else {
+-            // 乱序情况（当前帧ID小于上一帧ID）
+-            g_out_of_order_frames[stream_id]++;
+-            status = "乱序";
++            std::string list = argv[++i];
++            size_t pos = 0;
++            while ((pos = list.find(',')) != std::string::npos) {
++                config.channels.push_back(list.substr(0, pos));
++                list = list.substr(pos + 1);
++            }
++            if (!list.empty()) config.channels.push_back(list);
++        }
++        // 关键字过滤
++        else if (strcmp(arg, "-k") == 0 || strcmp(arg, "--keyword") == 0) {
++            if (i + 1 >= argc) {
++                std::cerr << "Error: Missing argument for -k/--keyword option\n";
++                config.show_help = true;
++                break;
++            }
++            config.keyword = argv[++i];
++        }
++        // 帧率设置
++        else if (strcmp(arg, "-f") == 0 || strcmp(arg, "--fps") == 0) {
++            if (i + 1 >= argc) {
++                std::cerr << "Error: Missing argument for -f/--fps option\n";
++                config.show_help = true;
++                break;
++            }
++            try {
++                config.fps = std::stod(argv[++i]);
++                if (config.fps < 0) {
++                    std::cerr << "Warning: FPS set to negative value, using dynamic detection\n";
++                    config.fps = 0;
++                }
++            } catch (const std::exception& e) {
++                std::cerr << "Error: Invalid FPS value: " << e.what() << "\n";
++                config.show_help = true;
++            }
++        }
++        // IP地址设置
++        else if (strcmp(arg, "-i") == 0 || strcmp(arg, "--ip") == 0) {
++            if (i + 1 >= argc) {
++                std::cerr << "Error: Missing argument for -i/--ip option\n";
++                config.show_help = true;
++                break;
++            }
++            config.ip_address = argv[++i];
++        }
++        // 端口号设置
++        else if (strcmp(arg, "-p") == 0 || strcmp(arg, "--port") == 0) {
++            if (i + 1 >= argc) {
++                std::cerr << "Error: Missing argument for -p/--port option\n";
++                config.show_help = true;
++                break;
++            }
++            try {
++                config.port = static_cast<uint16_t>(std::stoi(argv[++i]));
++                if (config.port < 1 || config.port > 65535) {
++                    std::cerr << "Error: Port number must be between 1 and 65535\n";
++                    config.show_help = true;
++                }
++            } catch (const std::exception& e) {
++                std::cerr << "Error: Invalid port value: " << e.what() << "\n";
++                config.show_help = true;
++            }
++        }
++        // 未知选项
++        else {
++            std::cerr << "Error: Unknown option '" << arg << "'\n";
++            config.show_help = true;
+         }
+-        
+-        g_last_frame_ids[stream_id] = current_frame_id;
+-    }
+-    
+-    g_total_frames[stream_id]++;
+-    
+-    // 打印详细信息
+-    std::cout << "[" << std::put_time(&tm_now, "%H:%M:%S") << "] "
+-              << "流[" << stream_id << "] "
+-              << "帧ID: " << current_frame_id << " "
+-              << "状态: " << status << " "
+-              << "大小: " << msg->data().size() << "字节 "
+-              << "格式: " << msg->format() << " "
+-              << "类型: " << (msg->frame_type() == 1 ? "关键帧" : "普通帧") << std::endl;
+-    
+-    // 每100帧打印一次统计信息
+-    if (g_total_frames[stream_id] % 100 == 0) {
+-        std::cout << "=== 流[" << stream_id << "] 统计信息 ===" << std::endl;
+-        std::cout << "总帧数: " << g_total_frames[stream_id] << std::endl;
+-        std::cout << "丢包数: " << g_dropped_frames[stream_id] << std::endl;
+-        std::cout << "乱序数: " << g_out_of_order_frames[stream_id] << std::endl;
+-        if (g_total_frames[stream_id] > 0) {
+-            double drop_rate = (g_dropped_frames[stream_id] * 100.0) / g_total_frames[stream_id];
+-            double out_of_order_rate = (g_out_of_order_frames[stream_id] * 100.0) / g_total_frames[stream_id];
+-            std::cout << "丢包率: " << std::fixed << std::setprecision(2) << drop_rate << "%" << std::endl;
+-            std::cout << "乱序率: " << std::fixed << std::setprecision(2) << out_of_order_rate << "%" << std::endl;
+-        }
+-        std::cout << "================================" << std::endl;
+     }
+     
+-    // 推送到RTSP
+-    if (g_rtsp_pusher) {
+-        const uint8_t* frame_data = reinterpret_cast<const uint8_t*>(msg->data().data());
+-        int frame_size = msg->data().size();
+-        
+-        if (!g_rtsp_pusher->PushFrame(frame_data, frame_size)) {
+-            std::cout << "Failed to push frame to RTSP" << std::endl;
++    return config;
++}
++
++// 从 channel name 中提取标识符（IP地址或通道名）
++std::string ExtractIdentifierFromChannelName(const std::string& channel_name) {
++    size_t last_slash_pos = channel_name.find_last_of('/');
++    if (last_slash_pos != std::string::npos && last_slash_pos + 1 < channel_name.size()) {
++        std::string id_part = channel_name.substr(last_slash_pos + 1);
++        // 如果包含下划线，假设是IP格式
++        if (id_part.find('_') != std::string::npos) {
++            std::replace(id_part.begin(), id_part.end(), '_', '.');
+         }
++        return id_part;
+     }
++    // 无法提取时使用整个通道名（替换特殊字符）
++    std::string safe_name = channel_name;
++    std::replace_if(safe_name.begin(), safe_name.end(), 
++        [](char c) { return c == '/' || c == ':'; }, '_');
++    return safe_name;
+ }
+ 
+ int main(int argc, char* argv[]) {
+-    // 初始化Cyber RT
+-    apollo::cyber::Init(argv[0]);
+-    
+-    // 创建监听节点
+-    auto listener_node = apollo::cyber::CreateNode("rtsp_tool_node");
++    // 解析命令行参数
++    AppConfig appConfig = ParseArguments(argc, argv);
+     
+-    // 使用 ReaderConfig 设置缓存队列
+-    apollo::cyber::ReaderConfig config;
+-    config.channel_name = "/sensor/ipcamera/h264/172_20_65_193";
+-    config.pending_queue_size = 10;  // 设置缓存队列大小
+-
+-    // 创建监听器
+-    auto listener = listener_node->CreateReader<os::v2x::device::ipcamera::CompressedImage>(
+-        config, ImageCallback);
+-    
+-    // 初始化RTSP推流器
+-    std::string rtsp_url = "rtsp://localhost:8554/live/stream";
+-    if (argc > 1) {
+-        rtsp_url = argv[1];
++    // 显示帮助信息并退出
++    if (appConfig.show_help) {
++        PrintHelp(argv[0]);
++        return 0;
+     }
+-    
+-    g_rtsp_pusher = std::make_unique<RTSPPusher>(rtsp_url, 25);
+-    if (!g_rtsp_pusher->Start()) {
+-        std::cerr << "Failed to start RTSP pusher" << std::endl;
+-        return -1;
++
++    // 存储通道处理器和互斥锁
++    std::map<std::string, ChannelProcessor> channel_processors;
++    std::mutex processors_mutex;
++    const std::string kDefaultRTSPPrefix = "rtsp://root:root@";
++    const std::string kDefaultRTSPMidFix = "/stream/";
++    std::string kDefaultRTSPUrl = kDefaultRTSPPrefix + appConfig.ip_address + ":" + std::to_string(appConfig.port) + kDefaultRTSPMidFix;
++
++    // 初始化CyberRT框架
++    apollo::cyber::Init(argv[0]);
++
++    // 创建节点
++    auto listener_node = apollo::cyber::CreateNode("rtsp_tool_node");
++    if (!listener_node) {
++        DEBUGPRINT("Failed to create node...");
++        return false;
+     }
+     
+-    std::cout << "RTSP Tool Node started" << std::endl;
+-    std::cout << "Listening on channel: /sensor/ipcamera/h264/172_20_65_193" << std::endl;
+-    std::cout << "Pushing to RTSP: " << rtsp_url << std::endl;
+-    std::cout << "Press Ctrl+C to stop" << std::endl;
++    // 创建通道处理器的函数
++    auto CreateChannelProcessor = [&](const std::string& channel_name) -> bool {
++        std::string identifier = ExtractIdentifierFromChannelName(channel_name);
++        std::string rtsp_url = kDefaultRTSPUrl + identifier;
++
++        DEBUGPRINT("Creating processor for channel:%s, RTSP URL:%s", channel_name.c_str(), rtsp_url.c_str());
++
++        // 配置reader
++        apollo::cyber::ReaderConfig config;
++        config.channel_name = channel_name;
++        config.pending_queue_size = 10;
++
++        // 创建处理器
++        auto processor = std::make_shared<ChannelDataProcessor>(rtsp_url, appConfig.fps, appConfig.debug);
++        auto reader = listener_node->CreateReader<os::v2x::device::ipcamera::CompressedImage>(
++            config, [processor](const std::shared_ptr<const os::v2x::device::ipcamera::CompressedImage>& msg) {
++                processor->ProcessData(msg);
++            });
++        
++        if (!reader) {
++            DEBUGPRINT("Failed to create reader for channel: %s", channel_name.c_str());
++            return false;
++        } else {
++            DEBUGPRINT("Reader created for channel: %s", channel_name.c_str());
++        }
++
++        // 添加到处理器映射
++        {
++            std::lock_guard<std::mutex> lock(processors_mutex);
++            channel_processors[channel_name] = {processor, reader};
++            DEBUGPRINT("Processor created for channel: %s", channel_name.c_str());
++        }
++        
++        return true;
++    };
+     
+-    // 等待关闭信号
+-    apollo::cyber::WaitForShutdown();
++    // 处理通道加入的回调
++    auto HandleChannelJoin = [&](const std::string& channel_name) {
++        // 检查关键字匹配
++        if (appConfig.keyword.empty() || channel_name.find(appConfig.keyword) != std::string::npos) {
++            DEBUGPRINT("Channel joined: %s", channel_name.c_str());
++            // 检查是否已经存在处理器
++            {
++                std::lock_guard<std::mutex> lock(processors_mutex);
++                if(channel_processors.find(channel_name) != channel_processors.end()) {
++                    DEBUGPRINT("Processor already exists for channel: %s", channel_name.c_str());
++                    return; // 已经存在处理器，忽略重复创建
++                }
++            }
++            // 创建新的通道处理器
++            CreateChannelProcessor(channel_name);
++        } else {
++            DEBUGPRINT("Channel ignored (keyword mismatch): %s", channel_name.c_str());
++        }
++    };
+     
+-    // 停止RTSP推流器
+-    if (g_rtsp_pusher) {
+-        g_rtsp_pusher->Stop();
++    // 处理通道离开的回调
++    auto HandleChannelLeave = [&](const std::string& channel_name) {
++        std::lock_guard<std::mutex> lock(processors_mutex);
++        auto it = channel_processors.find(channel_name);
++        if (it != channel_processors.end()) {
++            DEBUGPRINT("Removing processor and reader for channel: %s", channel_name.c_str());
++            it->second.processor->Stop();         // 停止处理器
++            it->second.reader.reset();            
++            listener_node->DeleteReader(it->first); // 销毁reader (不然重新播放同channel数据，创建会失败)
++            channel_processors.erase(it);
++        }
++    };
++
++    // 模式1: 监控指定通道
++    if (!appConfig.channels.empty()) {
++        DEBUGPRINT("Operating in specific channels mode with %zu channels", appConfig.channels.size());
++        for (const auto& channel_name : appConfig.channels) {
++            if (!CreateChannelProcessor(channel_name)) {
++                DEBUGPRINT("Failed to create processor for channel: %s", channel_name.c_str());
++            }
++            else {
++                DEBUGPRINT("Successfully created processor for channel: %s", channel_name.c_str());
++            }
++        }
++    } 
++    // 模式2: 动态监控所有通道
++    else {
++        DEBUGPRINT("Operating in dynamic discovery mode with keyword: %s", appConfig.keyword.c_str());
++
++        // 获取拓扑管理器
++        auto topology_manager = TopologyManager::Instance();
++        if (topology_manager == nullptr) {
++            DEBUGPRINT("TopologyManager instance is null, cannot monitor channels");
++            return -1;
++        }
++
++        // 获取通道管理器
++        auto channel_manager = topology_manager->channel_manager();
++        if (channel_manager == nullptr) {
++            DEBUGPRINT("ChannelManager instance is null, cannot monitor channels");
++            return -2;
++        }
++
++        // 添加通道变更监听器
++        channel_manager->AddChangeListener(
++            [&](const apollo::cyber::proto::ChangeMsg& change_msg) {
++                const auto& role_attr = change_msg.role_attr();
++                const std::string channel_name = role_attr.channel_name();
++                if(::apollo::cyber::proto::RoleType::ROLE_WRITER == change_msg.role_type())
++                {
++                    if (::apollo::cyber::proto::OperateType::OPT_JOIN == change_msg.operate_type()) {
++                        DEBUGPRINT("Channel change detected: %s, operation: JOIN", channel_name.c_str());
++                        HandleChannelJoin(channel_name);
++                    } else {
++                        DEBUGPRINT("Channel change detected: %s, operation: LEAVE", channel_name.c_str());
++                        HandleChannelLeave(channel_name);
++                    }
++                }
++            }
++        );
+     }
+-    
+-    // 打印最终统计信息
+-    std::cout << "\n=== 最终统计信息 ===" << std::endl;
+-    for (const auto& stream : g_total_frames) {
+-        const std::string& stream_id = stream.first;
+-        int64_t total = stream.second;
+-        int64_t dropped = g_dropped_frames[stream_id];
+-        int64_t out_of_order = g_out_of_order_frames[stream_id];
+-        
+-        std::cout << "流[" << stream_id << "]:" << std::endl;
+-        std::cout << "  总帧数: " << total << std::endl;
+-        std::cout << "  丢包数: " << dropped << std::endl;
+-        std::cout << "  乱序数: " << out_of_order << std::endl;
+-        if (total > 0) {
+-            double drop_rate = (dropped * 100.0) / total;
+-            double out_of_order_rate = (out_of_order * 100.0) / total;
+-            std::cout << "  丢包率: " << std::fixed << std::setprecision(2) << drop_rate << "%" << std::endl;
+-            std::cout << "  乱序率: " << std::fixed << std::setprecision(2) << out_of_order_rate << "%" << std::endl;
+-        }
+-        std::cout << "  最后帧ID: " << g_last_frame_ids[stream_id] << std::endl;
+-        std::cout << std::endl;
++
++    DEBUGPRINT("RTSP Tool started successfully");
++    DEBUGPRINT("Press Ctrl+C to exit");
++
++    // 保持程序运行
++    apollo::cyber::WaitForShutdown();
++
++    // 清理所有处理器
++    {
++        std::lock_guard<std::mutex> lock(processors_mutex);
++        DEBUGPRINT("Stopping all channel processors...");
++        for (auto& entry : channel_processors) {
++            entry.second.processor->Stop();
++            listener_node->DeleteReader(entry.first);
++            entry.second.reader.reset(); 
++        }
++        channel_processors.clear();
+     }
+-    std::cout << "===================" << std::endl;
+-    
++
++    DEBUGPRINT("RTSP Tool exited gracefully");
+     return 0;
+-}
++}
+\ No newline at end of file
+
+@@@C	root	2a85c31d911e15c109e91f8de0315e13be4ff968	2025-02-11	[通用][feat]: 日志打印优化
+diff --git a/base/common/log.h b/base/common/log.h
+index aedd60d..1ea395e 100644
+--- a/base/common/log.h
++++ b/base/common/log.h
+@@ -27,9 +27,12 @@
+ #define LOG_FATAL LOG(FATAL)
+ #define LOG_V(log_severity) VLOG(log_severity)
+ #define LOG_DATA_RECYCLE LOG(INFO)
+-// LOG_IF
+-#define LOG_INFO_IF(cond) LOG_IF(INFO, cond)
+-#define LOG_ERROR_IF(cond) LOG_IF(ERROR, cond)
++
++// LOG_IF (使用LOG_IF 跳过不输出的日志，避免浪费资源) 
++#define LOG_INFO_IF LOG_IF(INFO, FLAGS_minloglevel == 0)
++#define LOG_WARN_IF LOG_IF(WARNING, FLAGS_minloglevel <= 1)
++#define LOG_ERROR_IF LOG_IF(ERROR, FLAGS_minloglevel <= 2)
++#define LOG_FATAL_IF LOG_IF(FATAL, FLAGS_minloglevel <= 3)
+ 
+ // LOG_EVERY_N
+ #define LOG_INFO_EVERY(freq) LOG_EVERY_N(INFO, freq)
+@@ -52,50 +55,50 @@
+ // 为了将不同模块的日志进行区分, 方便管理。定义宏对下列模块的日志进行重定向
+ // app 模块的日志
+ #define LOG_KEY_APP "[airos_app]"
+-#define APP_LOG_INFO LOG_INFO << LOG_KEY_APP
+-#define APP_LOG_WARN LOG_WARN << LOG_KEY_APP
+-#define APP_LOG_ERROR LOG_ERROR << LOG_KEY_APP
+-#define APP_LOG_FATAL LOG_FATAL << LOG_KEY_APP
++#define APP_LOG_INFO LOG_INFO_IF << LOG_KEY_APP
++#define APP_LOG_WARN LOG_WARN_IF << LOG_KEY_APP
++#define APP_LOG_ERROR LOG_ERROR_IF << LOG_KEY_APP
++#define APP_LOG_FATAL LOG_FATAL_IF << LOG_KEY_APP
+ 
+ // v2x codec 模块的日志
+ #define LOG_KEY_V2X_CODEC "[v2x_codec]"
+-#define V2X_CODEC_LOG_INFO LOG_INFO << LOG_KEY_V2X_CODEC
+-#define V2X_CODEC_LOG_WARN LOG_WARN << LOG_KEY_V2X_CODEC
+-#define V2X_CODEC_LOG_ERROR LOG_ERROR << LOG_KEY_V2X_CODEC
+-#define V2X_CODEC_LOG_FATAL LOG_FATAL << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_INFO LOG_INFO_IF << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_WARN LOG_WARN_IF << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_ERROR LOG_ERROR_IF << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_FATAL LOG_FATAL_IF << LOG_KEY_V2X_CODEC
+ 
+ // 接入层 device_service mec 模块
+ #define LOG_KEY_MEC_SERVICE "[mec_service]"
+-#define MEC_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_MEC_SERVICE
+-#define MEC_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_MEC_SERVICE
+-#define MEC_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_MEC_SERVICE
+-#define MEC_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_MEC_SERVICE
+ 
+ // 接入层 device_service rsu 模块
+ #define LOG_KEY_RSU_SERVICE "[rsu_service]"
+-#define RSU_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_RSU_SERVICE
+-#define RSU_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_RSU_SERVICE
+-#define RSU_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_RSU_SERVICE
+-#define RSU_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_RSU_SERVICE
+ 
+ // 接入层 device_service traffic light 模块
+ #define LOG_KEY_TRAFFIC_LIFGT_SERVICE "[traffic_light_service]"
+-#define TRAFFIC_LIFGT_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+-#define TRAFFIC_LIFGT_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+-#define TRAFFIC_LIFGT_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+-#define TRAFFIC_LIFGT_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+ 
+ // 接入层 camera_cictci 模块
+ #define LOG_KEY_CAMERA_CICTCI_SERVICE "[camera_cictci_service]"
+-#define CAMERA_CICTCI_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_CAMERA_CICTCI_SERVICE
+-#define CAMERA_CICTCI_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_CAMERA_CICTCI_SERVICE
+-#define CAMERA_CICTCI_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_CAMERA_CICTCI_SERVICE
+-#define CAMERA_CICTCI_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
+ 
+ 
+ #define LOG_KEY_RASP "[rsap]"
+-#define RSAP_DEBUG_PRINT LOG_INFO << LOG_KEY_RASP
+-#define RSAP_WARN_PRINT LOG_WARN << LOG_KEY_RASP
+-#define RSAP_ERROR_PRINT LOG_ERROR << LOG_KEY_RASP
+-#define RSAP_SUCESS_PRINT LOG_INFO << LOG_KEY_RASP
+-#define RSAP_FATAL_PRINT   LOG_FATAL << LOG_KEY_RASP
+\ No newline at end of file
++#define RSAP_DEBUG_PRINT LOG_INFO_IF << LOG_KEY_RASP
++#define RSAP_WARN_PRINT LOG_WARN_IF << LOG_KEY_RASP
++#define RSAP_ERROR_PRINT LOG_ERROR_IF << LOG_KEY_RASP
++#define RSAP_SUCESS_PRINT LOG_INFO_IF << LOG_KEY_RASP
++#define RSAP_FATAL_PRINT LOG_FATAL_IF << LOG_KEY_RASP
+\ No newline at end of file
+
+@@@C	root	6b02f1a7cfa008c3bd4c7f6e0ab62482f70ab322	2025-02-11	[通用][fix]: 日志打印优化
+diff --git a/base/common/log.h b/base/common/log.h
+index aedd60d..1ea395e 100644
+--- a/base/common/log.h
++++ b/base/common/log.h
+@@ -27,9 +27,12 @@
+ #define LOG_FATAL LOG(FATAL)
+ #define LOG_V(log_severity) VLOG(log_severity)
+ #define LOG_DATA_RECYCLE LOG(INFO)
+-// LOG_IF
+-#define LOG_INFO_IF(cond) LOG_IF(INFO, cond)
+-#define LOG_ERROR_IF(cond) LOG_IF(ERROR, cond)
++
++// LOG_IF (使用LOG_IF 跳过不输出的日志，避免浪费资源) 
++#define LOG_INFO_IF LOG_IF(INFO, FLAGS_minloglevel == 0)
++#define LOG_WARN_IF LOG_IF(WARNING, FLAGS_minloglevel <= 1)
++#define LOG_ERROR_IF LOG_IF(ERROR, FLAGS_minloglevel <= 2)
++#define LOG_FATAL_IF LOG_IF(FATAL, FLAGS_minloglevel <= 3)
+ 
+ // LOG_EVERY_N
+ #define LOG_INFO_EVERY(freq) LOG_EVERY_N(INFO, freq)
+@@ -52,50 +55,50 @@
+ // 为了将不同模块的日志进行区分, 方便管理。定义宏对下列模块的日志进行重定向
+ // app 模块的日志
+ #define LOG_KEY_APP "[airos_app]"
+-#define APP_LOG_INFO LOG_INFO << LOG_KEY_APP
+-#define APP_LOG_WARN LOG_WARN << LOG_KEY_APP
+-#define APP_LOG_ERROR LOG_ERROR << LOG_KEY_APP
+-#define APP_LOG_FATAL LOG_FATAL << LOG_KEY_APP
++#define APP_LOG_INFO LOG_INFO_IF << LOG_KEY_APP
++#define APP_LOG_WARN LOG_WARN_IF << LOG_KEY_APP
++#define APP_LOG_ERROR LOG_ERROR_IF << LOG_KEY_APP
++#define APP_LOG_FATAL LOG_FATAL_IF << LOG_KEY_APP
+ 
+ // v2x codec 模块的日志
+ #define LOG_KEY_V2X_CODEC "[v2x_codec]"
+-#define V2X_CODEC_LOG_INFO LOG_INFO << LOG_KEY_V2X_CODEC
+-#define V2X_CODEC_LOG_WARN LOG_WARN << LOG_KEY_V2X_CODEC
+-#define V2X_CODEC_LOG_ERROR LOG_ERROR << LOG_KEY_V2X_CODEC
+-#define V2X_CODEC_LOG_FATAL LOG_FATAL << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_INFO LOG_INFO_IF << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_WARN LOG_WARN_IF << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_ERROR LOG_ERROR_IF << LOG_KEY_V2X_CODEC
++#define V2X_CODEC_LOG_FATAL LOG_FATAL_IF << LOG_KEY_V2X_CODEC
+ 
+ // 接入层 device_service mec 模块
+ #define LOG_KEY_MEC_SERVICE "[mec_service]"
+-#define MEC_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_MEC_SERVICE
+-#define MEC_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_MEC_SERVICE
+-#define MEC_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_MEC_SERVICE
+-#define MEC_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_MEC_SERVICE
++#define MEC_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_MEC_SERVICE
+ 
+ // 接入层 device_service rsu 模块
+ #define LOG_KEY_RSU_SERVICE "[rsu_service]"
+-#define RSU_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_RSU_SERVICE
+-#define RSU_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_RSU_SERVICE
+-#define RSU_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_RSU_SERVICE
+-#define RSU_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_RSU_SERVICE
++#define RSU_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_RSU_SERVICE
+ 
+ // 接入层 device_service traffic light 模块
+ #define LOG_KEY_TRAFFIC_LIFGT_SERVICE "[traffic_light_service]"
+-#define TRAFFIC_LIFGT_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+-#define TRAFFIC_LIFGT_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+-#define TRAFFIC_LIFGT_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+-#define TRAFFIC_LIFGT_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
++#define TRAFFIC_LIFGT_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_TRAFFIC_LIFGT_SERVICE
+ 
+ // 接入层 camera_cictci 模块
+ #define LOG_KEY_CAMERA_CICTCI_SERVICE "[camera_cictci_service]"
+-#define CAMERA_CICTCI_SERVICE_LOG_INFO LOG_INFO << LOG_KEY_CAMERA_CICTCI_SERVICE
+-#define CAMERA_CICTCI_SERVICE_LOG_WARN LOG_WARN << LOG_KEY_CAMERA_CICTCI_SERVICE
+-#define CAMERA_CICTCI_SERVICE_LOG_ERROR LOG_ERROR << LOG_KEY_CAMERA_CICTCI_SERVICE
+-#define CAMERA_CICTCI_SERVICE_LOG_FATAL LOG_FATAL << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_INFO LOG_INFO_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_WARN LOG_WARN_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_ERROR LOG_ERROR_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
++#define CAMERA_CICTCI_SERVICE_LOG_FATAL LOG_FATAL_IF << LOG_KEY_CAMERA_CICTCI_SERVICE
+ 
+ 
+ #define LOG_KEY_RASP "[rsap]"
+-#define RSAP_DEBUG_PRINT LOG_INFO << LOG_KEY_RASP
+-#define RSAP_WARN_PRINT LOG_WARN << LOG_KEY_RASP
+-#define RSAP_ERROR_PRINT LOG_ERROR << LOG_KEY_RASP
+-#define RSAP_SUCESS_PRINT LOG_INFO << LOG_KEY_RASP
+-#define RSAP_FATAL_PRINT   LOG_FATAL << LOG_KEY_RASP
+\ No newline at end of file
++#define RSAP_DEBUG_PRINT LOG_INFO_IF << LOG_KEY_RASP
++#define RSAP_WARN_PRINT LOG_WARN_IF << LOG_KEY_RASP
++#define RSAP_ERROR_PRINT LOG_ERROR_IF << LOG_KEY_RASP
++#define RSAP_SUCESS_PRINT LOG_INFO_IF << LOG_KEY_RASP
++#define RSAP_FATAL_PRINT LOG_FATAL_IF << LOG_KEY_RASP
+\ No newline at end of file
+
+@@@C	root	7b73014643d1d2d7a76eb4e38b0061343235a1e5	2025-02-10	[通用][feat]: 修复ssh保活机制的bug
+diff --git a/script/airos_keep_alive.sh b/script/airos_keep_alive.sh
+index d30b70c..fa6b1e8 100755
+--- a/script/airos_keep_alive.sh
++++ b/script/airos_keep_alive.sh
+@@ -116,8 +116,6 @@ function ssh_keep_alive() {
+       chmod 600 /etc/ssh/ssh_host_rsa_key
+       chmod 600 /etc/ssh/ssh_host_ecdsa_key
+       chmod 600 /etc/ssh/ssh_host_ed25519_key
+-      chmod 644 /run/sshd.pid
+-      chown root:root /run/sshd.pid
+       chmod 700 /var/run/sshd
+       chown root:root /var/run/sshd
+       service ssh start
+
+@@@C	root	184a0032ef239e2be880d3f84ecab9aa7970012a	2025-02-10	[通用][feat]: airos-v3.3.6-v1.0.3-deqing-release-202502081830 版本
+diff --git a/build_airos.sh b/build_airos.sh
+index 53c1db5..43189a2 100644
+--- a/build_airos.sh
++++ b/build_airos.sh
+@@ -10,7 +10,7 @@ SUPPORTED_DEVICE_SERVICE=(traffic_light rsu camera lidar mec )
+ #############################################################
+ protocol_version="v3.3.6"
+ RELEASE_ROOT="/home/airos"
+-package_version="v1.0.0"
++package_version="v1.0.3"
+ 
+ # 设置项目的名称
+  package_project="deqing"
+diff --git a/script/airos_keep_alive.sh b/script/airos_keep_alive.sh
+index 792aa54..4480c9b 100755
+--- a/script/airos_keep_alive.sh
++++ b/script/airos_keep_alive.sh
+@@ -126,8 +126,6 @@ function ssh_keep_alive() {
+       chmod 600 /etc/ssh/ssh_host_rsa_key
+       chmod 600 /etc/ssh/ssh_host_ecdsa_key
+       chmod 600 /etc/ssh/ssh_host_ed25519_key
+-      chmod 644 /run/sshd.pid
+-      chown root:root /run/sshd.pid
+       chmod 700 /var/run/sshd
+       chown root:root /var/run/sshd
+       service ssh start
+
+@@@C	root	546ff03efa13feacbe99ea019fee590a857be696	2025-02-08	Merge branch 'deqing' of http://10.255.11.16/new_4layer/airos2.0 into deqing
+
+
+@@@C	root	0def55b38e937ea1265be121e1cdf747416503b2	2025-02-08	[deqing][fix]:  解决德清反馈的bug
+diff --git a/middleware/device_service/modules/mec/cictci/cictci_mec.cc b/middleware/device_service/modules/mec/cictci/cictci_mec.cc
+index 2996a2e..c317e31 100644
+--- a/middleware/device_service/modules/mec/cictci/cictci_mec.cc
++++ b/middleware/device_service/modules/mec/cictci/cictci_mec.cc
+@@ -559,9 +559,11 @@ bool CICTCIMec::ParseJsonData2PbDataEvent(json &j) {
+         {
+             event->set_noveh_type(cictciEventDetail.m_NonVehType);            
+         }
++        event->set_event_picture(cictciEventDetail.m_EvtP);
++        event->set_event_video(cictciEventDetail.m_EvtV);
+     }
+-    MEC_SERVICE_LOG_ERROR << output_data_event_->DebugString();
+-    MEC_SERVICE_LOG_ERROR << "[event-num]" << cictciEvent.m_Evt_List.size();
++    MEC_SERVICE_LOG_INFO << output_data_event_->DebugString();
++    MEC_SERVICE_LOG_INFO << "[event-num]" << cictciEvent.m_Evt_List.size();
+     sender_(output_data_event_);
+     return true;
+ }
+diff --git a/middleware/device_service/modules/mec/cictci/cictci_mec_json.h b/middleware/device_service/modules/mec/cictci/cictci_mec_json.h
+index 60ec66a..3d03d6e 100644
+--- a/middleware/device_service/modules/mec/cictci/cictci_mec_json.h
++++ b/middleware/device_service/modules/mec/cictci/cictci_mec_json.h
+@@ -271,8 +271,8 @@ public:
+         JsonSerialize(m_VehW, "VehW", j, m_VehW_Empty);
+         JsonSerialize(m_VehH, "VehH", j, m_VehH_Empty);
+ 
+-        JsonSerialize(m_EvtV, "m_EvtV", j, m_EvtV_Empty);
+-        JsonSerialize(m_EvtP, "m_EvtP", j, m_EvtP_Empty);
++        JsonSerialize(m_EvtV, "EvtV", j, m_EvtV_Empty);
++        JsonSerialize(m_EvtP, "EvtP", j, m_EvtP_Empty);
+         JsonSerialize(m_PlateNum, "PlateNum", j, m_PlateNum_Empty);
+         JsonSerialize(m_RegionNo, "RegionNo", j, m_RegionNo_Empty);
+         
+@@ -295,8 +295,8 @@ public:
+         JsonDeserialize(m_VehW, "VehW", j, m_VehW_Empty);
+         JsonDeserialize(m_VehH, "VehH", j, m_VehH_Empty);
+ 
+-        JsonDeserialize(m_EvtV, "m_EvtV", j, m_EvtV_Empty);
+-        JsonDeserialize(m_EvtP, "m_EvtP", j, m_EvtP_Empty);
++        JsonDeserialize(m_EvtV, "EvtV", j, m_EvtV_Empty);
++        JsonDeserialize(m_EvtP, "EvtP", j, m_EvtP_Empty);
+         JsonDeserialize(m_PlateNum, "PlateNum", j, m_PlateNum_Empty);
+         JsonDeserialize(m_RegionNo, "RegionNo", j, m_RegionNo_Empty);
+ 
+@@ -704,7 +704,7 @@ public:
+     MecDevAlgorithmStatusDevType m_DevType;
+     std::string m_DeviceId;
+     MecDevAlgorithmStatusDevStatus m_Status;
+-    MecDevAlgorithmStatusDevServiceStatus m_DevServiceStaus;
++    MecDevAlgorithmStatusDevServiceStatus m_DevServiceStaus = MecDevAlgorithmStatusDevServiceStatus::DEV_SERVICE__STATUS_NORMAL;
+ public:
+     CictciAlgorithmDevStatus()
+     {}
+
+@@@C	root	ef9c41e8d3835ff4179ef2f417a62c553dd8a87d	2025-01-21	[德清][feat]：打镜像airos-v3.3.6-v1.0.0-deqing-release-202501211124
+diff --git a/build_airos.sh b/build_airos.sh
+index 3cc5cfd..53c1db5 100644
+--- a/build_airos.sh
++++ b/build_airos.sh
+@@ -8,9 +8,9 @@ SUPPORTED_ARCHS=" x86_64 aarch64 "
+ 
+ SUPPORTED_DEVICE_SERVICE=(traffic_light rsu camera lidar mec )
+ #############################################################
+-protocol_version="v3.2"
++protocol_version="v3.3.6"
+ RELEASE_ROOT="/home/airos"
+-package_version="v1.6.1"
++package_version="v1.0.0"
+ 
+ # 设置项目的名称
+  package_project="deqing"
+@@ -86,7 +86,7 @@ function tar_package()
+           dirs_os="os"
+           dirs_parm="param"
+           dirs_protocol="protocol"
+-          dirs_common_config="common_config/v2x_rsi_config.pb common_config/airos_cron_conf common_config/airos_log_conf common_config/rsu_map.xml common_config/xer_map.xml"
++          dirs_common_config="common_config"
+           dirs_script="script"
+ #          python_pack="need_package"
+         fi
+diff --git a/docker/builder_container/cictci_arm64.dockerfile b/docker/builder_container/cictci_arm64.dockerfile
+index 6b996f8..12d73c2 100644
+--- a/docker/builder_container/cictci_arm64.dockerfile
++++ b/docker/builder_container/cictci_arm64.dockerfile
+@@ -37,7 +37,7 @@ RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/
+ RUN sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication no/' /etc/ssh/sshd_config
+ 
+ # 拷贝程序到容器中
+-# COPY airos-v3.1-v1.5.0-deqing-release-202411071015.tar.gz /home/airos_bak/
++COPY airos-v3.3.6-v1.0.0-deqing-release-202501211124.tar.gz /home/airos_bak/
+ # RUN tar -xzf /home/airos/airos-v1.4.6-release-202408071057.tar.gz -C /home/airos/ && \
+ #     rm /home/airos/airos-v1.4.6-release-202408071057.tar.gz
+ 
+@@ -48,10 +48,10 @@ RUN rm -rf /opt/local/asn-wrapper && \
+     rm /opt/local/asn-wrapper.tar.gz
+ 
+ # 复制并解压 airos_package.tar.gz 文件 (包管理相关功能)
+-COPY airos_package.tar.gz /opt/
+-RUN rm -rf /opt/airos && \
+-    tar -xzf /opt/airos_package.tar.gz -C /opt/ && \
+-    rm /opt/airos_package.tar.gz
++# COPY airos_package.tar.gz /opt/
++# RUN rm -rf /opt/airos && \
++#     tar -xzf /opt/airos_package.tar.gz -C /opt/ && \
++#     rm /opt/airos_package.tar.gz
+ 
+ # 修改 .bashrc 文件
+ RUN echo 'source /home/airos/os/setup.bash' >> /root/.bashrc && \
+diff --git a/script/airos_docker_start.sh b/script/airos_docker_start.sh
+old mode 100644
+new mode 100755
+diff --git a/script/airos_install_need.sh b/script/airos_install_need.sh
+old mode 100644
+new mode 100755
+diff --git a/script/launch b/script/launch
+old mode 100644
+new mode 100755
+
+@@@C	root	172c607647d57cb0ffe270f0c8021f2758b07244	2025-01-14	[智路OS][feat]: 优化日志
+diff --git a/app/modules/v2x_application/mec_adapter/mec_adapter.cc b/app/modules/v2x_application/mec_adapter/mec_adapter.cc
+index c688350..ef8334a 100644
+--- a/app/modules/v2x_application/mec_adapter/mec_adapter.cc
++++ b/app/modules/v2x_application/mec_adapter/mec_adapter.cc
+@@ -24,7 +24,7 @@
+ #include "base/common/math_util.h"
+ #include "base/common/time_util.h"
+ #include "base/env/env.h"
+-#include "glog/logging.h"
++#include "base/common/log.h"
+ 
+ namespace airos {
+ namespace app {
+@@ -37,20 +37,20 @@ bool MECAdapter::Init(const airos::app::ApplicationCallBack& send_cb) {
+ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputResult>&
+               recv_data) {
+   if (!recv_data) {
+-    LOG(ERROR) << "Recv data EventOutputResult failed";
++    APP_LOG_ERROR << "Recv data EventOutputResult failed";
+     return false;
+   }
+ 
+   if(recv_data->perception_obstacle().empty())
+   {
+-    LOG(INFO) << "Recv data perception_obstacle is empty";
++    APP_LOG_WARN << "Recv data perception_obstacle is empty";
+     return false;
+   }
+ 
+   // 统计丢包率
+   ++recv_total_package_num;
+   recv_total_obj_num += recv_data->perception_obstacle().size();
+-  LOG(INFO) << "summary: Expected recv total package num: "
++  APP_LOG_INFO << "summary: Expected recv total package num: "
+         << recv_data->header().total_package_num()
+         << ", Actual recv package num: " << recv_total_package_num
+         << ", Packet loss rate: " << std::fixed
+@@ -58,7 +58,7 @@ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputRes
+             recv_total_package_num) *
+                1.0 / recv_data->header().total_package_num();
+ 
+-  LOG(INFO) << "summary: Expected recv total obj num: "
++  APP_LOG_INFO << "summary: Expected recv total obj num: "
+         << recv_data->header().total_obj_num()
+         << ", Actual recv obj num: " << recv_total_obj_num
+         << ", Obj loss rate: " << std::fixed
+@@ -66,7 +66,7 @@ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputRes
+                recv_data->header().total_obj_num();
+ 
+   double time_now = airos::base::TimeUtil::GetCurrentTime();
+-  LOG(INFO) << "summary: Send timestamp: " << std::fixed
++  APP_LOG_INFO << "summary: Send timestamp: " << std::fixed
+         << recv_data->header().timestamp_sec()
+         << " s, recv timestamp: " << time_now << " s, delay: "
+         << time_now - recv_data->header().timestamp_sec() << " s";
+@@ -136,7 +136,7 @@ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputRes
+           //   participant->set_ptc_type(v2xpb::asn::ParticipantType::PT_RSU);
+           //   break;
+           default:
+-            LOG(WARNING) << "not asn source type:" << obstacle.type();
++            APP_LOG_WARN << "not asn source type:" << obstacle.type();
+             participant->set_ptc_type(v2xpb::asn::ParticipantType::PT_UNKNOWN);
+             break;
+         }
+@@ -167,7 +167,7 @@ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputRes
+ 
+     auto message_pb = std::make_shared<airos::app::ApplicationData>();
+     message_pb->mutable_road_side_frame()->operator=(*asn_pb);
+-    // LOG(ERROR) << "generated:" << message_pb->DebugString();
++    // APP_LOG_INFO << "generated:" << message_pb->DebugString();
+     send_(message_pb);
+     std::chrono::microseconds duration(1000);
+     std::this_thread::sleep_for(duration);
+diff --git a/app/modules/v2x_application/usecase/base/config_manager.cc b/app/modules/v2x_application/usecase/base/config_manager.cc
+index 43d6401..39d71e7 100644
+--- a/app/modules/v2x_application/usecase/base/config_manager.cc
++++ b/app/modules/v2x_application/usecase/base/config_manager.cc
+@@ -31,7 +31,7 @@ class ConfigManagerImpl {
+     }
+ 
+     if (yaml_node_.IsNull()) {
+-      // LOG(WARN) << "Read " << config_file << " empty";
++      // APP_LOG_WARN << "Read " << config_file << " empty";
+     }
+ 
+     return true;
+
+@@@C	root	f16eb065f3a354c70a3369a2d3fe09cdfdb672b0	2025-01-13	[智路OS][feat]: 日志滚存加到保活脚本中，定期滚存
+diff --git a/app/modules/v2x_application/mec_adapter/mec_adapter.cc b/app/modules/v2x_application/mec_adapter/mec_adapter.cc
+index 7f5d310..c688350 100644
+--- a/app/modules/v2x_application/mec_adapter/mec_adapter.cc
++++ b/app/modules/v2x_application/mec_adapter/mec_adapter.cc
+@@ -50,7 +50,7 @@ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputRes
+   // 统计丢包率
+   ++recv_total_package_num;
+   recv_total_obj_num += recv_data->perception_obstacle().size();
+-  LOG(INFO) << "(summary) Expected recv total package num: "
++  LOG(INFO) << "summary: Expected recv total package num: "
+         << recv_data->header().total_package_num()
+         << ", Actual recv package num: " << recv_total_package_num
+         << ", Packet loss rate: " << std::fixed
+@@ -58,7 +58,7 @@ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputRes
+             recv_total_package_num) *
+                1.0 / recv_data->header().total_package_num();
+ 
+-  LOG(INFO) << "(summary) Expected recv total obj num: "
++  LOG(INFO) << "summary: Expected recv total obj num: "
+         << recv_data->header().total_obj_num()
+         << ", Actual recv obj num: " << recv_total_obj_num
+         << ", Obj loss rate: " << std::fixed
+@@ -66,7 +66,7 @@ bool MECAdapter::Proc(const std::shared_ptr<const airos::usecase::EventOutputRes
+                recv_data->header().total_obj_num();
+ 
+   double time_now = airos::base::TimeUtil::GetCurrentTime();
+-  LOG(INFO) << "(summary) Send timestamp: " << std::fixed
++  LOG(INFO) << "summary: Send timestamp: " << std::fixed
+         << recv_data->header().timestamp_sec()
+         << " s, recv timestamp: " << time_now << " s, delay: "
+         << time_now - recv_data->header().timestamp_sec() << " s";
+diff --git a/app/modules/v2x_application/mec_adapter_ssm/mec_adapter_ssm.cc b/app/modules/v2x_application/mec_adapter_ssm/mec_adapter_ssm.cc
+index bcf0422..a314d02 100644
+--- a/app/modules/v2x_application/mec_adapter_ssm/mec_adapter_ssm.cc
++++ b/app/modules/v2x_application/mec_adapter_ssm/mec_adapter_ssm.cc
+@@ -69,7 +69,7 @@ bool MECAdapterSsm::Proc(const std::shared_ptr<const airos::usecase::EventOutput
+   // 统计丢包率
+   ++recv_total_package_num;
+   recv_total_obj_num += recv_data->perception_obstacle().size();
+-  APP_LOG_INFO << "(sumarry) Expected recv total package num: "
++  APP_LOG_INFO << "sumarry: Expected recv total package num: "
+         << recv_data->header().total_package_num()
+         << ", Actual recv package num: " << recv_total_package_num
+         << ", Packet loss rate: " << std::fixed
+@@ -77,7 +77,7 @@ bool MECAdapterSsm::Proc(const std::shared_ptr<const airos::usecase::EventOutput
+             recv_total_package_num) *
+                1.0 / recv_data->header().total_package_num();
+ 
+-  APP_LOG_INFO << "(sumarry) Expected recv total obj num: "
++  APP_LOG_INFO << "sumarry: Expected recv total obj num: "
+         << recv_data->header().total_obj_num()
+         << ", Actual recv obj num: " << recv_total_obj_num
+         << ", Obj loss rate: " << std::fixed
+@@ -85,7 +85,7 @@ bool MECAdapterSsm::Proc(const std::shared_ptr<const airos::usecase::EventOutput
+                recv_data->header().total_obj_num();
+ 
+   double time_now = airos::base::TimeUtil::GetCurrentTime();
+-  APP_LOG_INFO << "(summary) Send timestamp: " << std::fixed
++  APP_LOG_INFO << "summary: Send timestamp: " << std::fixed
+         << recv_data->header().timestamp_sec()
+         << " s, recv timestamp: " << time_now << " s, delay: "
+         << time_now - recv_data->header().timestamp_sec() << " s";
+diff --git a/middleware/device_service/framework/rsu/rsu_component.cc b/middleware/device_service/framework/rsu/rsu_component.cc
+index 62ac633..c97891c 100644
+--- a/middleware/device_service/framework/rsu/rsu_component.cc
++++ b/middleware/device_service/framework/rsu/rsu_component.cc
+@@ -62,10 +62,10 @@ bool AIROS_COMPONENT_CLASS_NAME(RSUComponent)::Proc(
+ 
+     if (os::v2x::device::RSU_RSM == recv_data->type()) {
+     recv_total_obj_num += recv_data->obj_num();
+-    RSU_SERVICE_LOG_INFO << "[sumarry] Recv obj num: " << recv_data->obj_num() << ", recv total obj num: " << recv_total_obj_num;
++    RSU_SERVICE_LOG_INFO << "sumarry: Recv obj num: " << recv_data->obj_num() << ", recv total obj num: " << recv_total_obj_num;
+ 
+     if (recv_data->has_end_flag() && recv_data->end_flag()) {
+-      RSU_SERVICE_LOG_INFO << "[sumarry] Expected recv total obj num: "
++      RSU_SERVICE_LOG_INFO << "sumarry: Expected recv total obj num: "
+             << recv_data->total_obj_num()
+             << ", Actual recv obj num: " << recv_total_obj_num
+             << ", Obj loss rate: " << std::fixed
+@@ -73,7 +73,7 @@ bool AIROS_COMPONENT_CLASS_NAME(RSUComponent)::Proc(
+                    1.0 / recv_data->total_obj_num();
+ 
+       double time_now = airos::base::TimeUtil::GetCurrentTime();
+-      RSU_SERVICE_LOG_INFO << "[summary] Send timestamp: " << std::fixed
++      RSU_SERVICE_LOG_INFO << "summary: Send timestamp: " << std::fixed
+             << recv_data->message_timestamp()
+             << " s, recv timestamp: " << time_now << " s, delay: "
+             << time_now - recv_data->message_timestamp() << " s";
+diff --git a/middleware/device_service/modules/mec/cictci/cictci_mec.cc b/middleware/device_service/modules/mec/cictci/cictci_mec.cc
+index 7f7f753..607ce04 100644
+--- a/middleware/device_service/modules/mec/cictci/cictci_mec.cc
++++ b/middleware/device_service/modules/mec/cictci/cictci_mec.cc
+@@ -153,7 +153,7 @@ void CICTCIMec::TaskProcessRecvFrame()
+ {
+ 
+     V2X_CODEC_LOG_INFO << "start task : process response.";
+-    V2X_CODEC_LOG_INFO << "[summary]: Recv package num: " << ++mec_recv_packagenum_;
++    V2X_CODEC_LOG_INFO << "summary: Recv package num: " << ++mec_recv_packagenum_;
+     
+     auto oriBuf = afl::net::ByteBuffer(512, 65536);
+     ssize_t recv_len = -1;
+@@ -433,8 +433,8 @@ bool CICTCIMec::ParseJsonData2PbDataObj(json& j)
+         // RSAP_DEBUG_PRINT << ss_check.str();
+     }
+ 
+-    V2X_CODEC_LOG_INFO << "[summary] Send package total num: " << mec_seqnum_ << "  total obj num: " << mec_recv_objnum_;
+-    V2X_CODEC_LOG_INFO << "[summary] timeStamp: " <<  std::fixed << airos::base::TimeUtil::GetCurrentTime() * 1000;
++    V2X_CODEC_LOG_INFO << "summary: Send package total num: " << mec_seqnum_ << "  total obj num: " << mec_recv_objnum_;
++    V2X_CODEC_LOG_INFO << "summary: timeStamp: " <<  std::fixed << airos::base::TimeUtil::GetCurrentTime() * 1000;
+     MEC_SERVICE_LOG_ERROR << output_data_obj_->DebugString();
+ //    RSAP_DEBUG_PRINT << "[obj]" << output_data_obj_->DebugString();
+ 
+diff --git a/script/airos_keep_alive.sh b/script/airos_keep_alive.sh
+index 4295b02..e56c491 100755
+--- a/script/airos_keep_alive.sh
++++ b/script/airos_keep_alive.sh
+@@ -66,6 +66,9 @@ function keep_alive() {
+         check_run "${processes[$process]}"
+       fi
+     done
++
++    # 定期对日志进行管理
++    python3 /home/airos/script/airos_log_proc.py
+     sleep 30  # Check 30s
+   done
+ }
+

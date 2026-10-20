@@ -1,0 +1,121 @@
+added	deleted	commit	date	author	subject
+141575	0	cb9e1f0c01db26a912b63f24e7d27606102cd27b	2024-02-20	changxuhui	[airos][feat]: 2.0基础代码上传
+20623	0	1cb5b63cbbfd8862426bb1e2d7606078736de531	2024-02-26	changxuhui	[airos][feat]: base/common 添加公共库
+18443	2	b0a04fa5fc8709de9bcc44b83ec5550199994de3	2024-07-25	tianpuxuan	[feat]:test_tools更新
+13990	0	4422846e92fc14c5102311c4ed8aef31a6bf049f	2024-02-23	changxuhui	[airos][feat]: 添加bazel编译补全脚本
+13443	25957	b3bb7a6615de06e54b9b25a6228ec13571d32434	2025-03-17	zhangenwei	[运维][fix]同步主线新架构修改
+13125	0	53ed1e7161ef7f3bed19bde472acb9940c6f6886	2026-09-16	libo	docs(运维):【20260916-libo-1】新增运维平台协议文档：路侧感知与计算设备数据采集技术要求V3.3校正及V3.4版本
+9747	0	c390882d9e41980d95095f447805ef93aff92739	2024-12-16	常序辉	[通用][feat]: 证书验证权限Demo
+8780	16368	324f1b9d0e7e04e53cec0620fafd2b73705a2072	2025-02-27	zhangenwei	[新架构][feat]1.新架构入库，运维8个模块合并成1个模块，信控4个模块，合并成1个模块，主要是降低cpu占用
+8750	0	1110d1affffaaccf292ed14ded5e480ac3b33b86	2024-07-11	常序辉	[airos][feat]:测试工具上传
+8606	1	7591a30acde540360bcaad1621b2079930200824	2025-04-14	LAPTOP-0HQ2NSHK\hezhiyong	[顺义车网][feat]：场站引导代码提交
+8047	0	98bd1d371f956e9be59acde9e34cc18a5893092b	2024-06-18	zhangenwei	[公用][feat]1.新增http函数库
+6989	138	2bf7dab73b03f07af0557b5d663e327bddb47bd5	2024-04-01	zhangenwei	[感知接入][fix]1.调整感知接入和协议1所需封装类文件存放路径
+6862	92	7d2fa0f7fbfade00d4863a02a055faa39a6f5595	2024-11-29	zhangenwei	[协议2][fix]1.由于信控、雷达动态数据推送频率过高，将模块拆分成信控radar_tc、雷达静态数据radar_static、雷达动态数据radar_traffic_metric和统一上云服务radar_cloud
+6317	1335	6befac3a09d1365e46f0c56017a37862e645c5f0	2025-06-09	zhangenwei	feat(运维): 【20250609-zhangenwei-5】同步主线中运维3.3新增功能
+5787	0	d8e388801c7c02d830a2a399dd22eb3ab7aaf958	2024-12-17	贺志勇\hezhiyong	[德清][feat]：德清datahub功能提交
+4630	0	9f1425cbb5e77413cd5afd5b28d6f8b136e647ee	2024-06-18	zhangenwei	[协议5][feat]1.新增mec运维组件
+4343	1528	f0c4f6009fff1628c340e6b1a0f695212a237ea4	2025-04-15	changxuhui	[  ][    ]:
+3903	9	56da202a65415123768af8bd75a7a2ec6f2933ef	2024-06-07	zhangenwei	[业务数据模块][feat]1.新增角度偏移、信号机原始数据、场景数据组件
+3894	2	e6cb3f8d2bb93c89a954e6d5131f11416a543865	2026-08-26	libo	feat(信号机):【20260826-libo-1】按《雷达信控数据上报协议V1.12-20260415》（docs/radarV1.12-20260415.md）接入雷达脉冲和统计数据，通过GA/T 1743扩展协议发送给信号机
+3394	15	462cc356eec0c7e8231b1e4c4a4c2a94c3a5e5aa	2025-06-09	zhangenwei	feat(应用): 【20250609-zhangenwei-2】同步主线中场站引导代码
+3369	1	c5ad3555e3d46a7a65d4975e8af47b7672c17ba2	2025-04-10	贺志勇\hezhiyong	[顺义车网][feat]：场站引导功能提交
+3050	0	8ab8f8370a5bf6867fb9f58865d35604142e2070	2024-11-17	changxuhui	[测试平台][feat]: 上传信号机相关的包
+2881	0	894e49798151d1f189c44c63a767277a72d8ade9	2024-08-27	常序辉	[通用][feat]: 上传包管理相关的打包方式
+2872	0	112d0e0b25d6678552e68864e6a017b16905bfa0	2024-12-12	贺志勇\hezhiyong	[顺义车网][feat]：德清中控信号机对接：红绿灯解析成pb和gat1743并转发，
+2586	2	d4f35604e2860544da68df92d0bdb1acb857caf1	2024-06-18	zhangenwei	[协议5][feat]1.新增摄像头运维组件和云控组件
+2577	6	eb9375ba0110bd547971364376a0606fe92b3a7b	2024-04-10	changxuhui	[airos][fix]: 二阶段场景公共模块
+2011	789	5cb22a85a652b4325a406876c88a787421ed8c79	2025-05-25	zhangenwei	[运维][feat]1.增加om运维监控、信控服务监控
+1963	4524	d219b17dae352d3bcb6cb0223278a056a65ff6c0	2024-12-25	zhangenwei	[德清][fix]1.同步主线代码
+1952	593	1b0b4b54541d2d00af65bcda9a3a467d7883d21e	2026-03-16	zhangenwei	fix(运维):【20260316-zhangenwei-1】由于统一channel中数据过大，导致监控关键数据丢失，修改成多个channel
+1864	0	8edf4aa9fd21baf692bc62dc253112a656021d3f	2025-03-28	changxuhui	[认证][feat]: 新增license生成工具
+1795	1	12b243a88e6f241a242a1a7f9e4072fd111630c4	2025-03-28	常序辉	[认证授权][feat]: 认证授权工具同步主线分支
+1773	6	563942bcf0835f79d576708413040a7b60a6b3ce	2025-01-20	zhangenwei	[德清][feat]1.新增算法状态和ping统计接口
+1726	0	e6c2ef0c51c870e7b1d016d3831dd00bec1df0eb	2024-06-18	zhangenwei	[协议5][feat]1.新增设备状态组件，用于监控感知设备是否在线、授时情况
+1715	388	46795d1216c0672cefdda29d34d8c4aaf223481f	2024-06-18	zhangenwei	[协议1+协议5][fix]1.新增运维公用库（包括sqlite3操作类），相应的修改协议1中sqlite3调用函数接口
+1688	514	ebba5089718b7713a96165427fcd8d5f8c5c4de6	2024-06-26	zhangenwei	[协议2][feat]1.协议2从协议5雷达运维服务中单立出来
+1569	94	ded70af0c8f0e2647fef44a649df98405be0b10b	2024-11-18	zhangenwei	[智路os][feat]1.新增感知接入信息统计和感知上云信息统计
+1562	5	762b1401a2af228a18ec0703bf41111a75b1a565	2024-06-19	changxuhui	[airos][feat]: v2x xml 地图默认从工参表获取
+1526	0	5d66b537ce00db45d1793bc364513c9bd486bc9c	2024-06-19	changxuhui	[airos][feat]: 增加x86 架构的asn 编码库
+1523	136	7e8ed8f74a0e802271b5b501bfd1bd9de0d4e90e	2024-04-26	zhangenwei	[协议1][fix]1.修正设备状态字段、字和双字字节序转换问题
+1515	252	6a67b195b46d704c3ffcb39d1825193142340018	2025-05-27	changxuhui	[feat][fix]:大兴高速国汽地图加载
+1423	101	388679fffe3215edfe25610eb77e43bf53141529	2025-01-02	LAPTOP-0HQ2NSHK\hezhiyong	[德清][fix]：德清功能修改
+1400	4	8cc7ef4fdad2e731d3ee7ec1617e84f49fce821c	2024-02-26	changxuhui	[airos][feat]: mec 感知消息 1001 1002 接入
+1363	0	0cd31025e10aed6b500a4e15f259f83a1b250b85	2024-02-23	changxuhui	[airos][feat]: base/common 添加公共库
+1266	0	cb25b6f09a2e5f0c0bea3f678a50e9924b2e6f1f	2026-05-09	zhangenwei	feat(点云):【20260509-zhangenwei-6】运维3.4，在点云中增加cyberrt的接口，上传proto文件对应的py文件和之前的备份文件
+1207	0	737fe9f6fa20bbcf1b0b1d6d561c8a656b357e17	2024-11-11	常序辉	[airos][feat]:上传包管理相关代码
+1196	0	2e67136e792e15de630193bc8d426a5f4c868a46	2024-04-01	zhangenwei	[协议1][feat]1.新增协议1组件
+1160	36	5de89fb6a5c7068038733fcdd9983c1e843d441c	2025-04-07	zhangenwei	[运维][feat]1.相机内外参上报
+1120	489	dbb774ee69347b125130a5fc1460865d4a17ffb9	2026-03-05	zhangenwei	fix(运维):【20260305-zhangenwei-1】：【顺义车网】【智路os运维3.4】   1.调整打印控制
+1116	7	b255346ad51038ee4e3b4618f7a9baa223336e94	2025-04-07	zhangenwei	[运维][feat]1.雷达内外参上报
+1110	2	2db7875b3b8d1451355e7061d01dae77cf9d0fff	2024-07-17	zhangenwei	[智路os测试][feat]1.增加摄像头接入代码
+1095	9	cc01d01b40360865e3f3223951dc7f259da03157	2024-06-24	贺志勇	[顺义车网][feat]：信控功能代码提交
+1087	17	77fbdbbcc635f43a6e27d15af174b6b5536b80d4	2024-06-20	changxuhui	[airos][feat]: 默认兼容asn xer xml 地图
+1082	0	338cd4acfacd435b056848baf3b8563b23db2e8d	2024-06-07	zhangenwei	[公用][feat]1.增加公用库
+1081	50	de233482b285c46924ea305cc52b889e8c6ae31d	2025-07-08	changxuhui	perf(设备接入)【FAR202505-00064】相机接入模块优化
+1081	37	63aaefc509327583077fa3f560f4d0b46982de70	2026-01-12	zhangenwei	feat(运维):【FAR202512-00212】市场需求-解决方案 - 车网运维协议V3.4版本开发： 1、7.3.12 MEC自检结果上报 2、7.1.8.2 上报路口车辆情况 3、7.3.2 设备注册：增加"设备与测试服务系统接口版本"字段
+1069	0	4b87955ebf45c8878841e5ab20f5c1ca61b1057c	2024-11-17	changxuhui	[测试平台][feat]: 上传rsu包管理相关内容
+1041	610	165c607ba3ebb4dcdc3d15e88d3cb48fb5154389	2024-03-22	常序辉	[智路os][feat]: rsi路径通过配置文件调通
+1035	7	62d13c9cb85641474b7d381a4e43b2db5ae8569c	2024-11-26	zhangenwei	[协议2][feat]1.雷达结构化数据，增加静态数据接口和动态数据接口中设备状态数据上报接口
+1030	0	8cf3ecf658fce5b243e82a4535ed193640b640a4	2024-04-26	贺志勇	[顺义][feat]：协作式变道和协作式汇入代码初版提交
+1020	8	5b9234f531f52880863cd1cb57ab97c11c491d26	2025-07-04	changxuhui	feat(设备接入)【FAR202505-00064】设备接入网络相机framework和module实现
+1013	980	f85ad530c5a7984ded35b7bc30bdf3b40096bfc7	2024-08-30	zhangenwei	[协议5/1][fix]1.修改回车\n，使用std::endl代替
+1013	212	d29276e8f40bd6c3b2e2516f51fc5e20e1addcd8	2024-12-25	zhangenwei	[协议2][fix]1.雷达动态数据，修改实时过车数据上报机制
+985	0	cc1bc13a845ba7623115a7b6f08ff22461c928c3	2024-06-18	zhangenwei	[协议5][feat]1.新增雷达运维组件
+981	293	b6cde81d65ee822a8ef049e839b1dfa13021f65d	2025-04-07	zhangenwei	[运维][feat]1.相机和雷达告警信息log存储及数据入库
+866	101	76391236cba18b12f394af43ebd94565e15968ef	2024-06-07	zhangenwei	[协议1][feat]1.增加设备序列号映射、设备状态从数据库获取
+845	956	730d1a004ddb89de5215492259fb8e1779b568c4	2024-06-24	zhangenwei	[协议1、5][fix]1.修改log日志
+840	152	103b4909e66dd1b708f8ed7001b11db9ff371151	2025-01-20	zhangenwei	[德清运维][fix]1.一体化运维协议修改
+804	650	51dbd3029fd99e9a1e8b05012b9238c80844196e	2025-03-04	zhangenwei	[信控指标][fix]1.增加多线程处理和修改打印
+791	513	6daadbe7c780cab00ab3ecd8fadd36c2fb554e65	2026-04-03	zhangenwei	fix(运维):【BUG25534】【顺义车网】【智路OS】mec自检使用相同的channel存在数据丢失
+790	1	cb2718b36e4ea85ec5b5bb3fb64607194af9b9e8	2024-10-21	贺志勇\hezhiyong	[顺义车网][feat]：违法事件接口代码提交
+779	108	343c8d80a1303adfe208c163c2e17156c7449f5b	2024-05-28	常序辉	[智路][fix]: 修复二阶段场景中的一些bug
+776	651	68cabe075e94ee039b68b705bb386a18badf12bf	2025-07-02	zhangenwei	fix(信控): 【202507021613-zhangenwei-2】增加mqtt连接断开监控功能
+752	61	6a6ce9457d7ca1b2fba98d69abb8e4cf2ecd8325	2024-03-28	常序辉	[智路os][feat]：更新二阶段proto
+745	49	5e9b2869a07834da652626f0a09cf55120cca820	2025-03-07	tianchuan	雷达信控监控功能
+726	9	a0c801a2161474101a475f5163c4c2bbfc5310a0	2025-05-25	zhangenwei	[信控][feat]1.增加信控动态数据上云统计功能
+704	0	bbe8cfafa385e4cf973cd14615309b77d710ccfd	2024-08-23	zhangenwei	[协议5][feat]1.新增场景BSM数据服务
+680	1	a1207626e028206d952d9caf8f7e214e12f8e6f1	2025-07-08	changxuhui	feat(服务)【FAR202505-00064】视频从channel读取通过rtsp推流demo
+678	297	ed00b832776f69696ac3affb0bb5460f20bd7504	2024-09-24	zhangenwei	[运维][fix]1.修正om_device_status模块，监控的性能信息和告警信息入库逻辑，2.修改订阅主题
+677	99	74d4205a11d4832bbefd13ec86056573207b84ee	2026-03-05	zhangenwei	fix(运维):【bug24321】【顺义车网】【智路os运维3.4 MEC自检不符合接口
+659	94	f57c06f3f4e26aa262d9567d4eb1ff3a73399c8e	2024-08-23	zhangenwei	[协议5][feat]1.数据库中增加mec-status、mec-alarm 表，增加相应的操作接口
+655	264	9a7a0b21daad1b18d213852d94519837debbcfe6	2025-03-11	tianchuan	om_monitor:增加磁盘空间查询接口
+647	9	0312b3cd5eb74e8a21329ef4d66794bbcfc8e5b0	2024-03-29	changxuhui	[airos][fix]: 二阶段proto定义 编译通过
+642	353	bf9dec2946498cd4db136e2699fb7a04f0b91b32	2024-09-24	zhangenwei	[运维][fix]1.根据东软回复，修正告警处理逻辑：告警产生立刻上报，相同告警1分钟上报一次，告警消失，也需要上报，2.修正ptp授时离线告警 3.修正角度偏移告警
+640	81	6fb6aae7c391cd66a72aba9707933ddf7bbe7114	2024-11-26	zhangenwei	[协议5&协议1][fix]1.调整mqtt订阅处理逻辑
+636	99	11825942115e67a1c734b7d9ff9d546dc9d9282f	2025-01-20	zhangenwei	[德清运维][fix]1.同步主线内容
+609	256	0ab5c998f1e08fb6026f06eb0bf67d207e73cbc7	2024-06-26	zhangenwei	[协议2][fix]1.调整架构，增加上云功能
+607	417	da2996099679718945481bf6372411f964927b23	2025-03-04	zhangenwei	[运维][feat]1.增加多线程处理和调整打印、代码格式
+587	0	a86a47a5d4eeb0a6f2f45b13eda17d689cac7087	2024-07-22	lvhaitao	点云上传代码入库
+578	524	2905ff60e22c89f0f90c1aac64cd8aa2aca60582	2026-03-11	zhangenwei	fix(场景):【20260311-zhangenwei-1】格式化信号机适配器代码
+563	230	53a6c67dc8d9057b73dbf7e2859c4a357d7bcdbb	2025-09-02	zhangenwei	fix(运维)：【20250902-zhangenwei-3】运维模块增加mqtt断连重连机制，调整mec性能监控处理逻辑（mec直接监控，不从数据库获取）
+559	33	6f40990584375d3fe9dfb0313cd37f26b5ab8797	2024-08-23	zhangenwei	[协议5][feat]1.增加告警监控和摄像头角度偏移告警记录功能
+548	0	c5b61bbec60c93561af08657080d38bdbe840d80	2024-09-24	zhangenwei	[公用][feat]1.增加启动各个模块脚本，在airos_launch脚本基础上，增加单独启动模块到前台的功能，为了方便命令行输入命令，改名为launch
+544	6	29617786e6a9545e0c9b12256506cae04c006852	2025-06-25	zhangenwei	feat(信控)：【FAR202504-00020】市场需求-解决方案 - 车网3.0项目未完成需求-新增需求开发
+537	273	4e1971ca3cfce119cf3cbdf0b30b95f0f41bd537	2024-11-26	zhangenwei	[协议5][feat]1.运维协议3.1升级到3.2
+531	223	f643d5618c57436fccad7d825fe74ae03dafac8b	2024-09-24	zhangenwei	[运维][fix]1.修正对om_mec配置文件修改监控逻辑
+529	3	8258c75526ec95da568bdeaf0ab506feace1c630	2024-05-11	changxuhui	[airos][feat]:  配置文件配置RSi下发
+509	234	0bf66b025a4ada7052798f9ea538c64ebe588e46	2024-11-26	zhangenwei	[协议5][fix]1.mec运维，调整调试信息写log可控
+506	378	f4fbf975d748a25053159fa78cc44806a2a49544	2024-06-21	zhangenwei	[公用][fix]1.新增信控工参配置文件
+498	150	194abc87a43e1984b95dc74141dbdcd00aef456f	2024-05-09	changxuhui	[airos][fix]:  调整cooperation_intersection_cross模块
+488	167	054f8bbe766c8e6dee4a91d220fac8d15ddcd21a	2025-07-11	root	feat(服务)【FAR202505-00064】record 转RTSP功能实现
+481	116	6fbfc884dac454c9a395ac46f8c1c3559ac1f977	2025-01-08	zhangenwei	[运维监控][feat]1.增加智路os模块状态、docker状态查询
+476	180	593be74ceb75f985d0e9db1842bcd05294e98a63	2024-05-15	zhangenwei	[协议1][fix]1.根据测试要求，必须解析每个字段，不需要比对元数据
+469	339	fc63de0037424218a909d943b5468a0bf5a95496	2025-04-07	zhangenwei	[运维][feat]1.雷达内外参上报增加从工参中读取偏北角
+463	0	869f3b9aac8329a8a2afcb4311d2411b2770ece8	2024-06-28	zhangenwei	[公用][feat]1.新增md5类
+458	34	62e523cea924f10ca107bbc67190b204f341af74	2026-01-26	LAPTOP-0HQ2NSHK\hezhiyong	feat(运维):【FAR202510-00185】市场需求-解决方案 - 顺义3.0道路遗撒事件上报交管平台
+455	109	d944f1fc4c71b7fb6279f3c98c05bf3d93a06a7e	2025-05-13	changxuhui	[cybert_10.0][feat]: cybert_10.0移植测试
+453	205	9acd640f4cb73b0fe5f3464fc7f2153e5377b198	2024-12-02	贺志勇\hezhiyong	[顺义车网][feat]：修改信控proto打印
+452	264	dab5c9342c78c38b70b098e5d8e7ae5a384d2093	2026-03-11	zhangenwei	fix(运维):【20260311-zhangenwei-2】修改Mec自检处理逻辑    1.解决处理告警产生及消失开始时间不对、描述字段为空的问题    2.解决告警处理逻辑
+444	0	14bb558aa3e87b80ac79f8fec89e4fe5bab4a477	2025-07-04	changxuhui	feat(设备接入)【FAR202505-00064】智路OS网络相机接入工厂类定义实现
+429	413	2428edce1af289ec143fe8acf4d7a5994a063a76	2024-08-30	zhangenwei	[协议5][fix]1.数据操作类，修改mec_alarm中cpu的uti和load字段类型，及相应的操作接口语句
+426	53	e1586e601e75035810b5a56a450ab2a6e4cd51bb	2024-07-08	zhangenwei	[协议5][feat]1.运维公用数据库接口，增加单个字段更新函数接口和调整表格内容
+422	45	058d558611fd3dae694f3a296419773583e81fc1	2024-04-24	zhangenwei	[协议1][feat]1.公用库增加tcp客户端通信加密功能
+411	307	808b5d8e40e2e5cfce8df366a70e58ac52f90893	2024-08-23	zhangenwei	[协议5][fix]1.删除bs_common（MEC业务公用模块）,内容转移到om_common中，调整各个服务中头文件引用，各服务公用文件移动到om_common/data_model目录下
+410	2	f2b967cbab8f6377afffedd1fffcba940b561572	2024-11-07	changxuhui	[airos][feat]: 德清打包
+400	164	2890e6ed8ac4321bbda808f10770f9876c149f0b	2025-09-02	zhangenwei	fixed(运维):【20250902-zhangenwei-5】调整运维磁盘空间不足告警逻辑，/目录和挂载work目录分开判断
+391	330	e37575c5b5851419d642cbe85969139780dd6b9a	2025-06-09	zhangenwei	feat(设备接入): 【20250609-zhangenwei-3】同步主线中感知上云v4.0.16版本
+390	0	8db599296c7c800f4436792495f46cf9ef1fb608	2024-08-30	zhangenwei	[协议5][fix]1.增加性能管理信息功能类
+388	58	1bc177bbe0707abb337b58dfb996496322f77b05	2024-07-08	zhangenwei	[协议5][fix]1.根据车网部分反馈和测试反馈，修改计算设备运维接口逻辑
+384	261	24cd20ae08edb07926142f0e4a0fca03eaef08ab	2025-03-14	tianchuan	docker状态+模块状态+磁盘信息   合并
+384	0	69f980919ef7600ce91eab975aac18c238967460	2024-04-03	zhangenwei	[协议1][fix]1.增加依赖文件

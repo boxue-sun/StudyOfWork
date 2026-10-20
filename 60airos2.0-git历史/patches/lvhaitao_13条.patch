@@ -1,0 +1,1619 @@
+# 作者: lvhaitao
+# 提交数: 13
+# 来源: 193 机 /work/sunboxue/airos2.0 (--all)
+
+@@@C	lvhaitao	d6cc21863e537b295caf17c359d8e459f519d820	2025-07-17	feat(应用):【20250717-lvhaitao-2】测试平台2.0事件扩展后pb入库
+diff --git a/air_service/framework/proto/airos_usecase.proto b/air_service/framework/proto/airos_usecase.proto
+index 520fbee..073c6ed 100644
+--- a/air_service/framework/proto/airos_usecase.proto
++++ b/air_service/framework/proto/airos_usecase.proto
+@@ -79,6 +79,12 @@ message EventInformation {
+         SMALL_TURN = 32;                      // 大弯小转
+         FRAGMENT = 33;                        // 抛洒物
+ 
++        // 测试平台2.0事件扩展 add by lht
++        VEHICLE_MALFUNCTION = 60;             // 车辆故障
++        CONGESTION = 61;                      // 拥堵
++        TRAFFICLIGHT_MALFUNCTION = 62;        // 交通信号灯故障
++        EMERGENCY_VEHICLE = 63;               // 紧急车辆提醒
++
+         //车端提醒事件
+         PEOPLE_RUN_RED_C = 101;               // 行人闯红灯(车端提醒)
+         NONVEHICLE_RUN_RED_C = 102;           // 非机动车闯红灯(车端提醒)
+
+@@@C	lvhaitao	cc828f42e48897b587f3fa8af04ace557eae0661	2025-07-17	feat(应用):【20250717-lvhaitao-1】智路mec转发事件类型添加event_type和timestamp字段
+diff --git a/middleware/device_service/modules/mec/cictci/cictci_mec.cc b/middleware/device_service/modules/mec/cictci/cictci_mec.cc
+index 52baceb..49d4b13 100644
+--- a/middleware/device_service/modules/mec/cictci/cictci_mec.cc
++++ b/middleware/device_service/modules/mec/cictci/cictci_mec.cc
+@@ -493,6 +493,17 @@ bool CICTCIMec::ParseJsonData2PbDataEvent(json &j) {
+             event->set_id(SENSOROBJIDALLOCATOR_INSTANCE_REF.getObjId(cictciEventDetail.m_ID));
+             event->set_event_type_mec(cictciEventDetail.m_EvtType);
+ 
++            // add by lht for test platform 2.0
++            auto it = kCictciToAirosMap_.find(static_cast<os::v2x::device::CICTCI_EventType>(cictciEventDetail.m_EvtType));
++            if(it != kCictciToAirosMap_.end()) { 
++                event->set_event_type(it->second);
++            } else {
++                MEC_SERVICE_LOG_ERROR << "[error] cictci event type not found, use NONE instead, type: " << cictciEventDetail.m_EvtType;
++                event->set_event_type(airos::usecase::EventInformation_EventType_NONE);
++            } 
++            event->set_timestamp(TimeStampTransfer(cictciEvent.m_Timestamp) / 1000.0);  // s
++            // end add by lht for test platform 2.0
++
+             if (!cictciEventDetail.m_EvtStatus_Empty && 2 == cictciEventDetail.m_EvtStatus)
+             {
+                 event->set_stop_flag(true);
+diff --git a/middleware/device_service/modules/mec/cictci/cictci_mec.h b/middleware/device_service/modules/mec/cictci/cictci_mec.h
+index eaf5679..2187369 100644
+--- a/middleware/device_service/modules/mec/cictci/cictci_mec.h
++++ b/middleware/device_service/modules/mec/cictci/cictci_mec.h
+@@ -34,11 +34,46 @@
+ #include "base/common/network/exception.h"
+ #include "base/common/network/event_loop.h"
+ #include "middleware/protocol/proto/monitor.pb.h"
++#include "air_service/framework/proto/airos_usecase.pb.h"
++
+ using namespace airos::monitor;
+ namespace os {
+ namespace v2x {
+ namespace device {
+ using namespace afl::base;
++
++enum CICTCI_EventType : int {
++    CICTCI_NONE = 0,                                    // 非 use_case，防止不使用 has 判断
++    CICTCI_TRAFFIC_ANTIDROMIC = 1,                      // 交通逆行
++    CICTCI_TRAFFIC_CONGESTION = 2,                      // 交通拥堵
++    CICTCI_ROAD_DEBRIS = 3,                             // 道路遗撒
++    CICTCI_PARKING = 4,                                 // 停车
++    CICTCI_ROAD_CONSTRUCTION = 10,                      // 道路施工
++    CICTCI_SLOW_VEHICLE = 11,                           // 车辆慢行
++    CICTCI_ABNORMAL_LANE_CHANGE = 13,                   // 异常变道
++    CICTCI_OVERSPEED = 14,                              // 超速
++    CICTCI_EMERGENCY_LANE_OCCUPY = 15,                  // 占用应急车道
++    CICTCI_INTRUSION = 16,                              // 闯入事件
++    CICTCI_QUEUE_OVERFLOW = 17,                         // 排队超限
++    CICTCI_PEDESTRIAN_CROSSING = 18,                    // 行人横穿（弱势交通参与者）
++    CICTCI_SPILL_EVENT = 19,                            // 溢出事件
++    CICTCI_CONTINUOUS_MULTI_LANE_CHANGE = 20,           // 连续变多道
++    CICTCI_LANE_DEPARTURE = 21,                         // 压线
++    CICTCI_PEDESTRIAN_ON_CROSSWALK = 22,                // 行人在斑马线
++    CICTCI_VEHICLE_EXITING = 23,                        // 机动车驶离
++    CICTCI_REVERSING = 24,                              // 倒车
++    CICTCI_VRU_PEDESTRIAN_CROSSING_ALERT = 25,          // VRU 行人横穿预警
++    CICTCI_EMERGENCY_BRAKING = 26,                      // 紧急制动
++    CICTCI_VEHICLE_MALFUNCTION = 27,                    // 车辆故障
++    CICTCI_PEDESTRIAN_INTRUSION_MOTORWAY = 28,          // 行人闯入机动车道
++    CICTCI_NON_MOTOR_INTRUSION_MOTORWAY = 29,           // 非机动车闯入机动车道
++    CICTCI_TRAFFIC_LIGHT_FAULT = 30,                    // 信号灯故障
++    CICTCI_VEHICLE_RED_LIGHT_VIOLATION = 31,            // 机动车闯红灯
++    CICTCI_NON_MOTOR_RED_LIGHT_VIOLATION = 32,          // 非机动车闯红灯
++    CICTCI_PEDESTRIAN_RED_LIGHT_VIOLATION = 33,         // 行人闯红灯
++    CICTCI_EMERGENCY_VEHICLE_ALERT = 34,                // 紧急车辆提醒
++};
++
+ /**
+  * @brief cictci-MEC设备
+  *
+@@ -87,6 +122,28 @@ private:
+     void MonitorSensorDataIn();
+ 
+ private:
++    const std::unordered_map<os::v2x::device::CICTCI_EventType, airos::usecase::EventInformation_EventType> kCictciToAirosMap_ = {
++        {os::v2x::device::CICTCI_EventType::CICTCI_NONE,                    airos::usecase::EventInformation_EventType_NONE},
++        {os::v2x::device::CICTCI_EventType::CICTCI_TRAFFIC_CONGESTION,      airos::usecase::EventInformation_EventType_LANE_CONGESTION},
++        {os::v2x::device::CICTCI_EventType::CICTCI_TRAFFIC_ANTIDROMIC,      airos::usecase::EventInformation_EventType_ANTIDROMIC},
++        {os::v2x::device::CICTCI_EventType::CICTCI_OVERSPEED,               airos::usecase::EventInformation_EventType_OVERSPEED},
++        {os::v2x::device::CICTCI_EventType::CICTCI_SLOW_VEHICLE,            airos::usecase::EventInformation_EventType_LOWSPEED},
++        {os::v2x::device::CICTCI_EventType::CICTCI_ROAD_CONSTRUCTION,       airos::usecase::EventInformation_EventType_REGIONAL_CONSTRUCTION},
++        {os::v2x::device::CICTCI_EventType::CICTCI_PARKING,                 airos::usecase::EventInformation_EventType_ZOMBIES_CAR},
++        {os::v2x::device::CICTCI_EventType::CICTCI_EMERGENCY_LANE_OCCUPY,   airos::usecase::EventInformation_EventType_EMERGENCY_LANE_OCCUPY},
++        {os::v2x::device::CICTCI_EventType::CICTCI_ABNORMAL_LANE_CHANGE,    airos::usecase::EventInformation_EventType_CONTINUOUS_CHANGE_LANE},
++        {os::v2x::device::CICTCI_EventType::CICTCI_PEDESTRIAN_CROSSING,     airos::usecase::EventInformation_EventType_PEOPLE_ENTER},
++        {os::v2x::device::CICTCI_EventType::CICTCI_NON_MOTOR_INTRUSION_MOTORWAY, airos::usecase::EventInformation_EventType_NONVEHICLE_ENTER},
++        {os::v2x::device::CICTCI_EventType::CICTCI_VEHICLE_RED_LIGHT_VIOLATION,  airos::usecase::EventInformation_EventType_VEHICLE_RUN_RED_LIGHT},
++        {os::v2x::device::CICTCI_EventType::CICTCI_PEDESTRIAN_RED_LIGHT_VIOLATION, airos::usecase::EventInformation_EventType_PEOPLE_RUN_RED_LIGHT},
++        {os::v2x::device::CICTCI_EventType::CICTCI_NON_MOTOR_RED_LIGHT_VIOLATION, airos::usecase::EventInformation_EventType_NONVEHICLE_RUN_RED_LIGHT},
++        {os::v2x::device::CICTCI_EventType::CICTCI_INTRUSION,                  airos::usecase::EventInformation_EventType_PEOPLE_ENTER},
++        {os::v2x::device::CICTCI_EventType::CICTCI_LANE_DEPARTURE,             airos::usecase::EventInformation_EventType_CROSS_SOLID_LINE},
++        {os::v2x::device::CICTCI_EventType::CICTCI_VEHICLE_MALFUNCTION,        airos::usecase::EventInformation_EventType_VEHICLE_MALFUNCTION},
++        {os::v2x::device::CICTCI_EventType::CICTCI_TRAFFIC_LIGHT_FAULT,        airos::usecase::EventInformation_EventType_TRAFFICLIGHT_MALFUNCTION},
++        {os::v2x::device::CICTCI_EventType::CICTCI_EMERGENCY_VEHICLE_ALERT,    airos::usecase::EventInformation_EventType_EMERGENCY_VEHICLE}
++    };
++
+     std::unique_ptr <std::thread> thread_process_recv_ = nullptr;
+     std::shared_ptr <CictciCommunication> communication_ = nullptr;
+     volatile bool stop_ = false;
+
+@@@C	lvhaitao	a7571f5006983dabefa54e17e2810bd583b8de1f	2025-07-16	fix(服务):【20250716-lvhaitao-1】修复rtsp server断开再恢复导致推流失败的问题
+diff --git a/middleware/protocol/rtsp_tool/rtsp_pusher.cc b/middleware/protocol/rtsp_tool/rtsp_pusher.cc
+index e7dca8d..e7d1fd0 100644
+--- a/middleware/protocol/rtsp_tool/rtsp_pusher.cc
++++ b/middleware/protocol/rtsp_tool/rtsp_pusher.cc
+@@ -226,24 +226,14 @@ void RTSPPusher::HandleFrame(std::unique_ptr<Frame> frame) {
+                         }
+                     }
+                     
+-                    // 写入头部
++                    // 写入头部, 默认使用UDP传输
++                    // 如果需要强制使用TCP，可以使用以下代码
++                    // AVDictionary *options = NULL;
++                    // av_dict_set(&options, "rtsp_transport", "tcp", 0);  // 强制使用 TCP
++                    // avformat_write_header(output_ctx, &options);
+                     if (avformat_write_header(output_ctx, nullptr) < 0) {
+                         DEBUGPRINT("Failed to write header");
+-                        find_idr_ = false; // 重置状态
+-                        if (output_ctx->pb) {
+-                            avio_closep(&output_ctx->pb);
+-                        }
+-                        // 1. 清理旧的 output_ctx, 不然会core dump
+-                        if (output_ctx->pb) avio_closep(&output_ctx->pb); {
+-                            avformat_free_context(output_ctx);
+-                            output_ctx = nullptr;
+-                        }
+-                        // 2. 重新初始化 output_ctx
+-                        if (avformat_alloc_output_context2(&output_ctx, nullptr, "rtsp", rtsp_url_.c_str()) < 0) {
+-                            DEBUGPRINT("Failed to recreate output context after failure");
+-                            find_idr_ = false;
+-                            return;
+-                        }
++                        ResetOutputContext(); // 重置输出上下文
+                         break;
+                     }else{
+                         DEBUGPRINT("Header written successfully");
+@@ -271,6 +261,7 @@ void RTSPPusher::HandleFrame(std::unique_ptr<Frame> frame) {
+ 
+     if (av_interleaved_write_frame(output_ctx, &pkt) < 0) {
+         DEBUGPRINT("Failed to write frame");
++        ResetOutputContext(); // 重置输出上下文
+         return;
+     }
+ }
+@@ -307,6 +298,24 @@ void RTSPPusher::PushLoop() {
+     DEBUGPRINT("Push loop finished");
+ }
+ 
++void RTSPPusher::ResetOutputContext() {
++    find_idr_ = false; // 重置状态
++    if (output_ctx->pb) {
++        avio_closep(&output_ctx->pb);
++    }
++    // 1. 清理旧的 output_ctx
++    if (output_ctx->pb) avio_closep(&output_ctx->pb); {
++        avformat_free_context(output_ctx);
++        output_ctx = nullptr;
++    }
++    // 2. 重新初始化 output_ctx
++    if (avformat_alloc_output_context2(&output_ctx, nullptr, "rtsp", rtsp_url_.c_str()) < 0) {
++        DEBUGPRINT("Failed to recreate output context after failure");
++        return;
++    }
++    DEBUGPRINT("Output context reset");
++}
++
+ void RTSPPusher::Stop() {
+     {
+         std::lock_guard<std::mutex> lock(mutex_);
+diff --git a/middleware/protocol/rtsp_tool/rtsp_pusher.h b/middleware/protocol/rtsp_tool/rtsp_pusher.h
+index feb6150..22e3f7b 100644
+--- a/middleware/protocol/rtsp_tool/rtsp_pusher.h
++++ b/middleware/protocol/rtsp_tool/rtsp_pusher.h
+@@ -121,6 +121,8 @@ private:
+      */
+     void HandleFrame(std::unique_ptr<Frame> frame);
+ 
++    void ResetOutputContext();
++
+ 
+     /**
+      * @brief 推流线程循环函数
+
+@@@C	lvhaitao	703ad08e927785d4c7dffc65e30dbbacaf24891b	2025-07-15	fix(服务):【20250715-lvhaitao-1】修复rtsp连接建立失败时导致的挂死问题
+diff --git a/middleware/protocol/rtsp_tool/channel_data_processor.cc b/middleware/protocol/rtsp_tool/channel_data_processor.cc
+index a54886d..4216312 100644
+--- a/middleware/protocol/rtsp_tool/channel_data_processor.cc
++++ b/middleware/protocol/rtsp_tool/channel_data_processor.cc
+@@ -88,7 +88,7 @@ void ChannelDataProcessor::PushToRTSP(const std::shared_ptr<const os::v2x::devic
+     if (rtsp_pusher_) {
+         const uint8_t* frame_data = reinterpret_cast<const uint8_t*>(msg->data().data());
+         int frame_size = msg->data().size();
+-        if (!rtsp_pusher_->PushFrame(frame_data, frame_size)) {
++        if (!rtsp_pusher_->PushFrame(frame_data, frame_size, msg->exposure_time())) {
+             std::cout << "Failed to push frame to RTSP" << std::endl;
+         }
+     }
+diff --git a/middleware/protocol/rtsp_tool/rtsp_pusher.cc b/middleware/protocol/rtsp_tool/rtsp_pusher.cc
+index 544e1e2..e7dca8d 100644
+--- a/middleware/protocol/rtsp_tool/rtsp_pusher.cc
++++ b/middleware/protocol/rtsp_tool/rtsp_pusher.cc
+@@ -88,7 +88,7 @@ double RTSPPusher::GetFrameRate(const std::vector<int64_t>& frame_timestamps) {
+     return closest_fps;
+ }
+ 
+-bool RTSPPusher::PushFrame(const uint8_t* frame_data, int frame_size) {
++bool RTSPPusher::PushFrame(const uint8_t* frame_data, int frame_size, int64_t dts) {
+     std::lock_guard<std::mutex> lock(mutex_);
+     if (!running_) {
+         DEBUGPRINT("Pusher is not running, cannot push frame");
+@@ -99,7 +99,11 @@ bool RTSPPusher::PushFrame(const uint8_t* frame_data, int frame_size) {
+             DEBUGPRINT("frame_rs queue is full, clearing old");
+             frame_rs_.clear();
+         }
+-        frame_rs_.push_back(GetCurrentTimeMs());
++        if (dts > 0) {
++            frame_rs_.push_back(dts);
++        } else {  // 如果没有提供 dts，则使用当前时间戳
++            frame_rs_.push_back(GetCurrentTimeMs());
++        }
+     }
+     if(frame_queue_.size() >= MAX_QUEUE_SIZE) {
+         DEBUGPRINT("Frame queue is full, clearing old frames, size: %lu", frame_queue_.size());
+@@ -226,8 +230,21 @@ void RTSPPusher::HandleFrame(std::unique_ptr<Frame> frame) {
+                     if (avformat_write_header(output_ctx, nullptr) < 0) {
+                         DEBUGPRINT("Failed to write header");
+                         find_idr_ = false; // 重置状态
+-                        if (output_ctx->pb) avio_closep(&output_ctx->pb);
+-                            break;
++                        if (output_ctx->pb) {
++                            avio_closep(&output_ctx->pb);
++                        }
++                        // 1. 清理旧的 output_ctx, 不然会core dump
++                        if (output_ctx->pb) avio_closep(&output_ctx->pb); {
++                            avformat_free_context(output_ctx);
++                            output_ctx = nullptr;
++                        }
++                        // 2. 重新初始化 output_ctx
++                        if (avformat_alloc_output_context2(&output_ctx, nullptr, "rtsp", rtsp_url_.c_str()) < 0) {
++                            DEBUGPRINT("Failed to recreate output context after failure");
++                            find_idr_ = false;
++                            return;
++                        }
++                        break;
+                     }else{
+                         DEBUGPRINT("Header written successfully");
+                         average_interval_ = static_cast<int64_t>((1000.0 / fps_) * 90); // 计算平均间隔时间
+diff --git a/middleware/protocol/rtsp_tool/rtsp_pusher.h b/middleware/protocol/rtsp_tool/rtsp_pusher.h
+index 9f25bc6..feb6150 100644
+--- a/middleware/protocol/rtsp_tool/rtsp_pusher.h
++++ b/middleware/protocol/rtsp_tool/rtsp_pusher.h
+@@ -61,9 +61,10 @@ public:
+      * @brief 推送一帧数据到 RTSP 服务器
+      * @param frame_data 帧数据指针
+      * @param frame_size 帧数据大小
++     * @param dts 帧的解码时间戳，单位为毫秒，默认为0
+      * @return true 如果推送成功，false 如果推送失败或推送线程未运行
+      */
+-    bool PushFrame(const uint8_t* frame_data, int frame_size);
++    bool PushFrame(const uint8_t* frame_data, int frame_size, int64_t dts = 0);
+ 
+ private:
+     struct Frame {
+
+@@@C	lvhaitao	6751732363a471a73e4b2d7723b9b555215bc418	2024-12-27	[智路][fix]:优化CPU占用高的问题，关闭CRC校验
+diff --git a/middleware/protocol/radar_point_cloud/DianYunRecorder.py b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+index 02cf463..5f030b9 100644
+--- a/middleware/protocol/radar_point_cloud/DianYunRecorder.py
++++ b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+@@ -24,10 +24,10 @@ import logging
+ import numpy as np
+ import threading
+ from concurrent.futures import ThreadPoolExecutor
+-from datetime import datetime
++from datetime import datetime, timedelta
+ #import binascii
+ 
+-aucCRCHi = [
++aucCRCHi = np.array([
+     0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80,
+     0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1,
+     0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01,
+@@ -42,9 +42,9 @@ aucCRCHi = [
+     0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
+     0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80,
+     0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40
+-]
++], dtype=np.uint8)
+ 
+-aucCRCLo = [
++aucCRCLo = np.array([
+     0x00, 0xC0, 0xC1, 0x01, 0xC3, 0x03, 0x02, 0xC2, 0xC6, 0x06, 0x07, 0xC7, 0x05, 0xC5, 0xC4, 0x04, 0xCC, 0x0C, 0x0D,
+     0xCD, 0x0F, 0xCF, 0xCE, 0x0E, 0x0A, 0xCA, 0xCB, 0x0B, 0xC9, 0x09, 0x08, 0xC8, 0xD8, 0x18, 0x19, 0xD9, 0x1B, 0xDB,
+     0xDA, 0x1A, 0x1E, 0xDE, 0xDF, 0x1F, 0xDD, 0x1D, 0x1C, 0xDC, 0x14, 0xD4, 0xD5, 0x15, 0xD7, 0x17, 0x16, 0xD6, 0xD2,
+@@ -59,7 +59,7 @@ aucCRCLo = [
+     0x5C, 0x5D, 0x9D, 0x5F, 0x9F, 0x9E, 0x5E, 0x5A, 0x9A, 0x9B, 0x5B, 0x99, 0x59, 0x58, 0x98, 0x88, 0x48, 0x49, 0x89,
+     0x4B, 0x8B, 0x8A, 0x4A, 0x4E, 0x8E, 0x8F, 0x4F, 0x8D, 0x4D, 0x4C, 0x8C, 0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46,
+     0x86, 0x82, 0x42, 0x43, 0x83, 0x41, 0x81, 0x80, 0x40
+-]
++], dtype=np.uint8)
+ 
+ """
+ /**********************************************************
+@@ -87,13 +87,14 @@ u16_t tsCRC16 (u8_t *ptr, u16_t len)
+ def tsCRC16(data):
+     ucCRCHi = 0xFF
+     ucCRCLo = 0xFF
+-    iIndex = 0
++    data = np.array(data, dtype=np.uint8)  # 确保data是NumPy数组
+ 
+     for d in data:
+         iIndex = ucCRCLo ^ d
+         ucCRCLo = np.uint8(ucCRCHi ^ aucCRCHi[iIndex])
+         ucCRCHi = aucCRCLo[iIndex]
+-    return np.uint16(ucCRCHi << 8 | ucCRCLo)
++
++    return np.uint16((ucCRCHi << 8) | ucCRCLo)
+ 
+ 
+ def generate_filename(upload_period):
+@@ -128,6 +129,7 @@ class TCPReceiver:
+         self.thread = None
+         self.running = False
+         self.write_buffer = bytearray()
++        self.need_crc = False
+ 
+     def start(self):
+         self.running = True
+@@ -205,15 +207,18 @@ class TCPReceiver:
+ 
+             #self.logger.debug(f"received frame len:{frame_length}, total len:{total_length}, head_index:{head_index}")
+             if (buffer_len - head_index) >= total_length:
+-                payload = self.buffer[head_index + 8: head_index + total_length - 2]
+-                frame_checksum = struct.unpack('>H', self.buffer[head_index + total_length - 2:head_index + total_length])[0]
+-
+-                if self.verify_checksum(payload, frame_checksum):
+-                    # 校验和通过，处理帧内容
++                if self.need_crc:   # 开启校验
++                    payload = self.buffer[head_index + 8: head_index + total_length - 2]
++                    frame_checksum = struct.unpack('>H', self.buffer[head_index + total_length - 2:head_index + total_length])[0]
++
++                    if self.verify_checksum(payload, frame_checksum):
++                        # 校验和通过，处理帧内容
++                        self.process_frame(self.buffer[head_index:head_index + total_length])
++                    else:
++                        # 校验和不通过，丢弃当前帧
++                        self.logger.warning("Checksum failed, discarding frame.")
++                else:   # 后续CPU占用再高,可考虑关闭CRC校验
+                     self.process_frame(self.buffer[head_index:head_index + total_length])
+-                else:
+-                    # 校验和不通过，丢弃当前帧
+-                    self.logger.warning("Checksum failed, discarding frame.")
+                 # 更新处理指针
+                 head_index += total_length
+             else:
+@@ -243,7 +248,7 @@ class TCPReceiver:
+                 self.logger.debug(f"begin write to {self.save_fime}, now:{self.fs_time}")
+             else:
+                 # 如果缓冲区大小达到一定阈值，则写入文件
+-                if len(self.write_buffer) >= 8192:
++                if len(self.write_buffer) >= 1024 * 1024:
+                     self.handle.write(self.write_buffer)
+                     self.handle.flush()  # 刷新文件缓冲区
+                     self.write_buffer.clear()  # 清空缓冲区
+@@ -380,6 +385,31 @@ def clear_directory(directory):
+     os.makedirs(directory)
+ 
+ 
++def remove_file_by_hour(directory, logger, hour=12):
++    while True:
++        # 获取当前时间
++        now = datetime.now()
++        # 计算12小时之前的时间
++        twelve_hours_ago = now - timedelta(hours=hour)
++        logger.debug(f"now:{now}, twelve_hours_ago:{twelve_hours_ago}")
++        # 遍历文件夹中的所有文件
++        for filename in os.listdir(directory):
++            file_path = os.path.join(directory, filename)
++            # 检查路径是否为文件
++            if os.path.isfile(file_path):
++                # 获取文件的最后修改时间
++                file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path))
++                # 如果文件修改时间早于12小时之前，则删除该文件
++                logger.debug(f"file_mtime:{file_mtime}, diff:{file_mtime < twelve_hours_ago}")
++                if file_mtime < twelve_hours_ago:
++                    try:
++                        os.remove(file_path)
++                        logger.debug(f"Deleted file: {file_path}")
++                    except Exception as e:
++                        logger.error(f"Failed to delete file {file_path}. Reason: {e}")
++        time.sleep(3600)  # 暂停3600秒后继续下一次检查
++        
++
+ def check_directory_size(directory, max_size, logger):
+     logger.info(f'begin to check {directory}, max_size：{max_size / 1024 / 1024 /1024} Gb')
+     while True:
+@@ -407,7 +437,7 @@ def check_directory_size(directory, max_size, logger):
+                 logger.info("No more files to delete.")
+                 break
+         logger.info(f"Final total size: {total_size / 1024 / 1024 / 1024} Gb")
+-        time.sleep(60)  # 暂停60秒后继续下一次检查
++        time.sleep(3600)  # 暂停3600秒后继续下一次检查
+ 
+ 
+ def get_directory_size(directory):
+@@ -606,8 +636,8 @@ def main():
+ 
+         if need_check:
+             logger.info(f"begin to start directory size check thread...")
+-            executor.submit(check_directory_size, backup_data_path, backup_data_max, logger)
+-
++            #executor.submit(check_directory_size, backup_data_path, backup_data_max, logger)
++            executor.submit(remove_file_by_hour, backup_data_path, logger)
+             logger.info(f"begin to start FTP upload thread...")
+             executor.submit(upload_files_periodically, ftp_server, ftp_port, ftp_user, ftp_passwd, False, backup_data_path, upload_period, logger)
+ 
+diff --git a/tatus b/tatus
+new file mode 100644
+index 0000000..bd959f4
+--- /dev/null
++++ b/tatus
+@@ -0,0 +1,151 @@
++[1mdiff --git a/middleware/protocol/radar_point_cloud/DianYunRecorder.py b/middleware/protocol/radar_point_cloud/DianYunRecorder.py[m
++[1mindex 02cf463..5f030b9 100644[m
++[1m--- a/middleware/protocol/radar_point_cloud/DianYunRecorder.py[m
++[1m+++ b/middleware/protocol/radar_point_cloud/DianYunRecorder.py[m
++[36m@@ -24,10 +24,10 @@[m [mimport logging[m
++ import numpy as np[m
++ import threading[m
++ from concurrent.futures import ThreadPoolExecutor[m
++[31m-from datetime import datetime[m
++[32m+[m[32mfrom datetime import datetime, timedelta[m
++ #import binascii[m
++ [m
++[31m-aucCRCHi = [[m
++[32m+[m[32maucCRCHi = np.array([[m
++     0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80,[m
++     0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1,[m
++     0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01,[m
++[36m@@ -42,9 +42,9 @@[m [maucCRCHi = [[m
++     0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,[m
++     0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80,[m
++     0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40[m
++[31m-][m
++[32m+[m[32m], dtype=np.uint8)[m
++ [m
++[31m-aucCRCLo = [[m
++[32m+[m[32maucCRCLo = np.array([[m
++     0x00, 0xC0, 0xC1, 0x01, 0xC3, 0x03, 0x02, 0xC2, 0xC6, 0x06, 0x07, 0xC7, 0x05, 0xC5, 0xC4, 0x04, 0xCC, 0x0C, 0x0D,[m
++     0xCD, 0x0F, 0xCF, 0xCE, 0x0E, 0x0A, 0xCA, 0xCB, 0x0B, 0xC9, 0x09, 0x08, 0xC8, 0xD8, 0x18, 0x19, 0xD9, 0x1B, 0xDB,[m
++     0xDA, 0x1A, 0x1E, 0xDE, 0xDF, 0x1F, 0xDD, 0x1D, 0x1C, 0xDC, 0x14, 0xD4, 0xD5, 0x15, 0xD7, 0x17, 0x16, 0xD6, 0xD2,[m
++[36m@@ -59,7 +59,7 @@[m [maucCRCLo = [[m
++     0x5C, 0x5D, 0x9D, 0x5F, 0x9F, 0x9E, 0x5E, 0x5A, 0x9A, 0x9B, 0x5B, 0x99, 0x59, 0x58, 0x98, 0x88, 0x48, 0x49, 0x89,[m
++     0x4B, 0x8B, 0x8A, 0x4A, 0x4E, 0x8E, 0x8F, 0x4F, 0x8D, 0x4D, 0x4C, 0x8C, 0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46,[m
++     0x86, 0x82, 0x42, 0x43, 0x83, 0x41, 0x81, 0x80, 0x40[m
++[31m-][m
++[32m+[m[32m], dtype=np.uint8)[m
++ [m
++ """[m
++ /**********************************************************[m
++[36m@@ -87,13 +87,14 @@[m [mu16_t tsCRC16 (u8_t *ptr, u16_t len)[m
++ def tsCRC16(data):[m
++     ucCRCHi = 0xFF[m
++     ucCRCLo = 0xFF[m
++[31m-    iIndex = 0[m
++[32m+[m[32m    data = np.array(data, dtype=np.uint8)  # 确保data是NumPy数组[m
++ [m
++     for d in data:[m
++         iIndex = ucCRCLo ^ d[m
++         ucCRCLo = np.uint8(ucCRCHi ^ aucCRCHi[iIndex])[m
++         ucCRCHi = aucCRCLo[iIndex][m
++[31m-    return np.uint16(ucCRCHi << 8 | ucCRCLo)[m
++[32m+[m
++[32m+[m[32m    return np.uint16((ucCRCHi << 8) | ucCRCLo)[m
++ [m
++ [m
++ def generate_filename(upload_period):[m
++[36m@@ -128,6 +129,7 @@[m [mclass TCPReceiver:[m
++         self.thread = None[m
++         self.running = False[m
++         self.write_buffer = bytearray()[m
++[32m+[m[32m        self.need_crc = False[m
++ [m
++     def start(self):[m
++         self.running = True[m
++[36m@@ -205,15 +207,18 @@[m [mclass TCPReceiver:[m
++ [m
++             #self.logger.debug(f"received frame len:{frame_length}, total len:{total_length}, head_index:{head_index}")[m
++             if (buffer_len - head_index) >= total_length:[m
++[31m-                payload = self.buffer[head_index + 8: head_index + total_length - 2][m
++[31m-                frame_checksum = struct.unpack('>H', self.buffer[head_index + total_length - 2:head_index + total_length])[0][m
++[31m-[m
++[31m-                if self.verify_checksum(payload, frame_checksum):[m
++[31m-                    # 校验和通过，处理帧内容[m
++[32m+[m[32m                if self.need_crc:   # 开启校验[m
++[32m+[m[32m                    payload = self.buffer[head_index + 8: head_index + total_length - 2][m
++[32m+[m[32m                    frame_checksum = struct.unpack('>H', self.buffer[head_index + total_length - 2:head_index + total_length])[0][m
++[32m+[m
++[32m+[m[32m                    if self.verify_checksum(payload, frame_checksum):[m
++[32m+[m[32m                        # 校验和通过，处理帧内容[m
++[32m+[m[32m                        self.process_frame(self.buffer[head_index:head_index + total_length])[m
++[32m+[m[32m                    else:[m
++[32m+[m[32m                        # 校验和不通过，丢弃当前帧[m
++[32m+[m[32m                        self.logger.warning("Checksum failed, discarding frame.")[m
++[32m+[m[32m                else:   # 后续CPU占用再高,可考虑关闭CRC校验[m
++                     self.process_frame(self.buffer[head_index:head_index + total_length])[m
++[31m-                else:[m
++[31m-                    # 校验和不通过，丢弃当前帧[m
++[31m-                    self.logger.warning("Checksum failed, discarding frame.")[m
++                 # 更新处理指针[m
++                 head_index += total_length[m
++             else:[m
++[36m@@ -243,7 +248,7 @@[m [mclass TCPReceiver:[m
++                 self.logger.debug(f"begin write to {self.save_fime}, now:{self.fs_time}")[m
++             else:[m
++                 # 如果缓冲区大小达到一定阈值，则写入文件[m
++[31m-                if len(self.write_buffer) >= 8192:[m
++[32m+[m[32m                if len(self.write_buffer) >= 1024 * 1024:[m
++                     self.handle.write(self.write_buffer)[m
++                     self.handle.flush()  # 刷新文件缓冲区[m
++                     self.write_buffer.clear()  # 清空缓冲区[m
++[36m@@ -380,6 +385,31 @@[m [mdef clear_directory(directory):[m
++     os.makedirs(directory)[m
++ [m
++ [m
++[32m+[m[32mdef remove_file_by_hour(directory, logger, hour=12):[m
++[32m+[m[32m    while True:[m
++[32m+[m[32m        # 获取当前时间[m
++[32m+[m[32m        now = datetime.now()[m
++[32m+[m[32m        # 计算12小时之前的时间[m
++[32m+[m[32m        twelve_hours_ago = now - timedelta(hours=hour)[m
++[32m+[m[32m        logger.debug(f"now:{now}, twelve_hours_ago:{twelve_hours_ago}")[m
++[32m+[m[32m        # 遍历文件夹中的所有文件[m
++[32m+[m[32m        for filename in os.listdir(directory):[m
++[32m+[m[32m            file_path = os.path.join(directory, filename)[m
++[32m+[m[32m            # 检查路径是否为文件[m
++[32m+[m[32m            if os.path.isfile(file_path):[m
++[32m+[m[32m                # 获取文件的最后修改时间[m
++[32m+[m[32m                file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path))[m
++[32m+[m[32m                # 如果文件修改时间早于12小时之前，则删除该文件[m
++[32m+[m[32m                logger.debug(f"file_mtime:{file_mtime}, diff:{file_mtime < twelve_hours_ago}")[m
++[32m+[m[32m                if file_mtime < twelve_hours_ago:[m
++[32m+[m[32m                    try:[m
++[32m+[m[32m                        os.remove(file_path)[m
++[32m+[m[32m                        logger.debug(f"Deleted file: {file_path}")[m
++[32m+[m[32m                    except Exception as e:[m
++[32m+[m[32m                        logger.error(f"Failed to delete file {file_path}. Reason: {e}")[m
++[32m+[m[32m        time.sleep(3600)  # 暂停3600秒后继续下一次检查[m
++[32m+[m[41m        [m
++[32m+[m
++ def check_directory_size(directory, max_size, logger):[m
++     logger.info(f'begin to check {directory}, max_size：{max_size / 1024 / 1024 /1024} Gb')[m
++     while True:[m
++[36m@@ -407,7 +437,7 @@[m [mdef check_directory_size(directory, max_size, logger):[m
++                 logger.info("No more files to delete.")[m
++                 break[m
++         logger.info(f"Final total size: {total_size / 1024 / 1024 / 1024} Gb")[m
++[31m-        time.sleep(60)  # 暂停60秒后继续下一次检查[m
++[32m+[m[32m        time.sleep(3600)  # 暂停3600秒后继续下一次检查[m
++ [m
++ [m
++ def get_directory_size(directory):[m
++[36m@@ -606,8 +636,8 @@[m [mdef main():[m
++ [m
++         if need_check:[m
++             logger.info(f"begin to start directory size check thread...")[m
++[31m-            executor.submit(check_directory_size, backup_data_path, backup_data_max, logger)[m
++[31m-[m
++[32m+[m[32m            #executor.submit(check_directory_size, backup_data_path, backup_data_max, logger)[m
++[32m+[m[32m            executor.submit(remove_file_by_hour, backup_data_path, logger)[m
++             logger.info(f"begin to start FTP upload thread...")[m
++             executor.submit(upload_files_periodically, ftp_server, ftp_port, ftp_user, ftp_passwd, False, backup_data_path, upload_period, logger)[m
++ [m
+
+@@@C	lvhaitao	b8f50407bbbdd2ad8b9ae00b18bde9d27c6a6662	2024-10-28	[点云][fix]:配置异常重复拉起导致内存占用高
+diff --git a/script/airos_keep_alive.sh b/script/airos_keep_alive.sh
+index 5178584..d889f37 100755
+--- a/script/airos_keep_alive.sh
++++ b/script/airos_keep_alive.sh
+@@ -75,7 +75,7 @@ function dian_yun_keep_alive(){
+ 	if [ -z "$is_live" ]; then
+       	    return_info "start $TARGET..."
+ 	    python3 /home/airos/protocol/radar_point_cloud/DianYunRecorder.py /home/airos/common_config/work_param_config.flag &
+-	    sleep 1
++	    sleep 5
+ 	else
+ 	  return_info "$TARGET is running..."
+ 	  sleep 30
+@@ -90,7 +90,7 @@ function ptp_keep_alive() {
+     if [ -z "$is_live" ]; then
+       return_info "start $PTP_PROCESS_NAME..."
+       python3 /home/airos/protocol/mec/PTPpartlog.py /home/airos/common_config/work_param_config.flag > /dev/null 2>&1 &
+-      sleep 1
++      sleep 5
+     else
+       return_info "$PTP_PROCESS_NAME is running..."
+       sleep 30
+
+@@@C	lvhaitao	a3e4b1abea3de24f6bf188ecc3e324b13810d713	2024-10-28	[点云][fix]:修复备份目录太大bug，配置异常重复拉起导致cpu占用高的问题
+diff --git a/middleware/protocol/radar_point_cloud/DianYunRecorder.py b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+index ebe43c1..02cf463 100644
+--- a/middleware/protocol/radar_point_cloud/DianYunRecorder.py
++++ b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+@@ -22,6 +22,10 @@ import time
+ from ftplib import FTP, error_perm
+ import logging
+ import numpy as np
++import threading
++from concurrent.futures import ThreadPoolExecutor
++from datetime import datetime
++#import binascii
+ 
+ aucCRCHi = [
+     0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80,
+@@ -117,12 +121,13 @@ class TCPReceiver:
+         self.type = type
+         self.upload_period = upload_period
+         self.logger = logger
+-        self.buffer = b''
++        self.buffer = bytearray()
+         self.handle = None
+         self.save_fime = ""
+         self.fs_time = int(time.time())
+         self.thread = None
+         self.running = False
++        self.write_buffer = bytearray()
+ 
+     def start(self):
+         self.running = True
+@@ -151,11 +156,11 @@ class TCPReceiver:
+             try:
+                 self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                 self.tcp_socket.connect((self.host, self.port))
+-                self.logger.info('已连接到 TCP 服务器')
++                self.logger.info(f'已连接到 TCP 服务器 {self.host}:{self.port}')
+                 return
+             except Exception as e:
+-                self.logger.error(f'TCP 连接错误: {e}')
+-                self.logger.info('5秒后尝试重新连接到 TCP 服务器...')
++                self.logger.error(f'TCP 连接错误: {e}, {self.host}:{self.port}')
++                self.logger.info(f'5秒后尝试重新连接到 TCP 服务器...{self.host}：{self.port}')
+                 time.sleep(5)
+ 
+     def receive_data(self):
+@@ -172,10 +177,10 @@ class TCPReceiver:
+                 # 处理数据...
+                 # 这里可以根据需要对接收到的雷达点云数据进行处理
+                 self.buffer += data
+-                # self.logger.debug(f"received from peer:{binascii.hexlify(self.buffer).decode()}")
++                #self.logger.debug(f"received from {self.host} len:{len(data)}:{binascii.hexlify(data).decode()}")
+                 self.process_data()
+             except(socket.error, socket.timeout) as e:
+-                self.logger.error(f'TCP 接收数据错误: {e}')
++                self.logger.error(f'TCP 接收 {{self.host}} 数据错误: {e}')
+                 if self.handle:
+                     self.handle.flush()
+                     self.handle.close()
+@@ -183,33 +188,39 @@ class TCPReceiver:
+                 break
+ 
+     def process_data(self):
++        #self.logger.debug(f"begin to process {self.host} len:{len(self.buffer)}:{binascii.hexlify(self.buffer).decode()}")
++        head_index = 0  # 初始化处理指针
++        valid_headers = {b'TRAB', b'TRAC'}  # 使用集合提高查找效率
+         # 帧头（4 字节）+ 帧长（除帧头、帧长度外所有字节, 4字节）+ 帧内容（80*N+72 字节）+ 帧校验（2字节）
+-        while len(self.buffer) >= 82:
+-            frame_header = self.buffer[:4]
++        buffer_len = len(self.buffer)
++        while (buffer_len - head_index) >= 82:
++            frame_header = bytes(self.buffer[head_index:head_index + 4])
+             # 帧头为 TRAB 时，代表点云数据，帧头为 TRAC 时，代表过滤后的点云结构化数据
+-            if frame_header not in [b'TRAB', b'TRAC']:
++            if frame_header not in valid_headers:
+                 # 非法帧头，丢弃当前帧
+-                self.buffer = self.buffer[1:]
++                head_index += 1  # 丢弃非法帧头
+                 continue
+-            frame_length = struct.unpack('>I', self.buffer[4:8])[0]
+-            total_length = frame_length + 4 + 4
++            frame_length = struct.unpack('>I', self.buffer[head_index + 4:head_index + 8])[0]
++            total_length = frame_length + 8
+ 
+-            # self.logger.debug(f"received frame len:{frame_length}, total len:{total_length}")
+-            if len(self.buffer) >= total_length:
+-                payload = self.buffer[8:total_length - 2]
+-                frame_checksum = struct.unpack('>H', self.buffer[total_length - 2:total_length])[0]
++            #self.logger.debug(f"received frame len:{frame_length}, total len:{total_length}, head_index:{head_index}")
++            if (buffer_len - head_index) >= total_length:
++                payload = self.buffer[head_index + 8: head_index + total_length - 2]
++                frame_checksum = struct.unpack('>H', self.buffer[head_index + total_length - 2:head_index + total_length])[0]
+ 
+                 if self.verify_checksum(payload, frame_checksum):
+                     # 校验和通过，处理帧内容
+-                    self.process_frame(self.buffer[0:total_length])
++                    self.process_frame(self.buffer[head_index:head_index + total_length])
+                 else:
+                     # 校验和不通过，丢弃当前帧
+-                    self.buffer = self.buffer[total_length:]
+-                    continue
+-                # 从缓冲区中移除已处理的帧
+-                self.buffer = self.buffer[total_length:]
++                    self.logger.warning("Checksum failed, discarding frame.")
++                # 更新处理指针
++                head_index += total_length
+             else:
+-                break
++                break # 不足以构成完整帧，退出循环
++            # 移除已处理的内容
++            if head_index > 0:
++                self.buffer = self.buffer[head_index:]  # 使用切片移除已处理的部分
+ 
+     def verify_checksum(self, frame_content, frame_checksum):
+         desired = tsCRC16(frame_content)
+@@ -221,34 +232,37 @@ class TCPReceiver:
+ 
+     def process_frame(self, frame):
+         try:
++            # 将字节数据转换为十六进制字符串
++            # hex_data = binascii.hexlify(frame).decode()
++            #self.logger.info(f"begin write :{hex_data}")
++            self.write_buffer.extend(frame)  # 将帧追加到缓冲区
+             if not self.handle:
+                 self.save_fime = f'{self.save_path}/{self.type}_{self.sn}_{generate_filename(self.upload_period)}'  # 替换为实际的文件名
+                 self.handle = open(self.save_fime, 'ab')
+                 self.fs_time = int(time.time())
+-                # 将字节数据转换为十六进制字符串
+-                # hex_data = binascii.hexlify(frame).decode()
+                 self.logger.debug(f"begin write to {self.save_fime}, now:{self.fs_time}")
+-                self.handle.write(frame)
+-                self.handle.flush()  # 刷新文件缓冲区
+             else:
+-                # 将字节数据转换为十六进制字符串
+-                # hex_data = binascii.hexlify(frame).decode()
+-                # self.logger.info(f"begin write :{hex_data}")
+-                self.handle.write(frame)
+-                self.handle.flush()  # 刷新文件缓冲区
++                # 如果缓冲区大小达到一定阈值，则写入文件
++                if len(self.write_buffer) >= 8192:
++                    self.handle.write(self.write_buffer)
++                    self.handle.flush()  # 刷新文件缓冲区
++                    self.write_buffer.clear()  # 清空缓冲区
++
+                 now = int(time.time())
+                 if now - self.fs_time > self.upload_period:
+                     self.logger.info("write 5 minutes, so close the file...")
++                    self.handle.write(self.write_buffer)
++                    self.handle.flush()  # 刷新文件缓冲区
++                    self.write_buffer.clear()  # 清空缓冲区
+                     self.handle.close()
+                     self.handle = None
+                     # 替换文件名
+                     new_filename = self.save_fime.replace(".tmp", ".data")
+                     # 执行文件重命名
+                     os.rename(self.save_fime, new_filename)
+-                # else:
+-                #     self.logger.info(f"file not yet, begin time:{self.fs_time}, delta:{now - self.fs_time}")
+         except IOError as e:
+             self.logger.debug(f"write backup data error：{e}")
++            time.sleep(0.1)  # 添加适当的延迟
+ 
+ 
+ class FTPUploader:
+@@ -271,7 +285,7 @@ class FTPUploader:
+                 break
+             except ConnectionRefusedError as e:
+                 self.logger.warning(f'Connection failed: {str(e)}')
+-                self.logger.warning('Retrying connection...')
++                self.logger.warning(f'Retrying connection...{self.host}')
+                 self.connected = False
+                 time.sleep(1)  # 可选的延迟等待时间，避免频繁重试导致连接问题
+ 
+@@ -367,16 +381,32 @@ def clear_directory(directory):
+ 
+ 
+ def check_directory_size(directory, max_size, logger):
++    logger.info(f'begin to check {directory}, max_size：{max_size / 1024 / 1024 /1024} Gb')
+     while True:
+-        # 获取目录的当前大小
+-        total_size = get_directory_size(directory)
+-        # 判断目录大小是否达到阈值
+-        if total_size >= max_size:
+-            logger.info(f"目录 {directory} 的大小已达到阈值 {max_size} bytes！")
+-            # 删除最老的文件
+-            delete_oldest_file(directory, logger)
+-
+-        # 暂停一段时间后再次检查目录大小
++        # 获取今天的日期
++        today = datetime.now().date()
++        total_size = sum(os.path.getsize(os.path.join(directory, f)) for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)))
++
++        # 如果目录大小超过限制，开始删除
++        while total_size >= max_size / 2:
++            for filename in os.listdir(directory):
++                file_path = os.path.join(directory, filename)
++                # 检查是否为文件
++                if os.path.isfile(file_path):
++                    # 获取文件的修改时间
++                    file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path)).date()
++                    # 比较文件日期与今天的日期
++                    if file_mtime < today:
++                        # 更新总大小
++                        total_size -= os.path.getsize(file_path)
++                        logger.info(f"Deleting file: {file_path}")
++                        os.remove(file_path)
++                        break  # 重新计算大小后重新开始检查
++            else:
++                # 如果没有找到可以删除的文件，退出循环
++                logger.info("No more files to delete.")
++                break
++        logger.info(f"Final total size: {total_size / 1024 / 1024 / 1024} Gb")
+         time.sleep(60)  # 暂停60秒后继续下一次检查
+ 
+ 
+@@ -410,7 +440,8 @@ def delete_oldest_file(directory, logger):
+ 
+ def setup_logger(logpath):
+     logger = logging.getLogger()
+-    logger.setLevel(logging.DEBUG)
++    logger.setLevel(logging.WARNING)
++    #logger.setLevel(logging.DEBUG)
+     formatter = logging.Formatter('[%(asctime)s|%(levelname)s|%(filename)s(%(lineno)d)]:%(message)s')
+ 
+     # 日志输出到控制台
+@@ -425,6 +456,18 @@ def setup_logger(logpath):
+ 
+     return logger
+ 
++def start_tcp_receiver(device, index, logger, backup_data_path, upload_period):
++    device_type = device.get('C_deviceType')
++    device_sn = device.get('F_deviceEsn')
++    device_ip = device.get('G_deviceIp')
++    device_port = device.get('L_radarPort')
++
++    if device_type == 3:  # radar
++        receiver_name = f"tcp_receiver_{index}"
++        logger.info(f"begin to start receive from {device_sn}, ip:{device_ip}, port:{device_port}")
++        tcp_receiver = TCPReceiver(device_ip, device_port, backup_data_path, device_sn, 'WAVE', upload_period, logger)
++        tcp_receiver.start()
++
+ 
+ def is_valid_device_type(device_type):
+     # 假设设备类型必须是整数，且在特定范围内
+@@ -544,45 +587,31 @@ def main():
+         logger.error(f"ftp server ip:{ftp_server} is not valid...")
+         return
+ 
++    need_check = False
+     devices = config.get('D_sensorDeviceWorkParamList')
+-    if devices:
+-        # 初始化并启动 TCPReceivers
+-        tcp_receivers = {}
++    
++    if not devices:
++        logger.error('Config error: D_sensorDeviceWorkParamList not found.')
++        return
++
++    need_check = False
++    with ThreadPoolExecutor() as executor:
+         for i, device in enumerate(devices, start=1):
+             is_valid, message = validate_device_fields(device)
+             if is_valid:
+-                device_type = device.get('C_deviceType')
+-                device_sn = device.get('F_deviceEsn')
+-                device_ip = device.get('G_deviceIp')
+-                device_port = device.get('L_radarPort')
+-                if device_type == 3:  # radar
+-                    # 创建 TCPReceiver 实例并启动接收数据线程
+-                    receiver_name = f"tcp_receiver_{i}"
+-                    logger.info(f"begin to start receive from {device_sn}, ip:{device_ip}, port:{device_port}")
+-                    tcp_receivers[receiver_name] = TCPReceiver(device_ip, device_port, backup_data_path, device_sn,
+-                                                               'WAVE', upload_period, logger)
+-                    tcp_receivers[receiver_name].start()
++                need_check = True
++                executor.submit(start_tcp_receiver, device, i, logger, backup_data_path, upload_period)
+             else:
+                 logger.error(f"Config error: {message}, ignore...")
+-    else:
+-        logger.error('config error..., not found D_sensorDeviceWorkParamList')
+-
+-    # 创建监测目录线程，防止磁盘被写满
+-    logger.info(f"begin to start check_thread...")
+-    check_thread = threading.Thread(target=check_directory_size, args=(backup_data_path, backup_data_max, logger))
+-    check_thread.start()
+ 
+-    # 创建定时上传线程
+-    logger.info(f"begin to start ftp...ip:{ftp_server}, port:{ftp_port}, username:{ftp_user}, passwd:{ftp_passwd}")
+-    upload_thread = threading.Thread(target=upload_files_periodically, args=(
+-        ftp_server, ftp_port, ftp_user, ftp_passwd, ftp_pasv, backup_data_path, upload_period, logger))
+-    upload_thread.start()
++        if need_check:
++            logger.info(f"begin to start directory size check thread...")
++            executor.submit(check_directory_size, backup_data_path, backup_data_max, logger)
+ 
+-    check_thread.join()
+-    upload_thread.join()
++            logger.info(f"begin to start FTP upload thread...")
++            executor.submit(upload_files_periodically, ftp_server, ftp_port, ftp_user, ftp_passwd, False, backup_data_path, upload_period, logger)
+ 
+     logger.info('Program terminated.')
+ 
+-
+ if __name__ == '__main__':
+     main()
+
+@@@C	lvhaitao	df748f0b3e4c27a8174a4b3f8505ab368dbd1f5a	2024-07-26	修复ftp不是默认21端口连接的问题
+diff --git a/middleware/protocol/radar_point_cloud/DianYunRecorder.py b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+index f42c1d6..ebe43c1 100644
+--- a/middleware/protocol/radar_point_cloud/DianYunRecorder.py
++++ b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+@@ -257,9 +257,10 @@ class FTPUploader:
+         self.port = port
+         self.username = username
+         self.password = password
+-        self.ftp = FTP(self.host)
++        self.ftp = FTP()
+         self.logger = logger
+         self.connected = False
++        self.connect()
+ 
+     def connect(self):
+         while True:
+
+@@@C	lvhaitao	119bfd7cc858fff9cf025d9965621ec53ba2b9d0	2024-07-23	删除没用代码
+diff --git a/script/airos_keep_alive.sh b/script/airos_keep_alive.sh
+index 1bd9b8d..f0b4c6f 100755
+--- a/script/airos_keep_alive.sh
++++ b/script/airos_keep_alive.sh
+@@ -48,7 +48,6 @@ function keep_alive() {
+     ["bs_spat_src_data"]="mainboard -d dag/bs_spat_src_data.dag"
+     ["bs_v2x_data"]="mainboard -d dag/bs_v2x_data.dag"
+     ["om_mec"]="mainboard -d dag/om_mec.dag"
+-    ["radar_point_cloud"]="python3 /home/airos/protocol/radar_point_cloud/DianYunRecorder.py"
+   )
+ 
+   cd /home/airos/os
+
+@@@C	lvhaitao	d41ac51d329c47146b123fbaa1775d18c359ac06	2024-07-23	Merge branch 'master' of http://10.255.11.16/new_4layer/airos2.0
+
+
+@@@C	lvhaitao	41f27431da0760a6129c979ddfe67848b7c8865f	2024-07-23	添加保活脚本，修改雷达类型为3
+diff --git a/script/airos_keep_alive.sh b/script/airos_keep_alive.sh
+index cc1c79d..f0b4c6f 100755
+--- a/script/airos_keep_alive.sh
++++ b/script/airos_keep_alive.sh
+@@ -63,8 +63,27 @@ function keep_alive() {
+   done
+ }
+ 
++# add by lht for dianyun
++TARGET="DianYunRecorder"
++
++function dian_yun_keep_alive(){
++  while true;do
++	is_live=$(ps -ef | grep "$TARGET" | grep -v 'grep' | awk '{print $1}')
++	if [ -z "$is_live" ]; then
++      return_info "start $TARGET..."
++	  python3 /home/airos/middleware/protocol/radar_point_cloud/DianYunRecorder.py /home/airos/common_config/work_param_config.flag &
++	  sleep 1
++	else
++	  return_info "$TARGET is running..."
++	  sleep 30
++	fi
++  done
++}
++# end add 
++
+ function main() {
+     keep_alive >>  $LOG_PATH 2>&1 &
++	dian_yun_keep_alive >> $LOG_PATH 2>&1 &
+ }
+ 
+ main "$@"
+
+@@@C	lvhaitao	90db0efc37fc6f76ad484005a8fef3aff2fa0956	2024-07-23	添加保活脚本，修改雷达类型为3
+diff --git a/middleware/protocol/radar_point_cloud/DianYunRecorder.py b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+index da626d2..f42c1d6 100644
+--- a/middleware/protocol/radar_point_cloud/DianYunRecorder.py
++++ b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+@@ -415,7 +415,7 @@ def setup_logger(logpath):
+     # 日志输出到控制台
+     console_handler = logging.StreamHandler()
+     console_handler.setFormatter(formatter)
+-    logger.addHandler(console_handler)
++    #logger.addHandler(console_handler)
+ 
+     # 日志写入文件
+     file_handler = TimedRotatingFileHandler(logpath + '/ftp_upload.log', when='midnight', backupCount=7)
+@@ -554,7 +554,7 @@ def main():
+                 device_sn = device.get('F_deviceEsn')
+                 device_ip = device.get('G_deviceIp')
+                 device_port = device.get('L_radarPort')
+-                if device_type == 2:  # radar
++                if device_type == 3:  # radar
+                     # 创建 TCPReceiver 实例并启动接收数据线程
+                     receiver_name = f"tcp_receiver_{i}"
+                     logger.info(f"begin to start receive from {device_sn}, ip:{device_ip}, port:{device_port}")
+
+@@@C	lvhaitao	a86a47a5d4eeb0a6f2f45b13eda17d689cac7087	2024-07-22	点云上传代码入库
+diff --git a/middleware/protocol/radar_point_cloud/DianYunRecorder.py b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+new file mode 100644
+index 0000000..da626d2
+--- /dev/null
++++ b/middleware/protocol/radar_point_cloud/DianYunRecorder.py
+@@ -0,0 +1,587 @@
++# -*- coding: utf-8 -*-
++"""
++ @Author: lht
++ @Description: 
++ @Create: 2024/3/15 11:20
++ @Modified By:
++ @Project : learn
++ @FileName: DianYunRecorder.py
++ @Software: PyCharm 
++ 高山仰止,景行行止.虽不能至,然心向往之.
++"""
++import json
++import os
++import re
++import shutil
++import struct
++import sys
++from logging.handlers import TimedRotatingFileHandler
++import socket
++import threading
++import time
++from ftplib import FTP, error_perm
++import logging
++import numpy as np
++
++aucCRCHi = [
++    0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80,
++    0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1,
++    0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01,
++    0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40,
++    0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81,
++    0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0,
++    0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00,
++    0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41,
++    0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80,
++    0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0,
++    0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01,
++    0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
++    0x00, 0xC1, 0x81, 0x40, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80,
++    0x41, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40
++]
++
++aucCRCLo = [
++    0x00, 0xC0, 0xC1, 0x01, 0xC3, 0x03, 0x02, 0xC2, 0xC6, 0x06, 0x07, 0xC7, 0x05, 0xC5, 0xC4, 0x04, 0xCC, 0x0C, 0x0D,
++    0xCD, 0x0F, 0xCF, 0xCE, 0x0E, 0x0A, 0xCA, 0xCB, 0x0B, 0xC9, 0x09, 0x08, 0xC8, 0xD8, 0x18, 0x19, 0xD9, 0x1B, 0xDB,
++    0xDA, 0x1A, 0x1E, 0xDE, 0xDF, 0x1F, 0xDD, 0x1D, 0x1C, 0xDC, 0x14, 0xD4, 0xD5, 0x15, 0xD7, 0x17, 0x16, 0xD6, 0xD2,
++    0x12, 0x13, 0xD3, 0x11, 0xD1, 0xD0, 0x10, 0xF0, 0x30, 0x31, 0xF1, 0x33, 0xF3, 0xF2, 0x32, 0x36, 0xF6, 0xF7, 0x37,
++    0xF5, 0x35, 0x34, 0xF4, 0x3C, 0xFC, 0xFD, 0x3D, 0xFF, 0x3F, 0x3E, 0xFE, 0xFA, 0x3A, 0x3B, 0xFB, 0x39, 0xF9, 0xF8,
++    0x38, 0x28, 0xE8, 0xE9, 0x29, 0xEB, 0x2B, 0x2A, 0xEA, 0xEE, 0x2E, 0x2F, 0xEF, 0x2D, 0xED, 0xEC, 0x2C, 0xE4, 0x24,
++    0x25, 0xE5, 0x27, 0xE7, 0xE6, 0x26, 0x22, 0xE2, 0xE3, 0x23, 0xE1, 0x21, 0x20, 0xE0, 0xA0, 0x60, 0x61, 0xA1, 0x63,
++    0xA3, 0xA2, 0x62, 0x66, 0xA6, 0xA7, 0x67, 0xA5, 0x65, 0x64, 0xA4, 0x6C, 0xAC, 0xAD, 0x6D, 0xAF, 0x6F, 0x6E, 0xAE,
++    0xAA, 0x6A, 0x6B, 0xAB, 0x69, 0xA9, 0xA8, 0x68, 0x78, 0xB8, 0xB9, 0x79, 0xBB, 0x7B, 0x7A, 0xBA, 0xBE, 0x7E, 0x7F,
++    0xBF, 0x7D, 0xBD, 0xBC, 0x7C, 0xB4, 0x74, 0x75, 0xB5, 0x77, 0xB7, 0xB6, 0x76, 0x72, 0xB2, 0xB3, 0x73, 0xB1, 0x71,
++    0x70, 0xB0, 0x50, 0x90, 0x91, 0x51, 0x93, 0x53, 0x52, 0x92, 0x96, 0x56, 0x57, 0x97, 0x55, 0x95, 0x94, 0x54, 0x9C,
++    0x5C, 0x5D, 0x9D, 0x5F, 0x9F, 0x9E, 0x5E, 0x5A, 0x9A, 0x9B, 0x5B, 0x99, 0x59, 0x58, 0x98, 0x88, 0x48, 0x49, 0x89,
++    0x4B, 0x8B, 0x8A, 0x4A, 0x4E, 0x8E, 0x8F, 0x4F, 0x8D, 0x4D, 0x4C, 0x8C, 0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46,
++    0x86, 0x82, 0x42, 0x43, 0x83, 0x41, 0x81, 0x80, 0x40
++]
++
++"""
++/**********************************************************
++* @brieftsCRC16
++* @paramptr: 待校验数据
++* @paramlen: 数据长度
++* @return16bit crc 计算结果
++**********************************************************/
++u16_t tsCRC16 (u8_t *ptr, u16_t len)
++{
++	u8_t ucCRCHi = 0xFF;
++	u8_t ucCRCLo = 0xFF;
++	u32_t iIndex;
++	while ( len-- )
++	{
++	iIndex = ucCRCLo ^ *( ptr++ );
++	ucCRCLo = ( u8_t )( ucCRCHi ^ aucCRCHi[iIndex] );
++	ucCRCHi = aucCRCLo[iIndex];
++	}
++	return ( u16_t )( ucCRCHi << 8 | ucCRCLo );
++}
++"""
++
++
++def tsCRC16(data):
++    ucCRCHi = 0xFF
++    ucCRCLo = 0xFF
++    iIndex = 0
++
++    for d in data:
++        iIndex = ucCRCLo ^ d
++        ucCRCLo = np.uint8(ucCRCHi ^ aucCRCHi[iIndex])
++        ucCRCHi = aucCRCLo[iIndex]
++    return np.uint16(ucCRCHi << 8 | ucCRCLo)
++
++
++def generate_filename(upload_period):
++    current_time = time.localtime()
++    hour_begin = current_time.tm_hour
++    minute_begin = current_time.tm_min
++    hour_end = hour_begin
++    minute_end = minute_begin + int(upload_period / 60)  # 计算5分钟的间隔
++    if minute_end >= 60:
++        minute_end = minute_end % 60
++        hour_end = (hour_begin + 1) % 24
++    formatted_time = time.strftime(
++        "%Y%m%d_{:02d}{:02d}_{:02d}{:02d}".format(hour_begin, minute_begin, hour_end, minute_end), current_time)
++    filename = f"{formatted_time}.tmp"
++    return filename
++
++
++class TCPReceiver:
++    def __init__(self, host, port, save_path, sn, type, upload_period, logger):
++        self.host = host
++        self.port = port
++        self.tcp_socket = None
++        self.save_path = save_path
++        self.sn = sn
++        self.type = type
++        self.upload_period = upload_period
++        self.logger = logger
++        self.buffer = b''
++        self.handle = None
++        self.save_fime = ""
++        self.fs_time = int(time.time())
++        self.thread = None
++        self.running = False
++
++    def start(self):
++        self.running = True
++        self.thread = threading.Thread(target=self.run)
++        self.thread.daemon = True  # 设置为守护线程,这样不会阻止程序退出
++        self.thread.start()
++
++    def stop(self):
++        self.running = False
++        if self.tcp_socket:
++            self.tcp_socket.close()
++        if self.thread:
++            self.thread.join()
++
++    def run(self):
++        while self.running:
++            try:
++                self.connect()
++                self.receive_data()
++            except Exception as e:
++                self.logger.error(f"TCPReceiver 出错: {e}")
++                time.sleep(5)  # 等待一段时间后尝试重新连接
++
++    def connect(self):
++        while self.running:
++            try:
++                self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
++                self.tcp_socket.connect((self.host, self.port))
++                self.logger.info('已连接到 TCP 服务器')
++                return
++            except Exception as e:
++                self.logger.error(f'TCP 连接错误: {e}')
++                self.logger.info('5秒后尝试重新连接到 TCP 服务器...')
++                time.sleep(5)
++
++    def receive_data(self):
++        while self.running:
++            try:
++                data = self.tcp_socket.recv(4096)
++                if not data:
++                    self.logger.info('TCP connection closed by remote server')
++                    if self.handle:
++                        self.handle.flush()
++                        self.handle.close()
++                        self.handle = None
++                    break
++                # 处理数据...
++                # 这里可以根据需要对接收到的雷达点云数据进行处理
++                self.buffer += data
++                # self.logger.debug(f"received from peer:{binascii.hexlify(self.buffer).decode()}")
++                self.process_data()
++            except(socket.error, socket.timeout) as e:
++                self.logger.error(f'TCP 接收数据错误: {e}')
++                if self.handle:
++                    self.handle.flush()
++                    self.handle.close()
++                    self.handle = None
++                break
++
++    def process_data(self):
++        # 帧头（4 字节）+ 帧长（除帧头、帧长度外所有字节, 4字节）+ 帧内容（80*N+72 字节）+ 帧校验（2字节）
++        while len(self.buffer) >= 82:
++            frame_header = self.buffer[:4]
++            # 帧头为 TRAB 时，代表点云数据，帧头为 TRAC 时，代表过滤后的点云结构化数据
++            if frame_header not in [b'TRAB', b'TRAC']:
++                # 非法帧头，丢弃当前帧
++                self.buffer = self.buffer[1:]
++                continue
++            frame_length = struct.unpack('>I', self.buffer[4:8])[0]
++            total_length = frame_length + 4 + 4
++
++            # self.logger.debug(f"received frame len:{frame_length}, total len:{total_length}")
++            if len(self.buffer) >= total_length:
++                payload = self.buffer[8:total_length - 2]
++                frame_checksum = struct.unpack('>H', self.buffer[total_length - 2:total_length])[0]
++
++                if self.verify_checksum(payload, frame_checksum):
++                    # 校验和通过，处理帧内容
++                    self.process_frame(self.buffer[0:total_length])
++                else:
++                    # 校验和不通过，丢弃当前帧
++                    self.buffer = self.buffer[total_length:]
++                    continue
++                # 从缓冲区中移除已处理的帧
++                self.buffer = self.buffer[total_length:]
++            else:
++                break
++
++    def verify_checksum(self, frame_content, frame_checksum):
++        desired = tsCRC16(frame_content)
++        if desired != frame_checksum:
++            self.logger.error(f"checksum failed, need:{desired}, received:{frame_checksum}")
++            return False
++        else:
++            return True
++
++    def process_frame(self, frame):
++        try:
++            if not self.handle:
++                self.save_fime = f'{self.save_path}/{self.type}_{self.sn}_{generate_filename(self.upload_period)}'  # 替换为实际的文件名
++                self.handle = open(self.save_fime, 'ab')
++                self.fs_time = int(time.time())
++                # 将字节数据转换为十六进制字符串
++                # hex_data = binascii.hexlify(frame).decode()
++                self.logger.debug(f"begin write to {self.save_fime}, now:{self.fs_time}")
++                self.handle.write(frame)
++                self.handle.flush()  # 刷新文件缓冲区
++            else:
++                # 将字节数据转换为十六进制字符串
++                # hex_data = binascii.hexlify(frame).decode()
++                # self.logger.info(f"begin write :{hex_data}")
++                self.handle.write(frame)
++                self.handle.flush()  # 刷新文件缓冲区
++                now = int(time.time())
++                if now - self.fs_time > self.upload_period:
++                    self.logger.info("write 5 minutes, so close the file...")
++                    self.handle.close()
++                    self.handle = None
++                    # 替换文件名
++                    new_filename = self.save_fime.replace(".tmp", ".data")
++                    # 执行文件重命名
++                    os.rename(self.save_fime, new_filename)
++                # else:
++                #     self.logger.info(f"file not yet, begin time:{self.fs_time}, delta:{now - self.fs_time}")
++        except IOError as e:
++            self.logger.debug(f"write backup data error：{e}")
++
++
++class FTPUploader:
++    def __init__(self, host, port, username, password, logger):
++        self.host = host
++        self.port = port
++        self.username = username
++        self.password = password
++        self.ftp = FTP(self.host)
++        self.logger = logger
++        self.connected = False
++
++    def connect(self):
++        while True:
++            try:
++                self.ftp.connect(self.host, self.port)
++                self.logger.info(f"Connected to FTP server: {self.host}")
++                self.connected = True
++                break
++            except ConnectionRefusedError as e:
++                self.logger.warning(f'Connection failed: {str(e)}')
++                self.logger.warning('Retrying connection...')
++                self.connected = False
++                time.sleep(1)  # 可选的延迟等待时间，避免频繁重试导致连接问题
++
++    def login(self):
++        while True:
++            try:
++                self.ftp.login(user=self.username, passwd=self.password)
++                self.logger.info('Login in to FTP server')
++                self.connected = True
++                break
++            except error_perm as e:
++                self.logger.warning(f'Login failed: {str(e)}')
++                self.logger.warning('Retrying login...')
++                self.connected = False
++                time.sleep(1)  # 可选的延迟等待时间，避免频繁重试导致连接问题
++
++    def reconnect(self):
++        self.disconnect()
++        self.connect()
++        self.login()
++
++    def upload_file(self, local_path, remote_path):
++        while True:
++            try:
++                with open(local_path, 'rb') as file:
++                    self.ftp.storbinary(f'STOR {remote_path}', file)
++                    self.logger.info(f'Uploaded file to FTP server: {remote_path}')
++                    return True
++            except (ConnectionResetError, error_perm) as e:
++                self.logger.warning(f'Upload failed due to connection error: {str(e)}')
++                self.logger.warning('Reconnecting and retrying...')
++                self.reconnect()
++                time.sleep(1)  # 可选的延迟等待时间，避免频繁重连导致连接问题
++                return False
++
++    def rename_file(self, old_filename, new_filename):
++        self.ftp.rename(old_filename, new_filename)
++
++    def disconnect(self):
++        self.ftp.quit()
++        self.logger.info('Disconnected from FTP server')
++        self.connected = False
++
++
++def upload_files_periodically(ftp_server, ftp_port, ftp_user, ftp_passwd, ftp_pasv, data_path, upload_period, logger):
++    global ftp_uploader
++    while True:
++        # 创建 FTPUploader 实例并启动上传文件线程
++        ftp_initok = False
++        while not ftp_initok:
++            try:
++                ftp_uploader = FTPUploader(ftp_server, ftp_port, ftp_user, ftp_passwd, logger)  # 替换为实际的 FTP 服务器地址、用户名和密码
++                ftp_uploader.login()
++                ftp_uploader.ftp.set_pasv(ftp_pasv)
++                ftp_initok = True
++            except Exception as e:
++                logger.warning(f"ftp init failed:{e}")
++                time.sleep(5)
++        try:
++            # 遍历目录下的文件
++            for root, dirs, files in os.walk(data_path):
++                for file in files:
++                    if file.endswith(".data"):
++                        file_path = os.path.join(root, file)
++                        remote_file = os.path.basename(file_path)
++                        # 上传文件到 FTP 服务器
++                        if ftp_uploader.connected:
++                            tmp_file = remote_file + ".tmp"  # 传输中用临时文件
++                            logger.info(f"begin to upload {tmp_file}...")
++                            if ftp_uploader.upload_file(file_path, tmp_file):
++                                logger.info(f"upload {tmp_file} success...")
++                                time.sleep(1)
++                                ftp_uploader.rename_file(tmp_file, remote_file)
++                                logger.info(f"rename {tmp_file} to {remote_file} success...")
++                                os.remove(file_path)
++                            else:
++                                logger.warning(f"upload {file_path} to {remote_file} failed...")
++                        else:
++                            logger.warning(f"ftp_uploader is not connected...")
++            ftp_uploader.disconnect()
++            time.sleep(upload_period)  # 5分钟
++        except Exception as e:
++            logger.warning(f"ftp upload exception:{e}")
++            ftp_uploader.disconnect()
++            time.sleep(upload_period)
++
++
++def clear_directory(directory):
++    # 删除目录下的所有文件和子目录
++    shutil.rmtree(directory)
++    # 重新创建空的目录
++    os.makedirs(directory)
++
++
++def check_directory_size(directory, max_size, logger):
++    while True:
++        # 获取目录的当前大小
++        total_size = get_directory_size(directory)
++        # 判断目录大小是否达到阈值
++        if total_size >= max_size:
++            logger.info(f"目录 {directory} 的大小已达到阈值 {max_size} bytes！")
++            # 删除最老的文件
++            delete_oldest_file(directory, logger)
++
++        # 暂停一段时间后再次检查目录大小
++        time.sleep(60)  # 暂停60秒后继续下一次检查
++
++
++def get_directory_size(directory):
++    # 获取目录的当前大小
++    total_size = 0
++    for dirpath, dirnames, filenames in os.walk(directory):
++        for filename in filenames:
++            file_path = os.path.join(dirpath, filename)
++            total_size += os.path.getsize(file_path)
++    return total_size
++
++
++def delete_oldest_file(directory, logger):
++    # 获取目录中所有文件的创建时间
++    file_times = []
++    for dirpath, dirnames, filenames in os.walk(directory):
++        for filename in filenames:
++            file_path = os.path.join(dirpath, filename)
++            file_stat = os.stat(file_path)
++            file_times.append((file_path, file_stat.st_ctime))
++
++    # 根据创建时间对文件进行排序
++    sorted_files = sorted(file_times, key=lambda x: x[1])
++
++    # 删除最老的文件
++    oldest_file = sorted_files[0][0]
++    os.remove(oldest_file)
++    logger.info(f"已删除最老的文件：{oldest_file}")
++
++
++def setup_logger(logpath):
++    logger = logging.getLogger()
++    logger.setLevel(logging.DEBUG)
++    formatter = logging.Formatter('[%(asctime)s|%(levelname)s|%(filename)s(%(lineno)d)]:%(message)s')
++
++    # 日志输出到控制台
++    console_handler = logging.StreamHandler()
++    console_handler.setFormatter(formatter)
++    logger.addHandler(console_handler)
++
++    # 日志写入文件
++    file_handler = TimedRotatingFileHandler(logpath + '/ftp_upload.log', when='midnight', backupCount=7)
++    file_handler.setFormatter(formatter)
++    logger.addHandler(file_handler)
++
++    return logger
++
++
++def is_valid_device_type(device_type):
++    # 假设设备类型必须是整数，且在特定范围内
++    return isinstance(device_type, int) and 0 <= device_type <= 10
++
++
++def is_valid_device_sn(device_sn):
++    # 假设设备序列号是字母数字组合，长度在8到20之间
++    return isinstance(device_sn, str) and 8 <= len(device_sn) <= 22 and device_sn.isalnum()
++
++
++def is_valid_ip(ip):
++    # 使用正则表达式验证IP地址
++    ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
++    if not isinstance(ip, str) or not re.match(ip_pattern, ip):
++        return False
++    return all(0 <= int(num) <= 255 for num in ip.split('.'))
++
++
++def is_valid_port(port):
++    # 端口号应该是0到65535之间的整数
++    return isinstance(port, int) and 0 <= port <= 65535
++
++
++def validate_device_fields(device):
++    fields = {
++        'C_deviceType': 'Device Type',
++        'F_deviceEsn': 'Device Serial Number',
++        'G_deviceIp': 'Device IP',
++        'L_radarPort': 'Radar Port'
++    }
++
++    missing_fields = []
++
++    for key, name in fields.items():
++        if device.get(key) is None:
++            missing_fields.append(name)
++
++    if missing_fields:
++        return False, f"Missing fields: {', '.join(missing_fields)}"
++
++    device_type = device['C_deviceType']
++    device_sn = device['F_deviceEsn']
++    device_ip = device['G_deviceIp']
++    device_port = device['L_radarPort']
++
++    if not is_valid_device_type(device_type):
++        return False, f"Invalid device type:{device_type}"
++
++    if not is_valid_device_sn(device_sn):
++        return False, f"Invalid device serial number:{device_sn}"
++
++    if not is_valid_ip(device_ip):
++        return False, f"Invalid IP address:{device_ip}"
++
++    if not is_valid_port(device_port):
++        return False, f"Invalid port number:{device_port}"
++
++    return True, "All fields are valid"
++
++
++def main():
++    # 检查是否提供了必要的参数数量
++    if len(sys.argv) != 2:
++        # 打印用法信息
++        print("用法: python DianYunRecorder.py configFilePath")
++        sys.exit(1)  # 以非零状态码退出，表示错误
++
++    config_file = sys.argv[1]
++    script_dir = os.path.dirname(os.path.abspath(__file__))
++    log_path = script_dir + '/logs'
++    backup_data_path = script_dir + '/backupDatas'
++    upload_period = 300
++    backup_data_max = 2 * 1024 * 1024 * 1024  # 数据保存目录阈值大小，防止一直写磁盘，例如2GB
++
++    # 检查目录是否存在
++    if not os.path.exists(backup_data_path):
++        # 目录不存在，创建目录
++        os.makedirs(backup_data_path)
++        print(f"Directory '{backup_data_path}' was created.")
++    else:
++        # 目录已存在
++        print(f"Directory '{backup_data_path}' already exists.")
++
++    if not os.path.exists(log_path):
++        # 目录不存在，创建目录
++        os.makedirs(log_path)
++        print(f"Directory '{log_path}' was created.")
++    else:
++        # 目录已存在
++        print(f"Directory '{log_path}' already exists.")
++
++    # 配置日志记录器
++    logger = setup_logger(log_path)
++
++    # 读取并解析JSON配置文件
++    with open(config_file, 'r') as file:
++        config = json.load(file)
++
++    ftp_server = None
++    ftp_user = None
++    ftp_passwd = None
++    ftp_pasv = False
++    mec_device_config = config.get('B_mecDeviceWorkParam')
++    if mec_device_config:
++        ftp_server = mec_device_config.get('h_radarPointCloudFtpIp')
++        ftp_port = mec_device_config.get('t_radarPointCloudFtpPort')
++        ftp_user = mec_device_config.get('i_radarPointCloudFtpUser')
++        ftp_passwd = mec_device_config.get('j_radarPointCloudFtpPasswd')
++        ftp_pasv = False
++
++    if not all([ftp_server, ftp_user, ftp_passwd]):
++        logger.error(f"ftp config is not valid...")
++        return
++
++    if not is_valid_ip(ftp_server):
++        logger.error(f"ftp server ip:{ftp_server} is not valid...")
++        return
++
++    devices = config.get('D_sensorDeviceWorkParamList')
++    if devices:
++        # 初始化并启动 TCPReceivers
++        tcp_receivers = {}
++        for i, device in enumerate(devices, start=1):
++            is_valid, message = validate_device_fields(device)
++            if is_valid:
++                device_type = device.get('C_deviceType')
++                device_sn = device.get('F_deviceEsn')
++                device_ip = device.get('G_deviceIp')
++                device_port = device.get('L_radarPort')
++                if device_type == 2:  # radar
++                    # 创建 TCPReceiver 实例并启动接收数据线程
++                    receiver_name = f"tcp_receiver_{i}"
++                    logger.info(f"begin to start receive from {device_sn}, ip:{device_ip}, port:{device_port}")
++                    tcp_receivers[receiver_name] = TCPReceiver(device_ip, device_port, backup_data_path, device_sn,
++                                                               'WAVE', upload_period, logger)
++                    tcp_receivers[receiver_name].start()
++            else:
++                logger.error(f"Config error: {message}, ignore...")
++    else:
++        logger.error('config error..., not found D_sensorDeviceWorkParamList')
++
++    # 创建监测目录线程，防止磁盘被写满
++    logger.info(f"begin to start check_thread...")
++    check_thread = threading.Thread(target=check_directory_size, args=(backup_data_path, backup_data_max, logger))
++    check_thread.start()
++
++    # 创建定时上传线程
++    logger.info(f"begin to start ftp...ip:{ftp_server}, port:{ftp_port}, username:{ftp_user}, passwd:{ftp_passwd}")
++    upload_thread = threading.Thread(target=upload_files_periodically, args=(
++        ftp_server, ftp_port, ftp_user, ftp_passwd, ftp_pasv, backup_data_path, upload_period, logger))
++    upload_thread.start()
++
++    check_thread.join()
++    upload_thread.join()
++
++    logger.info('Program terminated.')
++
++
++if __name__ == '__main__':
++    main()
+
