@@ -1,0 +1,2174 @@
+# 作者: ThorfromAsgard
+# 提交数: 2
+# 来源: 193 机 /work/sunboxue/LiuLiang/traffic_flow (--all)
+
+@@@C	ThorfromAsgard	0b7376a4579198ecf8ebdefa327bf36d2731df6b	2025-10-11	update FusionFlow Tool
+diff --git a/tool/FusionFlow/draw_roi_page.py b/tool/FusionFlow/draw_roi_page.py
+index 9e27401..5f6d106 100644
+--- a/tool/FusionFlow/draw_roi_page.py
++++ b/tool/FusionFlow/draw_roi_page.py
+@@ -83,6 +83,10 @@ class ImageLabel(QLabel):
+     def update_display(self):
+         """
+         Update the display with the current image and points, using local and global indices.
++        Draw order:
++        1. Draw all points and lines of non-current lanes (semi-transparent overlay).
++        2. Draw points and lines of the current lane (highlighted solid lines).
++        When only one lane remains, other lanes are not displayed, and the current lane is highlighted.
+         """
+         if self.is_full_size:
+             display_img = self.image.copy()
+@@ -93,14 +97,76 @@ class ImageLabel(QLabel):
+             disp_h = int(self.height * self.scale_factor)
+             display_img = cv2.resize(self.image, (disp_w, disp_h), interpolation=cv2.INTER_AREA)
+ 
+-        # Merge and sort points from both groups by global_idx if available
+-        all_points = []
+-        for pt in self.points_group1:
+-            all_points.append((pt, 1))
+-        for pt in self.points_group2:
+-            all_points.append((pt, 2))
+-        # Sort by global_idx if exists
+-        points_sorted = sorted(all_points, key=lambda x: x[0][4] if len(x[0]) >= 5 else 0)
++        lanes_valid = hasattr(self, 'lanes') and isinstance(self.lanes, list) and len(self.lanes) > 0 \
++            and hasattr(self, 'current_lane_idx') and 0 <= self.current_lane_idx < len(self.lanes)
++        current_lane_idx = getattr(self, "current_lane_idx", None)
++        current_group = getattr(self, "current_group", 1)
++
++        # 1. Draw other lanes (semi-transparent)
++        if hasattr(self, 'lanes') and isinstance(self.lanes, list) and len(self.lanes) > 1 and current_lane_idx is not None:
++            overlay = display_img.copy()
++            for lane_idx, lane in enumerate(self.lanes):
++                if lane_idx == current_lane_idx:
++                    continue
++                color_line1 = (255, 0, 0)
++                color_line2 = (0, 0, 255)
++                # Draw line1 points
++                for pt in lane.get("line1_points", []):
++                    px, py = pt[0], pt[1]
++                    disp_px = int(round(px * disp_w / self.width))
++                    disp_py = int(round(py * disp_h / self.height))
++                    cv2.circle(overlay, (disp_px, disp_py), 5, color_line1, -1)
++                # Draw line2 points
++                for pt in lane.get("line2_points", []):
++                    px, py = pt[0], pt[1]
++                    disp_px = int(round(px * disp_w / self.width))
++                    disp_py = int(round(py * disp_h / self.height))
++                    cv2.circle(overlay, (disp_px, disp_py), 5, color_line2, -1)
++                # Draw line1 polyline
++                line1_points = lane.get("line1_points", [])
++                if len(line1_points) >= 2:
++                    pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line1_points], np.int32)
++                    cv2.polylines(overlay, [pts], False, color_line1, 2)
++                # Draw line2 polyline
++                line2_points = lane.get("line2_points", [])
++                if len(line2_points) >= 2:
++                    pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line2_points], np.int32)
++                    cv2.polylines(overlay, [pts], False, color_line2, 2)
++            # Blend overlay with display_img, overlay 30% opacity
++            cv2.addWeighted(overlay, 0.3, display_img, 0.7, 0, display_img)
++
++        # Draw current lane (highlighted)
++        points_to_draw = []
++        draw_lines = False
++        line1_points = []
++        line2_points = []
++        if lanes_valid:
++            lane = self.lanes[self.current_lane_idx]
++            for pt in lane.get("line1_points", []):
++                points_to_draw.append((pt, 1))
++            for pt in lane.get("line2_points", []):
++                points_to_draw.append((pt, 2))
++            draw_lines = True
++            line1_points = lane.get("line1_points", [])
++            line2_points = lane.get("line2_points", [])
++        else:
++            # fallback legacy
++            for pt in self.points_group1:
++                points_to_draw.append((pt, 1))
++            for pt in self.points_group2:
++                points_to_draw.append((pt, 2))
++            draw_lines = False
++            line1_points = []
++            line2_points = []
++
++        # Sort points by global_idx, None at the end
++        def sort_key(x):
++            pt = x[0]
++            global_idx = pt[4] if len(pt) >= 5 else None
++            return (1, 0) if global_idx is None else (0, global_idx)
++        points_sorted = sorted(points_to_draw, key=sort_key)
++
++        # Draw points with indices
+         for idx, (point, group) in enumerate(points_sorted):
+             if len(point) == 6:
+                 px, py, wx, wy, global_idx, _ = point
+@@ -111,31 +177,39 @@ class ImageLabel(QLabel):
+                 global_idx = None
+             disp_px = int(round(px * disp_w / self.width))
+             disp_py = int(round(py * disp_h / self.height))
+-            # Group color: red for group1, blue for group2
+-            color = (0, 0, 255) if group == 1 else (255, 0, 0)
++            color = (255, 0, 0) if group == 1 else (0, 0, 255)
+             cv2.circle(display_img, (disp_px, disp_py), 5, color, -1)
+             # Highlight dragging point
+             if (self.dragging and self.dragging_point_idx is not None and group == self.dragging_group):
+-                if self.current_group == group:
++                if lanes_valid:
++                    group_points = lane["line1_points"] if group == 1 else lane["line2_points"]
++                else:
+                     group_points = self.points_group1 if group == 1 else self.points_group2
+-                    if self.dragging_point_idx < len(group_points):
+-                        pt_drag = group_points[self.dragging_point_idx]
+-                        if pt_drag[:2] == (px, py):
+-                            cv2.circle(display_img, (disp_px, disp_py), 10, (0, 255, 255), 2)
++                if self.dragging_point_idx < len(group_points):
++                    pt_drag = group_points[self.dragging_point_idx]
++                    if pt_drag[:2] == (px, py):
++                        cv2.circle(display_img, (disp_px, disp_py), 10, (0, 255, 255), 2)
+             # Use global sequential index, prefix LP/RP
+             if global_idx is not None:
+                 text = f"{'LP' if group==1 else 'RP'}{global_idx}"
+             else:
+-                text = f"{'LP' if group==1 else 'RP'}?"
++                text = f"{'LP' if group==1 else 'RP'}"
+             text_x = disp_px + 10
+             text_y = disp_py - 10 if disp_py > 15 else disp_py + 15
+-            cv2.putText(display_img, text, (text_x, text_y),
+-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+-
+-        # Draw current mouse position (show original coordinates in text)
++            cv2.putText(display_img, text, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
++
++        # Draw polylines for current lane
++        if draw_lines:
++            if len(line1_points) >= 2:
++                pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line1_points], np.int32)
++                cv2.polylines(display_img, [pts], False, (255, 0, 0), 2)
++            if len(line2_points) >= 2:
++                pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line2_points], np.int32)
++                cv2.polylines(display_img, [pts], False, (0, 0, 255), 2)
++
++        # Display current mouse pixel coordinates
+         if self.current_mouse_pos is not None:
+             mx, my = self.current_mouse_pos
+-            # Coordinate mapping
+             px = mx * self.width / disp_w
+             py = my * self.height / disp_h
+             show_px = round(px)
+@@ -154,6 +228,8 @@ class ImageLabel(QLabel):
+     def find_nearest_point(self, mx, my, group=None):
+         """
+         Find the nearest point to the mouse position (mx, my) within a given group.
++        Prefer searching in self.lanes[current_lane_idx] if available, otherwise fall back to
++        self.points_group1 / self.points_group2 for backward compatibility.
+         """
+         min_dist = float('inf')
+         min_idx = None
+@@ -168,18 +244,36 @@ class ImageLabel(QLabel):
+         # Coordinate mapping
+         px = mx * self.width / disp_w
+         py = my * self.height / disp_h
++
++        # Try lanes-based storage first
++        if hasattr(self, 'lanes') and getattr(self, 'current_lane_idx', -1) >= 0 and getattr(self, 'current_lane_idx', -1) < len(self.lanes):
++            lane = self.lanes[self.current_lane_idx]
++            groups = []
++            if group is None:
++                groups = [(lane.get('line1_points', []), 1), (lane.get('line2_points', []), 2)]
++            else:
++                groups = [(lane.get('line1_points', []), 1)] if group == 1 else [(lane.get('line2_points', []), 2)]
++            for pts, g in groups:
++                for idx, pt in enumerate(pts):
++                    pt_x, pt_y = pt[0], pt[1]
++                    dist = ((pt_x - px)**2 + (pt_y - py)**2) ** 0.5
++                    if dist < min_dist:
++                        min_dist = dist
++                        min_idx = idx
++                        min_group = g
++            if min_dist <= self.drag_threshold:
++                return min_idx, min_group
++            return None, None
++
++        # Fallback to old storage
+         groups = []
+         if group is None:
+             groups = [(self.points_group1, 1), (self.points_group2, 2)]
+         else:
+-            if group == 1:
+-                groups = [(self.points_group1, 1)]
+-            else:
+-                groups = [(self.points_group2, 2)]
++            groups = [(self.points_group1, 1)] if group == 1 else [(self.points_group2, 2)]
+         for pts, g in groups:
+             for idx, pt in enumerate(pts):
+                 pt_x, pt_y = pt[0], pt[1]
+-                # pt_x, pt_y 可能为 int, px/py 为 float
+                 dist = ((pt_x - px)**2 + (pt_y - py)**2) ** 0.5
+                 if dist < min_dist:
+                     min_dist = dist
+@@ -217,12 +311,19 @@ class ImageLabel(QLabel):
+         # Left mouse button: drag existing point or add new point
+         # Right mouse button: delete last point in current group (delegated to main window)
+         if event.button() == Qt.MouseButton.LeftButton:
++            # If there are no lanes, cannot add points
++            if not hasattr(self, 'lanes') or len(self.lanes) == 0:
++                print("No lanes exist, cannot add points.")
++                return
++
++            # try to find nearest point in lanes first
+             idx, group = self.find_nearest_point(mx, my, self.current_group)
+             if idx is not None and group == self.current_group:
+                 self.dragging_point_idx = idx
+                 self.dragging_group = group
+                 self.dragging = True
+                 return
++
+             # Add new point to current group if no nearby point found
+             pixel_coord = [pixel_x, pixel_y]
+             if getattr(self, "is_fisheye", True):
+@@ -231,14 +332,37 @@ class ImageLabel(QLabel):
+                 world_coords = self.coord_convertor.pixel2wgs84([pixel_coord])
+             lon, lat = world_coords[0]
+             creation_order = time.time()
++
++            # Prefer to store points in self.lanes if available (keeps DrawRoiPage and ImageLabel in sync)
++            if hasattr(self, 'lanes') and getattr(self, 'current_lane_idx', -1) >= 0:
++                lane_idx = self.current_lane_idx
++                if lane_idx >= len(self.lanes):
++                    while len(self.lanes) <= lane_idx:
++                        self.lanes.append({"lane_id": len(self.lanes)+1, "line1_points": [], "line2_points": []})
++                lane = self.lanes[lane_idx]
++                global_idx = None
++                if hasattr(top_window, 'get_next_global_index'):
++                    global_idx = top_window.get_next_global_index()
++                pt_tuple = (pixel_x, pixel_y, lat, lon, global_idx, creation_order)
++                if self.current_group == 1:
++                    lane['line1_points'].append(pt_tuple)
++                else:
++                    lane['line2_points'].append(pt_tuple)
++                # Notify parent to reassign indices and refresh text
++                if hasattr(top_window, 'reassign_global_indices'):
++                    top_window.reassign_global_indices()
++                if hasattr(top_window, 'update_all_points_text'):
++                    top_window.update_all_points_text()
++                self.update_display()
++                return
++
++            # Fallback (legacy): append into points_group lists
+             pt_tuple = (pixel_x, pixel_y, lat, lon, None, creation_order)
+             if self.current_group == 1:
+                 self.points_group1.append(pt_tuple)
+             else:
+                 self.points_group2.append(pt_tuple)
+-            self.update_display()
+-            top_window = self.window()
+-            if hasattr(top_window, "reassign_global_indices"):
++            if hasattr(top_window, 'reassign_global_indices'):
+                 top_window.reassign_global_indices()
+             return
+         elif event.button() == Qt.MouseButton.RightButton:
+@@ -268,6 +392,19 @@ class ImageLabel(QLabel):
+             py = round(py)
+             px = min(max(0, px), self.width - 1)
+             py = min(max(0, py), self.height - 1)
++            # Prefer lanes storage
++            if hasattr(self, 'lanes') and getattr(self, 'current_lane_idx', -1) >= 0:
++                group_points = self.lanes[self.current_lane_idx]["line1_points"] if self.dragging_group == 1 else self.lanes[self.current_lane_idx]["line2_points"]
++                if 0 <= self.dragging_point_idx < len(group_points):
++                    pt = group_points[self.dragging_point_idx]
++                    new_pt = (px, py) + pt[2:]
++                    group_points[self.dragging_point_idx] = new_pt
++                    self.update_display()
++                    top_window = self.window()
++                    if hasattr(top_window, "reassign_global_indices"):
++                        top_window.reassign_global_indices()
++                return
++            # Fallback to legacy groups
+             group_points = self.points_group1 if self.dragging_group == 1 else self.points_group2
+             if 0 <= self.dragging_point_idx < len(group_points):
+                 pt = group_points[self.dragging_point_idx]
+@@ -511,7 +648,7 @@ class DrawRoiPage(QMainWindow):
+         self.btn_add_lane.clicked.connect(self.add_new_lane)
+ 
+         self.all_roi_points = []
+-        self.entry_window_ref = None
++        # self.entry_window_ref = None
+ 
+     def clear_current_line1(self):
+         if not self.lanes:
+@@ -603,14 +740,14 @@ class DrawRoiPage(QMainWindow):
+         if 0 <= self.current_lane_idx < len(self.lanes):
+             self.lanes[self.current_lane_idx][field_name] = value
+ 
+-    def switch_lane(self, lane_idx):
+-        if lane_idx < 0 or lane_idx >= len(self.lanes):
+-            return
+-        self.current_lane_idx = lane_idx
+-        lane = self.lanes[lane_idx]
+-        self.lane_sdtype_edit.setText(lane.get("lane_sdtype_no", ""))
+-        self.lane_id_edit.setText(lane.get("LaneID", ""))
+-        self.turn_dir_no_edit.setText(lane.get("turn_dir_no", ""))
++    # def switch_lane(self, lane_idx):
++    #     if lane_idx < 0 or lane_idx >= len(self.lanes):
++    #         return
++    #     self.current_lane_idx = lane_idx
++    #     lane = self.lanes[lane_idx]
++    #     self.lane_sdtype_edit.setText(lane.get("lane_sdtype_no", ""))
++    #     self.lane_id_edit.setText(lane.get("LaneID", ""))
++    #     self.turn_dir_no_edit.setText(lane.get("turn_dir_no", ""))
+ 
+     def on_set_left_boundary(self):
+         """ 
+@@ -805,15 +942,20 @@ class DrawRoiPage(QMainWindow):
+             if isinstance(lane, dict):
+                 lane["lane_id"] = i + 1
+ 
+-        # Adjust current_lane_idx
++        # Adjust current_lane_idx: if only one lane left, index is 0; if more, min(del_idx, len-1)
+         if self.lanes:
+-            # If the deleted lane is the last one, move to the last one; otherwise keep the delete position (the next lane will move to this index)
+-            if del_idx >= len(self.lanes):
+-                self.current_lane_idx = len(self.lanes) - 1
+-            else:
+-                self.current_lane_idx = del_idx
++            self.current_lane_idx = min(del_idx, len(self.lanes) - 1)
++        else:
++            self.current_lane_idx = -1
++
++        # Synchronize current_lane_idx and current_group to all image labels
++        for label in getattr(self, "image_labels", []):
++            label.current_lane_idx = self.current_lane_idx
++            label.current_group = getattr(self, "current_group", 1)
++            label.update_display()
++
+         # Update global input fields
+-        if self.lanes:
++        if self.lanes and self.current_lane_idx >= 0:
+             lane = self.lanes[self.current_lane_idx]
+             self.lane_sdtype_edit.setText(lane.get("lane_sdtype_no", ""))
+             self.lane_id_edit.setText(lane.get("LaneID", ""))
+@@ -822,42 +964,14 @@ class DrawRoiPage(QMainWindow):
+             self.lane_sdtype_edit.clear()
+             self.lane_id_edit.clear()
+             self.turn_dir_no_edit.clear()
+-        if hasattr(self, "lane1_button"):
+-            self.lane1_button.setEnabled(True)
+-        if hasattr(self, "lane2_button"):
+-            self.lane2_button.setEnabled(True)
+-        else:
+-            # Disable lane line buttons if no lanes left
+-            self.current_lane_idx = -1
+-            if hasattr(self, "lane1_button"):
+-                self.lane1_button.setEnabled(False)
+-            if hasattr(self, "lane2_button"):
+-                self.lane2_button.setEnabled(False)
+-            if hasattr(self, "lane_entries") and self.lane_entries:
+-                for lane_widget, btn, del_btn in self.lane_entries:
+-                    lane_widget.setParent(None)
+-                    lane_widget.deleteLater()
+-                self.lane_entries = []
+-            # Set all image labels' current_lane_idx to -1 (no lane)
+-            for label in getattr(self, "image_labels", []):
+-                label.current_lane_idx = -1
+ 
+-        # Highlight the selected lane button
++        # Update lane line buttons (highlight current)
+         for idx, entry in enumerate(getattr(self, "lane_entries", [])):
+             entry[1].setChecked(idx == self.current_lane_idx)
+ 
+-        # Update displays
++        # Update text and displays
+         if hasattr(self, "update_all_points_text"):
+             self.update_all_points_text()
+-        for label in getattr(self, "image_labels", []):
+-            if hasattr(label, "update_display"):
+-                label.update_display()
+-        print("Delete lane succeeded. Switched to left lane")
+-        if not self.lanes:
+-            if hasattr(self, "lane1_button"):
+-                self.lane1_button.setEnabled(False)
+-            if hasattr(self, "lane2_button"):
+-                self.lane2_button.setEnabled(False)
+ 
+     def ensure_lane_exists(self):
+         if self.current_lane_idx >= len(self.lanes):
+@@ -882,145 +996,143 @@ class DrawRoiPage(QMainWindow):
+                 img_label.lanes = []
+                 img_label.current_lane_idx = 0
+                 img_label.current_line_group = 1
+-                img_label.update_display = self.make_update_display(img_label)
+-                img_label.mousePressEvent = self.make_mouse_press_event(img_label)
+-
++                # Do NOT override update_display or mousePressEvent; let ImageLabel handle its own logic
+                 self.image_labels.append(img_label)
+             except Exception as e:
+                 msg = QLabel(f"图片加载失败: {image_path}\n{e}")
+                 self.image_labels.append(msg)
+         self.arrange_grid()
+ 
+-    def make_update_display(self, label):
+-        # Plot all lanes and points on the image label, with current lane highlighted and others faded (20% opacity)
+-        def update_display():
+-            img = label.image.copy()
+-            disp_w = int(label.width * (1.0 if label.is_full_size else label.scale_factor))
+-            disp_h = int(label.height * (1.0 if label.is_full_size else label.scale_factor))
+-            if not label.is_full_size:
+-                img = cv2.resize(img, (disp_w, disp_h), interpolation=cv2.INTER_AREA)
+-
+-            overlay = img.copy()
+-            for lane_idx, lane in enumerate(label.lanes):
+-                is_current = (lane_idx == label.current_lane_idx)
+-                if is_current:
+-                    continue
+-                color1 = (255, 0, 0)  # Blue
+-                color2 = (0, 0, 255)  # Red
+-                # Draw line1 point
+-                for pt in lane["line1_points"]:
+-                    px, py = pt[0], pt[1]
+-                    disp_px = int(round(px * disp_w / label.width))
+-                    disp_py = int(round(py * disp_h / label.height))
+-                    cv2.circle(overlay, (disp_px, disp_py), 5, color1, -1)
+-                # Draw line2 point
+-                for pt in lane["line2_points"]:
+-                    px, py = pt[0], pt[1]
+-                    disp_px = int(round(px * disp_w / label.width))
+-                    disp_py = int(round(py * disp_h / label.height))
+-                    cv2.circle(overlay, (disp_px, disp_py), 5, color2, -1)
+-                # Draw line segment
+-                if len(lane["line1_points"]) >= 2:
+-                    pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line1_points"]], np.int32)
+-                    cv2.polylines(overlay, [pts], False, color1, 2)
+-                if len(lane["line2_points"]) >= 2:
+-                    pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line2_points"]], np.int32)
+-                    cv2.polylines(overlay, [pts], False, color2, 2)
+-            # Add overlay with 20% opacity
+-            cv2.addWeighted(overlay, 0.2, img, 0.8, 0, img)
+-
+-            # Highlight current lane
+-            if 0 <= label.current_lane_idx < len(label.lanes):
+-                lane = label.lanes[label.current_lane_idx]
+-                color1 = (255, 0, 0)  # Blue
+-                color2 = (0, 0, 255)  # Red
+-                # Draw line1 point
+-                for pt in lane["line1_points"]:
+-                    px, py = pt[0], pt[1]
+-                    disp_px = int(round(px * disp_w / label.width))
+-                    disp_py = int(round(py * disp_h / label.height))
+-                    cv2.circle(img, (disp_px, disp_py), 5, color1, -1)
+-                # Draw line2 point
+-                for pt in lane["line2_points"]:
+-                    px, py = pt[0], pt[1]
+-                    disp_px = int(round(px * disp_w / label.width))
+-                    disp_py = int(round(py * disp_h / label.height))
+-                    cv2.circle(img, (disp_px, disp_py), 5, color2, -1)
+-                # Draw line segment
+-                if len(lane["line1_points"]) >= 2:
+-                    pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line1_points"]], np.int32)
+-                    cv2.polylines(img, [pts], False, color1, 2)
+-                if len(lane["line2_points"]) >= 2:
+-                    pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line2_points"]], np.int32)
+-                    cv2.polylines(img, [pts], False, color2, 2)
+-                # Draw larger yellow circle around points
+-                for group in [1, 2]:
+-                    pts = lane["line1_points"] if group == 1 else lane["line2_points"]
+-                    for pt in pts:
+-                        px, py = pt[0], pt[1]
+-                        disp_px = int(round(px * disp_w / label.width))
+-                        disp_py = int(round(py * disp_h / label.height))
+-                        cv2.circle(img, (disp_px, disp_py), 7, (0, 255, 255), 1)
+-            qimage = label.convert_to_qimage(img)
+-            pixmap = QPixmap.fromImage(qimage)
+-            label.setPixmap(pixmap)
+-            label.setFixedSize(pixmap.size())
+-        return update_display
+-
+-    def make_mouse_press_event(self, label):
+-        def mousePressEvent(event):
+-            pos = event.position().toPoint()
+-            mx, my = pos.x(), pos.y()
+-            pixmap = label.pixmap()
+-            if pixmap is not None:
+-                disp_w = pixmap.width()
+-                disp_h = pixmap.height()
+-            else:
+-                disp_w = int(label.width * (1.0 if label.is_full_size else label.scale_factor))
+-                disp_h = int(label.height * (1.0 if label.is_full_size else label.scale_factor))
+-            if not (0 <= mx < disp_w and 0 <= my < disp_h):
+-                return
+-            px = mx * label.width / disp_w
+-            py = my * label.height / disp_h
+-            pixel_x = round(px)
+-            pixel_y = round(py)
+-            pixel_x = min(max(0, pixel_x), label.width - 1)
+-            pixel_y = min(max(0, pixel_y), label.height - 1)
+-
+-            # If no lanes exist, do nothing
+-            if not self.lanes:
+-                print("No lanes exist, cannot add points.")
+-                return
+-
+-            # Add point to current lane
+-            if event.button() == Qt.MouseButton.LeftButton:
+-                self.ensure_lane_exists()
+-                lane_idx = getattr(label, "current_lane_idx", 0)
+-                line_group = getattr(label, "current_line_group", 1)
+-                if lane_idx >= len(label.lanes):
+-                    while len(label.lanes) <= lane_idx:
+-                        label.lanes.append({"lane_id": len(label.lanes)+1, "line1_points": [], "line2_points": []})
+-                lane = label.lanes[lane_idx]
+-                pixel_coord = [pixel_x, pixel_y]
+-                # Use the label's own coord_convertor instead of self.coord_convertor
+-                world_coords = label.coord_convertor.pixel2wgs84([pixel_coord])
+-                lon, lat = world_coords[0]
+-                global_idx = self.get_next_global_index() if hasattr(self, "get_next_global_index") else 1
+-                creation_order = time.time()
+-                pt_tuple = (pixel_x, pixel_y, lat, lon, global_idx, creation_order)
+-                if line_group == 1:
+-                    lane["line1_points"].append(pt_tuple)
+-                else:
+-                    lane["line2_points"].append(pt_tuple)
+-                label.update_display()
+-                self.update_all_points_text()
+-                return
+-            elif event.button() == Qt.MouseButton.RightButton:
+-                # Delete last added point in current lane and group
+-                line_group = getattr(label, "current_line_group", 1)
+-                self.remove_last_global_point(group=line_group)
+-                return
+-        return mousePressEvent
++    # def make_update_display(self, label):
++    #     # Plot all lanes and points on the image label, with current lane highlighted and others faded (20% opacity)
++    #     def update_display():
++    #         img = label.image.copy()
++    #         disp_w = int(label.width * (1.0 if label.is_full_size else label.scale_factor))
++    #         disp_h = int(label.height * (1.0 if label.is_full_size else label.scale_factor))
++    #         if not label.is_full_size:
++    #             img = cv2.resize(img, (disp_w, disp_h), interpolation=cv2.INTER_AREA)
++
++    #         overlay = img.copy()
++    #         for lane_idx, lane in enumerate(label.lanes):
++    #             is_current = (lane_idx == label.current_lane_idx)
++    #             if is_current:
++    #                 continue
++    #             color1 = (255, 0, 0)  # Blue
++    #             color2 = (0, 0, 255)  # Red
++    #             # Draw line1 point
++    #             for pt in lane["line1_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(overlay, (disp_px, disp_py), 5, color1, -1)
++    #             # Draw line2 point
++    #             for pt in lane["line2_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(overlay, (disp_px, disp_py), 5, color2, -1)
++    #             # Draw line segment
++    #             if len(lane["line1_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line1_points"]], np.int32)
++    #                 cv2.polylines(overlay, [pts], False, color1, 2)
++    #             if len(lane["line2_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line2_points"]], np.int32)
++    #                 cv2.polylines(overlay, [pts], False, color2, 2)
++    #         # Add overlay with 20% opacity
++    #         cv2.addWeighted(overlay, 0.2, img, 0.8, 0, img)
++
++    #         # Highlight current lane
++    #         if 0 <= label.current_lane_idx < len(label.lanes):
++    #             lane = label.lanes[label.current_lane_idx]
++    #             color1 = (255, 0, 0)  # Blue
++    #             color2 = (0, 0, 255)  # Red
++    #             # Draw line1 point
++    #             for pt in lane["line1_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(img, (disp_px, disp_py), 5, color1, -1)
++    #             # Draw line2 point
++    #             for pt in lane["line2_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(img, (disp_px, disp_py), 5, color2, -1)
++    #             # Draw line segment
++    #             if len(lane["line1_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line1_points"]], np.int32)
++    #                 cv2.polylines(img, [pts], False, color1, 2)
++    #             if len(lane["line2_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line2_points"]], np.int32)
++    #                 cv2.polylines(img, [pts], False, color2, 2)
++    #             # Draw larger yellow circle around points
++    #             for group in [1, 2]:
++    #                 pts = lane["line1_points"] if group == 1 else lane["line2_points"]
++    #                 for pt in pts:
++    #                     px, py = pt[0], pt[1]
++    #                     disp_px = int(round(px * disp_w / label.width))
++    #                     disp_py = int(round(py * disp_h / label.height))
++    #                     cv2.circle(img, (disp_px, disp_py), 7, (0, 255, 255), 1)
++    #         qimage = label.convert_to_qimage(img)
++    #         pixmap = QPixmap.fromImage(qimage)
++    #         label.setPixmap(pixmap)
++    #         label.setFixedSize(pixmap.size())
++    #     return update_display
++
++    # def make_mouse_press_event(self, label):
++    #     def mousePressEvent(event):
++    #         pos = event.position().toPoint()
++    #         mx, my = pos.x(), pos.y()
++    #         pixmap = label.pixmap()
++    #         if pixmap is not None:
++    #             disp_w = pixmap.width()
++    #             disp_h = pixmap.height()
++    #         else:
++    #             disp_w = int(label.width * (1.0 if label.is_full_size else label.scale_factor))
++    #             disp_h = int(label.height * (1.0 if label.is_full_size else label.scale_factor))
++    #         if not (0 <= mx < disp_w and 0 <= my < disp_h):
++    #             return
++    #         px = mx * label.width / disp_w
++    #         py = my * label.height / disp_h
++    #         pixel_x = round(px)
++    #         pixel_y = round(py)
++    #         pixel_x = min(max(0, pixel_x), label.width - 1)
++    #         pixel_y = min(max(0, pixel_y), label.height - 1)
++
++    #         # If no lanes exist, do nothing
++    #         if not self.lanes:
++    #             print("No lanes exist, cannot add points.")
++    #             return
++
++    #         # Add point to current lane
++    #         if event.button() == Qt.MouseButton.LeftButton:
++    #             self.ensure_lane_exists()
++    #             lane_idx = getattr(label, "current_lane_idx", 0)
++    #             line_group = getattr(label, "current_line_group", 1)
++    #             if lane_idx >= len(label.lanes):
++    #                 while len(label.lanes) <= lane_idx:
++    #                     label.lanes.append({"lane_id": len(label.lanes)+1, "line1_points": [], "line2_points": []})
++    #             lane = label.lanes[lane_idx]
++    #             pixel_coord = [pixel_x, pixel_y]
++    #             # Use the label's own coord_convertor instead of self.coord_convertor
++    #             world_coords = label.coord_convertor.pixel2wgs84([pixel_coord])
++    #             lon, lat = world_coords[0]
++    #             global_idx = self.get_next_global_index() if hasattr(self, "get_next_global_index") else 1
++    #             creation_order = time.time()
++    #             pt_tuple = (pixel_x, pixel_y, lat, lon, global_idx, creation_order)
++    #             if line_group == 1:
++    #                 lane["line1_points"].append(pt_tuple)
++    #             else:
++    #                 lane["line2_points"].append(pt_tuple)
++    #             label.update_display()
++    #             self.update_all_points_text()
++    #             return
++    #         elif event.button() == Qt.MouseButton.RightButton:
++    #             # Delete last added point in current lane and group
++    #             line_group = getattr(label, "current_line_group", 1)
++    #             self.remove_last_global_point(group=line_group)
++    #             return
++    #     return mousePressEvent
+ 
+     def arrange_grid(self):
+         self.update_thumb_size()
+@@ -1124,14 +1236,21 @@ class DrawRoiPage(QMainWindow):
+         latest1 = []
+         latest2 = []
+ 
+-        lane_idx = getattr(self, "current_lane_idx", 0)
++        lane_idx = getattr(self, "current_lane_idx", -1)
++        if lane_idx < 0:
++            # No lanes exist, clear text and return
++            self.points_text1.setPlainText("尚未添加车道左边界点")
++            self.points_text2.setPlainText("尚未添加车道右边界点")
++            self._latest_group_points = {1: [], 2: []}
++            return
+ 
+         # Collect left boundary points across all images for current lane
+         left_entries = []
+         for label_idx, label in enumerate(self.image_labels):
+-            if not hasattr(label, "lanes") or lane_idx >= len(label.lanes):
++            if not hasattr(label, "lanes") or lane_idx >= len(label.lanes) or len(label.lanes) == 0:
+                 continue
+-            for idx_in_label, pt in enumerate(label.lanes[lane_idx].get("line1_points", [])):
++            lane = label.lanes[lane_idx]
++            for idx_in_label, pt in enumerate(lane.get("line1_points", [])):
+                 order = pt[5] if len(pt) >= 6 else float("inf")
+                 left_entries.append({
+                     "label": label,
+@@ -1160,9 +1279,10 @@ class DrawRoiPage(QMainWindow):
+         # Collect right boundary points across all images for current lane
+         right_entries = []
+         for label_idx, label in enumerate(self.image_labels):
+-            if not hasattr(label, "lanes") or lane_idx >= len(label.lanes):
++            if not hasattr(label, "lanes") or lane_idx >= len(label.lanes) or len(label.lanes) == 0:
+                 continue
+-            for idx_in_label, pt in enumerate(label.lanes[lane_idx].get("line2_points", [])):
++            lane = label.lanes[lane_idx]
++            for idx_in_label, pt in enumerate(lane.get("line2_points", [])):
+                 order = pt[5] if len(pt) >= 6 else float("inf")
+                 right_entries.append({
+                     "label": label,
+@@ -1224,20 +1344,35 @@ class DrawRoiPage(QMainWindow):
+         menu.exec(text_widget.mapToGlobal(pos))
+ 
+     def delete_point_by_info(self, ptinfo, group):
+-        # ptinfo: dict with keys including label_idx, img_label, pixel_x, pixel_y, global_idx, creation_order
++        """删除点时保持车道显示正常，先删数据再刷新索引和显示"""
+         img_label = ptinfo["img_label"]
+         px, py = ptinfo["pixel_x"], ptinfo["pixel_y"]
+-        # Find the corresponding point in the label and delete it
+-        group_list = img_label.points_group1 if group == 1 else img_label.points_group2
+-        idx_to_del = None
+-        for idx, pt in enumerate(group_list):
+-            if (pt[0], pt[1]) == (px, py):
+-                idx_to_del = idx
+-                break
+-        if idx_to_del is not None:
+-            del group_list[idx_to_del]
+-            self.reassign_global_indices()
+-            self.update_all_points_text()
++        lane_idx = ptinfo.get("lane_idx", getattr(self, 'current_lane_idx', 0))
++
++        # 删除点（优先 lanes）
++        if hasattr(img_label, 'lanes') and 0 <= lane_idx < len(img_label.lanes):
++            group_key = 'line1_points' if group == 1 else 'line2_points'
++            pts = img_label.lanes[lane_idx].get(group_key, [])
++            idx_to_del = next((i for i, pt in enumerate(pts) if (pt[0], pt[1]) == (px, py)), None)
++            if idx_to_del is not None:
++                del pts[idx_to_del]
++        else:
++            # 兼容旧逻辑
++            group_list = img_label.points_group1 if group == 1 else img_label.points_group2
++            idx_to_del = next((i for i, pt in enumerate(group_list) if (pt[0], pt[1]) == (px, py)), None)
++            if idx_to_del is not None:
++                del group_list[idx_to_del]
++
++        # ✅ 先重排索引
++        self.reassign_global_indices()
++
++        # ✅ 再刷新所有图像标签的显示（确保数据稳定后再画）
++        for label in getattr(self, "image_labels", []):
++            if hasattr(label, "update_display"):
++                label.update_display()
++
++        # ✅ 最后更新文本
++        self.update_all_points_text()
+ 
+     # Bind context menu to points text widgets
+     def bind_context_menu(self):
+diff --git a/tool/FusionFlow/draw_roi_page_bak.py b/tool/FusionFlow/draw_roi_page_bak.py
+new file mode 100644
+index 0000000..86c5ba0
+--- /dev/null
++++ b/tool/FusionFlow/draw_roi_page_bak.py
+@@ -0,0 +1,1382 @@
++# -*- coding: utf-8 -*-
++import os
++import time
++import glob
++import json
++import cv2
++import numpy as np
++from PyQt6.QtCore import Qt, QSize
++from PyQt6.QtGui import QImage, QPixmap, QAction, QIcon
++from PyQt6.QtWidgets import (
++    QToolButton, QLabel, QLineEdit, QMainWindow, QMessageBox, QWidget, QGridLayout, QPushButton, QVBoxLayout, QHBoxLayout, QTextEdit, QMenu, QFrame, QButtonGroup, QScrollArea
++)
++
++from pixel2wgs84 import Pixel2WGS84
++from util import resource_path
++
++class ImageLabel(QLabel):
++    """
++    Customized QLabel for displaying images and handling mouse events, refactored for global point management.
++    Supports two groups of points (points_group1, points_group2)
++    """
++    def __init__(self, image_path, parent=None):
++        super().__init__(parent)
++        self.image = cv2.imread(image_path)
++        if self.image is None:
++            raise FileNotFoundError(f"Cannot load image: {image_path}")
++        # Load coordinate conversion data: try .json, then .bin, else error
++        self.is_fisheye = False
++        json_path = image_path.rsplit('.', 1)[0] + '.json'
++        bin_path = image_path.rsplit('.', 1)[0] + '.bin'
++        if os.path.exists(json_path):
++            with open(json_path, 'r') as f:
++                data = json.load(f)
++            pmatrix_data = data["PMatrix"]
++            self.coord_convertor = Pixel2WGS84(pmatrix_data)
++        elif os.path.exists(bin_path):
++            with open(bin_path, 'rb') as f:
++                pmatrix_data = f.read()
++            self.is_fisheye = True
++            # coord_convertor is a placeholder; use pixel2wgs84_fisheye
++            self.coord_convertor = None
++        else:
++            raise FileNotFoundError(f"Cannot find coordinate file for image: {image_path}")
++        self.height, self.width, _ = self.image.shape
++
++        self.points_group1 = []
++        self.points_group2 = []
++        self.current_group = 1  # 1 or 2, indicates which group is active for adding points
++        self.setMouseTracking(True)
++        self.current_mouse_pos = None  # Current mouse position
++
++        self.is_full_size = False
++        self.scale_factor = 0.25  # 25% scale for thumbnail, can be dynamically changed by Ctrl+Wheel
++        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
++
++        # Drag point state
++        self.dragging_point_idx = None  # Index of the point being dragged in the current group
++        self.dragging_group = None      # Group of the point being dragged
++        self.dragging = False
++        self.drag_threshold = 10  # Threshold for starting a drag operation
++
++        self.setStyleSheet("border: none; margin: 0px; padding: 0px;")
++        self.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
++        self.setCursor(Qt.CursorShape.CrossCursor)
++        self.update_display()
++    
++    def pixel2wgs84_fisheye(self, pixel_coord_list):
++        # Placeholder for fisheye camera coordinate conversion
++        # TODO: implement actual fisheye mapping
++        return [(0.0, 0.0) for _ in pixel_coord_list]
++
++    def enterEvent(self, event):
++        """
++        When the mouse enters the widget, set focus to allow keyboard events.
++        """
++        self.setFocus()
++        super().enterEvent(event)
++
++    def convert_to_qimage(self, img_bgr):
++        rgb_image = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
++        return QImage(rgb_image.data, img_bgr.shape[1], img_bgr.shape[0], 3 * img_bgr.shape[1], QImage.Format.Format_RGB888)
++
++    def update_display(self):
++        """
++        Update the display with the current image and points, using local and global indices.
++        Draw order:
++        1. Draw all points and lines of non-current lanes (semi-transparent overlay).
++        2. Draw points and lines of the current lane (highlighted solid lines).
++        When only one lane remains, other lanes are not displayed, and the current lane is highlighted.
++        """
++        if self.is_full_size:
++            display_img = self.image.copy()
++            disp_w = self.width
++            disp_h = self.height
++        else:
++            disp_w = int(self.width * self.scale_factor)
++            disp_h = int(self.height * self.scale_factor)
++            display_img = cv2.resize(self.image, (disp_w, disp_h), interpolation=cv2.INTER_AREA)
++
++        lanes_valid = hasattr(self, 'lanes') and isinstance(self.lanes, list) and len(self.lanes) > 0 \
++            and hasattr(self, 'current_lane_idx') and 0 <= self.current_lane_idx < len(self.lanes)
++        current_lane_idx = getattr(self, "current_lane_idx", None)
++        current_group = getattr(self, "current_group", 1)
++
++        # 1. Draw other lanes (semi-transparent)
++        if hasattr(self, 'lanes') and isinstance(self.lanes, list) and len(self.lanes) > 1 and current_lane_idx is not None:
++            overlay = display_img.copy()
++            for lane_idx, lane in enumerate(self.lanes):
++                if lane_idx == current_lane_idx:
++                    continue
++                color_line1 = (255, 0, 0)
++                color_line2 = (0, 0, 255)
++                # Draw line1 points
++                for pt in lane.get("line1_points", []):
++                    px, py = pt[0], pt[1]
++                    disp_px = int(round(px * disp_w / self.width))
++                    disp_py = int(round(py * disp_h / self.height))
++                    cv2.circle(overlay, (disp_px, disp_py), 5, color_line1, -1)
++                # Draw line2 points
++                for pt in lane.get("line2_points", []):
++                    px, py = pt[0], pt[1]
++                    disp_px = int(round(px * disp_w / self.width))
++                    disp_py = int(round(py * disp_h / self.height))
++                    cv2.circle(overlay, (disp_px, disp_py), 5, color_line2, -1)
++                # Draw line1 polyline
++                line1_points = lane.get("line1_points", [])
++                if len(line1_points) >= 2:
++                    pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line1_points], np.int32)
++                    cv2.polylines(overlay, [pts], False, color_line1, 2)
++                # Draw line2 polyline
++                line2_points = lane.get("line2_points", [])
++                if len(line2_points) >= 2:
++                    pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line2_points], np.int32)
++                    cv2.polylines(overlay, [pts], False, color_line2, 2)
++            # Blend overlay with display_img, overlay 30% opacity
++            cv2.addWeighted(overlay, 0.3, display_img, 0.7, 0, display_img)
++
++        # Draw current lane (highlighted)
++        points_to_draw = []
++        draw_lines = False
++        line1_points = []
++        line2_points = []
++        if lanes_valid:
++            lane = self.lanes[self.current_lane_idx]
++            for pt in lane.get("line1_points", []):
++                points_to_draw.append((pt, 1))
++            for pt in lane.get("line2_points", []):
++                points_to_draw.append((pt, 2))
++            draw_lines = True
++            line1_points = lane.get("line1_points", [])
++            line2_points = lane.get("line2_points", [])
++        else:
++            # fallback legacy
++            for pt in self.points_group1:
++                points_to_draw.append((pt, 1))
++            for pt in self.points_group2:
++                points_to_draw.append((pt, 2))
++            draw_lines = False
++            line1_points = []
++            line2_points = []
++
++        # Sort points by global_idx, None at the end
++        def sort_key(x):
++            pt = x[0]
++            global_idx = pt[4] if len(pt) >= 5 else None
++            return (1, 0) if global_idx is None else (0, global_idx)
++        points_sorted = sorted(points_to_draw, key=sort_key)
++
++        # Draw points with indices
++        for idx, (point, group) in enumerate(points_sorted):
++            if len(point) == 6:
++                px, py, wx, wy, global_idx, _ = point
++            elif len(point) == 5:
++                px, py, wx, wy, global_idx = point
++            else:
++                px, py, wx, wy = point
++                global_idx = None
++            disp_px = int(round(px * disp_w / self.width))
++            disp_py = int(round(py * disp_h / self.height))
++            color = (255, 0, 0) if group == 1 else (0, 0, 255)
++            cv2.circle(display_img, (disp_px, disp_py), 5, color, -1)
++            # Highlight dragging point
++            if (self.dragging and self.dragging_point_idx is not None and group == self.dragging_group):
++                if lanes_valid:
++                    group_points = lane["line1_points"] if group == 1 else lane["line2_points"]
++                else:
++                    group_points = self.points_group1 if group == 1 else self.points_group2
++                if self.dragging_point_idx < len(group_points):
++                    pt_drag = group_points[self.dragging_point_idx]
++                    if pt_drag[:2] == (px, py):
++                        cv2.circle(display_img, (disp_px, disp_py), 10, (0, 255, 255), 2)
++            # Use global sequential index, prefix LP/RP
++            if global_idx is not None:
++                text = f"{'LP' if group==1 else 'RP'}{global_idx}"
++            else:
++                text = f"{'LP' if group==1 else 'RP'}"
++            text_x = disp_px + 10
++            text_y = disp_py - 10 if disp_py > 15 else disp_py + 15
++            cv2.putText(display_img, text, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
++
++        # Draw polylines for current lane
++        if draw_lines:
++            if len(line1_points) >= 2:
++                pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line1_points], np.int32)
++                cv2.polylines(display_img, [pts], False, (255, 0, 0), 2)
++            if len(line2_points) >= 2:
++                pts = np.array([[int(round(pt[0] * disp_w / self.width)), int(round(pt[1] * disp_h / self.height))] for pt in line2_points], np.int32)
++                cv2.polylines(display_img, [pts], False, (0, 0, 255), 2)
++
++        # Display current mouse pixel coordinates
++        if self.current_mouse_pos is not None:
++            mx, my = self.current_mouse_pos
++            px = mx * self.width / disp_w
++            py = my * self.height / disp_h
++            show_px = round(px)
++            show_py = round(py)
++            cv2.putText(display_img, f"({show_px}, {show_py})", (10, disp_h - 10),
++                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
++
++        qimage = self.convert_to_qimage(display_img)
++        pixmap = QPixmap.fromImage(qimage)
++        self.setPixmap(pixmap)
++        if self.is_full_size:
++            self.setFixedSize(self.width, self.height)
++        else:
++            self.setFixedSize(pixmap.size())
++
++    def find_nearest_point(self, mx, my, group=None):
++        """
++        Find the nearest point to the mouse position (mx, my) within a given group.
++        Prefer searching in self.lanes[current_lane_idx] if available, otherwise fall back to
++        self.points_group1 / self.points_group2 for backward compatibility.
++        """
++        min_dist = float('inf')
++        min_idx = None
++        min_group = None
++        pixmap = self.pixmap()
++        if pixmap is not None:
++            disp_w = pixmap.width()
++            disp_h = pixmap.height()
++        else:
++            disp_w = int(self.width * (1.0 if self.is_full_size else self.scale_factor))
++            disp_h = int(self.height * (1.0 if self.is_full_size else self.scale_factor))
++        # Coordinate mapping
++        px = mx * self.width / disp_w
++        py = my * self.height / disp_h
++
++        # Try lanes-based storage first
++        if hasattr(self, 'lanes') and getattr(self, 'current_lane_idx', -1) >= 0 and getattr(self, 'current_lane_idx', -1) < len(self.lanes):
++            lane = self.lanes[self.current_lane_idx]
++            groups = []
++            if group is None:
++                groups = [(lane.get('line1_points', []), 1), (lane.get('line2_points', []), 2)]
++            else:
++                groups = [(lane.get('line1_points', []), 1)] if group == 1 else [(lane.get('line2_points', []), 2)]
++            for pts, g in groups:
++                for idx, pt in enumerate(pts):
++                    pt_x, pt_y = pt[0], pt[1]
++                    dist = ((pt_x - px)**2 + (pt_y - py)**2) ** 0.5
++                    if dist < min_dist:
++                        min_dist = dist
++                        min_idx = idx
++                        min_group = g
++            if min_dist <= self.drag_threshold:
++                return min_idx, min_group
++            return None, None
++
++        # Fallback to old storage
++        groups = []
++        if group is None:
++            groups = [(self.points_group1, 1), (self.points_group2, 2)]
++        else:
++            groups = [(self.points_group1, 1)] if group == 1 else [(self.points_group2, 2)]
++        for pts, g in groups:
++            for idx, pt in enumerate(pts):
++                pt_x, pt_y = pt[0], pt[1]
++                dist = ((pt_x - px)**2 + (pt_y - py)**2) ** 0.5
++                if dist < min_dist:
++                    min_dist = dist
++                    min_idx = idx
++                    min_group = g
++        if min_dist <= self.drag_threshold:
++            return min_idx, min_group
++        return None, None
++
++    def mousePressEvent(self, event):
++        self.setFocus()
++        pos = event.position().toPoint()
++        mx, my = pos.x(), pos.y()
++        # Get displayed image size
++        pixmap = self.pixmap()
++        if pixmap is not None:
++            disp_w = pixmap.width()
++            disp_h = pixmap.height()
++        else:
++            disp_w = int(self.width * (1.0 if self.is_full_size else self.scale_factor))
++            disp_h = int(self.height * (1.0 if self.is_full_size else self.scale_factor))
++        # Check whether within image bounds
++        if not (0 <= mx < disp_w and 0 <= my < disp_h):
++            return
++        # Coordinate mapping
++        px = mx * self.width / disp_w
++        py = my * self.height / disp_h
++        pixel_x = round(px)
++        pixel_y = round(py)
++        # Restrict to image bounds
++        pixel_x = min(max(0, pixel_x), self.width - 1)
++        pixel_y = min(max(0, pixel_y), self.height - 1)
++
++        top_window = self.window()
++        # Left mouse button: drag existing point or add new point
++        # Right mouse button: delete last point in current group (delegated to main window)
++        if event.button() == Qt.MouseButton.LeftButton:
++            # If there are no lanes, cannot add points
++            if not hasattr(self, 'lanes') or len(self.lanes) == 0:
++                print("No lanes exist, cannot add points.")
++                return
++
++            # try to find nearest point in lanes first
++            idx, group = self.find_nearest_point(mx, my, self.current_group)
++            if idx is not None and group == self.current_group:
++                self.dragging_point_idx = idx
++                self.dragging_group = group
++                self.dragging = True
++                return
++
++            # Add new point to current group if no nearby point found
++            pixel_coord = [pixel_x, pixel_y]
++            if getattr(self, "is_fisheye", True):
++                world_coords = self.pixel2wgs84_fisheye([pixel_coord])
++            else:
++                world_coords = self.coord_convertor.pixel2wgs84([pixel_coord])
++            lon, lat = world_coords[0]
++            creation_order = time.time()
++
++            # Prefer to store points in self.lanes if available (keeps DrawRoiPage and ImageLabel in sync)
++            if hasattr(self, 'lanes') and getattr(self, 'current_lane_idx', -1) >= 0:
++                lane_idx = self.current_lane_idx
++                if lane_idx >= len(self.lanes):
++                    while len(self.lanes) <= lane_idx:
++                        self.lanes.append({"lane_id": len(self.lanes)+1, "line1_points": [], "line2_points": []})
++                lane = self.lanes[lane_idx]
++                global_idx = None
++                if hasattr(top_window, 'get_next_global_index'):
++                    global_idx = top_window.get_next_global_index()
++                pt_tuple = (pixel_x, pixel_y, lat, lon, global_idx, creation_order)
++                if self.current_group == 1:
++                    lane['line1_points'].append(pt_tuple)
++                else:
++                    lane['line2_points'].append(pt_tuple)
++                # Notify parent to reassign indices and refresh text
++                if hasattr(top_window, 'reassign_global_indices'):
++                    top_window.reassign_global_indices()
++                if hasattr(top_window, 'update_all_points_text'):
++                    top_window.update_all_points_text()
++                self.update_display()
++                return
++
++            # Fallback (legacy): append into points_group lists
++            pt_tuple = (pixel_x, pixel_y, lat, lon, None, creation_order)
++            if self.current_group == 1:
++                self.points_group1.append(pt_tuple)
++            else:
++                self.points_group2.append(pt_tuple)
++            if hasattr(top_window, 'reassign_global_indices'):
++                top_window.reassign_global_indices()
++            return
++        elif event.button() == Qt.MouseButton.RightButton:
++            # Delete last point in current group
++            top_window = self.window()
++            line_group = self.current_group
++            if hasattr(top_window, "remove_last_global_point"):
++                top_window.remove_last_global_point(group=line_group, lane_idx=getattr(self, "current_lane_idx", 0))
++            return
++
++    def mouseMoveEvent(self, event):
++        pos = event.position().toPoint()
++        mx, my = pos.x(), pos.y()
++        pixmap = self.pixmap()
++        if pixmap is not None:
++            disp_w = pixmap.width()
++            disp_h = pixmap.height()
++        else:
++            disp_w = int(self.width * (1.0 if self.is_full_size else self.scale_factor))
++            disp_h = int(self.height * (1.0 if self.is_full_size else self.scale_factor))
++        # Drag point if in dragging state
++        if self.dragging and self.dragging_point_idx is not None and self.dragging_group is not None:
++            # Only drag within current group
++            px = mx * self.width / disp_w
++            py = my * self.height / disp_h
++            px = round(px)
++            py = round(py)
++            px = min(max(0, px), self.width - 1)
++            py = min(max(0, py), self.height - 1)
++            # Prefer lanes storage
++            if hasattr(self, 'lanes') and getattr(self, 'current_lane_idx', -1) >= 0:
++                group_points = self.lanes[self.current_lane_idx]["line1_points"] if self.dragging_group == 1 else self.lanes[self.current_lane_idx]["line2_points"]
++                if 0 <= self.dragging_point_idx < len(group_points):
++                    pt = group_points[self.dragging_point_idx]
++                    new_pt = (px, py) + pt[2:]
++                    group_points[self.dragging_point_idx] = new_pt
++                    self.update_display()
++                    top_window = self.window()
++                    if hasattr(top_window, "reassign_global_indices"):
++                        top_window.reassign_global_indices()
++                return
++            # Fallback to legacy groups
++            group_points = self.points_group1 if self.dragging_group == 1 else self.points_group2
++            if 0 <= self.dragging_point_idx < len(group_points):
++                pt = group_points[self.dragging_point_idx]
++                new_pt = (px, py) + pt[2:]
++                group_points[self.dragging_point_idx] = new_pt
++                self.update_display()
++                top_window = self.window()
++                if hasattr(top_window, "reassign_global_indices"):
++                    top_window.reassign_global_indices()
++            return
++        # Update current mouse position for display
++        if 0 <= mx < disp_w and 0 <= my < disp_h:
++            self.current_mouse_pos = (mx, my)
++            self.update_display()
++
++    def mouseReleaseEvent(self, event):
++        if self.dragging:
++            self.dragging = False
++            self.dragging_point_idx = None
++            self.dragging_group = None
++            self.setCursor(Qt.CursorShape.CrossCursor)
++            self.update_display()
++
++    def wheelEvent(self, event):
++        """
++        Ctrl + Mouse Wheel to zoom in/out the thumbnail size
++        """
++        # Only allow zooming when not in full-size mode
++        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
++            # Zoom in/out while holding Ctrl
++            num_degrees = event.angleDelta().y() / 8
++            num_steps = num_degrees / 15
++            if num_steps > 0:
++                self.scale_factor *= (1.1 ** num_steps)
++            elif num_steps < 0:
++                self.scale_factor /= (1.1 ** (-num_steps))
++            # Restrict to reasonable range
++            self.scale_factor = max(0.1, min(self.scale_factor, 3.0))
++            self.current_mouse_pos = None
++            self.update_display()
++            event.accept()  # Accept the event to prevent default behavior
++        else:
++            super().wheelEvent(event)
++
++    def keyPressEvent(self, event):
++        # Switch between groups with 1 and 2
++        if event.key() == Qt.Key.Key_1:
++            self.current_group = 1
++            print("Switch to group 1")
++            self.update_display()
++        elif event.key() == Qt.Key.Key_2:
++            self.current_group = 2
++            print("Switch to group 2")
++            self.update_display()
++        else:
++            super().keyPressEvent(event)
++
++
++class DrawRoiPage(QMainWindow):
++    def __init__(self, image_dir_or_files):
++        super().__init__()
++        self.setWindowTitle("TrafficFlow ROI")
++
++        central_widget = QWidget()
++        self.setCentralWidget(central_widget)
++        main_layout = QVBoxLayout()
++        central_widget.setLayout(main_layout)
++
++        # Layout: Top fields upstream_cross_id & f_dir_8_no
++        top_fields_layout = QHBoxLayout()
++        upstream_label = QLabel("upstream_cross_id:")
++        self.upstream_edit = QLineEdit()
++        self.upstream_edit.setFixedWidth(150)
++        fdir_label = QLabel("f_dir_8_no:")
++        self.fdir_edit = QLineEdit()
++        self.fdir_edit.setFixedWidth(150)
++        top_fields_layout.addWidget(upstream_label)
++        top_fields_layout.addWidget(self.upstream_edit)
++        top_fields_layout.addWidget(fdir_label)
++        top_fields_layout.addWidget(self.fdir_edit)
++        main_layout.addLayout(top_fields_layout)
++
++        # First row: Add Lane button & lane switch buttons
++        first_row_layout = QHBoxLayout()
++        self.btn_add_lane = QPushButton("新增车道")
++        first_row_layout.addWidget(self.btn_add_lane)
++        # Lane switch buttons layout
++        self.lane_button_layout = QHBoxLayout()
++        first_row_layout.addLayout(self.lane_button_layout)
++        main_layout.addLayout(first_row_layout)
++        # self.lane_btns = []  # Store lane switch buttons
++        self.lane_entries = []  # Each entry: (lane_widget, btn, del_btn)
++
++        # Add separators
++        line_sep = QFrame()
++        line_sep.setFrameShape(QFrame.Shape.HLine)
++        line_sep.setFrameShadow(QFrame.Shadow.Sunken)
++        main_layout.addWidget(line_sep)
++
++        # Second row: lane line buttons & global fields
++        second_row_layout = QVBoxLayout()
++        # Laneline row
++        lane_buttons_layout = QHBoxLayout()
++        # Lane left boundary
++        lane1_widget = QWidget()
++        lane1_layout = QHBoxLayout(lane1_widget)
++        lane1_layout.setContentsMargins(0, 0, 0, 0)
++        lane1_layout.setSpacing(2)
++        self.lane1_button = QPushButton("车道左边界")
++        self.lane1_button.setCheckable(True)
++        self.lane1_button.clicked.connect(self.on_set_left_boundary)
++        self.lane1_del_btn = QToolButton()
++        self.lane1_del_btn.setIcon(QIcon(resource_path("material/delete.svg")))
++        self.lane1_del_btn.setIconSize(QSize(16, 16))
++        self.lane1_del_btn.setFixedSize(20, 20)
++        self.lane1_del_btn.setStyleSheet("border: none;")
++        self.lane1_del_btn.clicked.connect(self.clear_current_line1)
++        lane1_layout.addWidget(self.lane1_button)
++        lane1_layout.addWidget(self.lane1_del_btn)
++        lane_buttons_layout.addWidget(lane1_widget)
++        # Lane right boundary
++        lane2_widget = QWidget()
++        lane2_layout = QHBoxLayout(lane2_widget)
++        lane2_layout.setContentsMargins(0, 0, 0, 0)
++        lane2_layout.setSpacing(2)
++        self.lane2_button = QPushButton("车道右边界")
++        self.lane2_button.setCheckable(True)
++        self.lane2_button.clicked.connect(self.on_set_right_boundary)
++        self.lane2_del_btn = QToolButton()
++        self.lane2_del_btn.setIcon(QIcon(resource_path("material/delete.svg")))
++        self.lane2_del_btn.setIconSize(QSize(16, 16))
++        self.lane2_del_btn.setFixedSize(20, 20)
++        self.lane2_del_btn.setStyleSheet("border: none;")
++        self.lane2_del_btn.clicked.connect(self.clear_current_line2)
++        lane2_layout.addWidget(self.lane2_button)
++        lane2_layout.addWidget(self.lane2_del_btn)
++        lane_buttons_layout.addWidget(lane2_widget)
++        second_row_layout.addLayout(lane_buttons_layout)
++
++        # Global fields row
++        lane_fields_layout = QHBoxLayout()
++        self.lane_sdtype_edit = QLineEdit()
++        self.lane_id_edit = QLineEdit()
++        self.turn_dir_no_edit = QLineEdit()
++        lane_fields_layout.addWidget(QLabel("lane_sdtype_no:"))
++        lane_fields_layout.addWidget(self.lane_sdtype_edit)
++        lane_fields_layout.addWidget(QLabel("LaneID:"))     # who on earth came up with those fucking protocol names?
++        lane_fields_layout.addWidget(self.lane_id_edit)
++        lane_fields_layout.addWidget(QLabel("turn_dir_no:"))
++        lane_fields_layout.addWidget(self.turn_dir_no_edit)
++        second_row_layout.addLayout(lane_fields_layout)
++
++        # Bounding events for global fields
++        self.lane_sdtype_edit.editingFinished.connect(
++            lambda: self.update_current_lane_field("lane_sdtype_no", self.lane_sdtype_edit.text()))
++        self.lane_id_edit.editingFinished.connect(
++            lambda: self.update_current_lane_field("LaneID", self.lane_id_edit.text()))
++        self.turn_dir_no_edit.editingFinished.connect(
++            lambda: self.update_current_lane_field("turn_dir_no", self.turn_dir_no_edit.text()))
++        # Sync on text change for immediate update
++        self.lane_sdtype_edit.textChanged.connect(lambda text: self.update_current_lane_field("lane_sdtype_no", text))
++        self.lane_id_edit.textChanged.connect(lambda text: self.update_current_lane_field("LaneID", text))
++        self.turn_dir_no_edit.textChanged.connect(lambda text: self.update_current_lane_field("turn_dir_no", text))
++
++        # Enforce mutual exclusivity using QButtonGroup
++        self.lane_line_group = QButtonGroup(self)
++        self.lane_line_group.setExclusive(True)
++        self.lane_line_group.addButton(self.lane1_button)
++        self.lane_line_group.addButton(self.lane2_button)
++
++        main_layout.addLayout(second_row_layout)
++
++        # Scroll area for images
++        self.scroll_area = QScrollArea()
++        self.scroll_area.setWidgetResizable(True)
++        self.scroll_widget = QWidget()
++        self.grid_layout = QGridLayout()
++        self.scroll_widget.setLayout(self.grid_layout)
++        self.scroll_area.setWidget(self.scroll_widget)
++        main_layout.addWidget(self.scroll_area)
++
++        # Glob directory for images
++        if isinstance(image_dir_or_files, list):
++            self.image_files = image_dir_or_files
++        elif isinstance(image_dir_or_files, str):
++            self.image_files = sorted(glob.glob(f"{image_dir_or_files}/*.jpg") + glob.glob(f"{image_dir_or_files}/*.png"))
++        else:
++            self.image_files = []
++        self.image_labels = []
++        self.thumb_size = 600  # thumbnail size for layout
++        self.desired_columns = 2  # number of columns in grid layout
++        self.init_image_labels()
++
++        # Init lanes
++        self.lanes = []
++        self.current_lane_idx = 0
++        self.add_new_lane()
++        # Default to editing left boundary when entering interface
++        self.current_group = 1
++        if hasattr(self, "lane1_button"):
++            self.lane1_button.setChecked(True)
++        if hasattr(self, "lane2_button"):
++            self.lane2_button.setChecked(False)
++        print("Default to editing left boundary on startup")
++
++        # Add QTextEdit for displaying points
++        self.points_text1 = QTextEdit()
++        self.points_text1.setReadOnly(True)
++        self.points_text1.setFixedHeight(120)
++        self.points_text1.setPlaceholderText("车道左边界点")
++
++        self.points_text2 = QTextEdit()
++        self.points_text2.setReadOnly(True)
++        self.points_text2.setFixedHeight(120)
++        self.points_text2.setPlaceholderText("车道右边界点")
++
++        # Side-by-side layout for lane boundary points
++        hbox = QHBoxLayout()
++        vbox1 = QVBoxLayout()
++        label1 = QLabel("车道左边界")
++        label1.setContentsMargins(0, 0, 0, 0)
++        label1.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
++        label1.setFixedHeight(16)
++        vbox1.addWidget(label1)
++        vbox1.addWidget(self.points_text1)
++        vbox2 = QVBoxLayout()
++        label2 = QLabel("车道右边界")
++        label2.setContentsMargins(0, 0, 0, 0)
++        label2.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
++        label2.setFixedHeight(16)
++        vbox2.addWidget(label2)
++        vbox2.addWidget(self.points_text2)
++        hbox.addLayout(vbox1)
++        hbox.addLayout(vbox2)
++        main_layout.addLayout(hbox)
++        self.update_all_points_text()
++
++        # Add buttons for lane selection
++        self.lane1_button.clicked.connect(self.on_set_left_boundary)
++        self.lane2_button.clicked.connect(self.on_set_right_boundary)
++        self.btn_add_lane.clicked.connect(self.add_new_lane)
++
++        # self.all_roi_points = []
++        # self.entry_window_ref = None
++
++    def clear_current_line1(self):
++        if not self.lanes:
++            return
++        lane = self.lanes[self.current_lane_idx]
++        lane["line1_points"].clear()
++        for label in self.image_labels:
++            if hasattr(label, "lanes") and self.current_lane_idx < len(label.lanes):
++                label.lanes[self.current_lane_idx]["line1_points"].clear()
++                label.update_display()
++        self.update_all_points_text()
++
++    def clear_current_line2(self):
++        if not self.lanes:
++            return
++        lane = self.lanes[self.current_lane_idx]
++        lane["line2_points"].clear()
++        for label in self.image_labels:
++            if hasattr(label, "lanes") and self.current_lane_idx < len(label.lanes):
++                label.lanes[self.current_lane_idx]["line2_points"].clear()
++                label.update_display()
++        self.update_all_points_text()
++
++    def closeEvent(self, event):
++        # if hasattr(self, "entry_window_ref") and self.entry_window_ref:
++        #     self.entry_window_ref.show()
++        event.accept()
++
++    def reassign_global_indices(self):
++        """
++        reassign global sequential indices to left/right boundary points across all images for each lane.
++        with the format: (px, py, wx, wy, idx, order)
++        """
++        num_lanes = len(getattr(self, "lanes", []))
++        if num_lanes == 0:
++            return
++
++        # Deal with each lane separately
++        for lane_idx in range(num_lanes):
++            # Collect all (label, idx_in_label, pt, order) for line1 and line2
++            left_entries = []
++            right_entries = []
++            for label in getattr(self, "image_labels", []):
++                if not hasattr(label, "lanes") or lane_idx >= len(label.lanes):
++                    continue
++                line1 = label.lanes[lane_idx].get("line1_points", [])
++                for i, pt in enumerate(line1):
++                    order = pt[5] if len(pt) >= 6 else float("inf")
++                    left_entries.append({"label": label, "idx_in_label": i, "pt": pt, "order": order})
++                line2 = label.lanes[lane_idx].get("line2_points", [])
++                for i, pt in enumerate(line2):
++                    order = pt[5] if len(pt) >= 6 else float("inf")
++                    right_entries.append({"label": label, "idx_in_label": i, "pt": pt, "order": order})
++
++            # Reassign global indices according to creation_order
++            left_entries_sorted = sorted(left_entries, key=lambda x: x["order"])
++            for new_idx, entry in enumerate(left_entries_sorted, start=1):
++                label = entry["label"]
++                i = entry["idx_in_label"]
++                pt = entry["pt"]
++                px, py, wx, wy = pt[0], pt[1], pt[2], pt[3]
++                order = entry["order"]
++                label.lanes[lane_idx]["line1_points"][i] = (px, py, wx, wy, new_idx, order)
++
++            right_entries_sorted = sorted(right_entries, key=lambda x: x["order"])
++            for new_idx, entry in enumerate(right_entries_sorted, start=1):
++                label = entry["label"]
++                i = entry["idx_in_label"]
++                pt = entry["pt"]
++                px, py, wx, wy = pt[0], pt[1], pt[2], pt[3]
++                order = entry["order"]
++                label.lanes[lane_idx]["line2_points"][i] = (px, py, wx, wy, new_idx, order)
++
++        # Update displays
++        for label in getattr(self, "image_labels", []):
++            if hasattr(label, "update_display"):
++                label.update_display()
++        self.update_all_points_text()
++
++    def get_next_global_index(self):
++        if not hasattr(self, "global_counter"):
++            self.global_counter = 1
++        idx = self.global_counter
++        self.global_counter += 1
++        return idx
++
++    def update_current_lane_field(self, field_name, value):
++        """ save the input box value to the current lane's data dictionary """
++        if 0 <= self.current_lane_idx < len(self.lanes):
++            self.lanes[self.current_lane_idx][field_name] = value
++
++    # def switch_lane(self, lane_idx):
++    #     if lane_idx < 0 or lane_idx >= len(self.lanes):
++    #         return
++    #     self.current_lane_idx = lane_idx
++    #     lane = self.lanes[lane_idx]
++    #     self.lane_sdtype_edit.setText(lane.get("lane_sdtype_no", ""))
++    #     self.lane_id_edit.setText(lane.get("LaneID", ""))
++    #     self.turn_dir_no_edit.setText(lane.get("turn_dir_no", ""))
++
++    def on_set_left_boundary(self):
++        """ 
++        Switch all images' current editing line group to lane left boundary.
++        """
++        if not self.lanes:
++            print("No lanes to switch")
++            return
++        self.ensure_lane_exists()
++        self.current_group = 1
++        for label in self.image_labels:
++            label.current_lane_idx = self.current_lane_idx
++            # label.current_line_group = 1
++            label.current_group = 1
++            label.update_display()
++        print(f"Switch to lane {self.current_lane_idx+1} lane left boundary")
++
++    def on_set_right_boundary(self):
++        """ Switch all images' current editing line group to lane right boundary """
++        if not self.lanes:
++            print("No lanes to switch")
++            return
++        self.ensure_lane_exists()
++        self.current_group = 2
++        for label in self.image_labels:
++            label.current_lane_idx = self.current_lane_idx
++            # label.current_line_group = 2
++            label.current_group = 2
++            label.update_display()
++        print(f"Switch to lane {self.current_lane_idx+1} lane right boundary")
++
++    def add_new_lane(self):
++        """ Add a new lane and switch to it, also inherit the current boundary selection (left/right) and synchronize it to all labels. """
++        lane_id = len(self.lanes) + 1
++        new_lane = {
++            "lane_id": lane_id,
++            "line1_points": [],
++            "line2_points": [],
++            "lane_sdtype_no": "",
++            "LaneID": "",
++            "turn_dir_no": ""
++        }
++        self.lanes.append(new_lane)
++        # New lane index
++        self.current_lane_idx = len(self.lanes) - 1
++        # Keep current boundary selection
++        current_group = getattr(self, "current_group", 1)
++        self.current_group = current_group
++        # If currently editing right boundary, switch to left boundary when adding new lane
++        if self.current_group == 2:
++            self.current_group = 1
++            if hasattr(self, "lane1_button"):
++                self.lane1_button.setChecked(True)
++            if hasattr(self, "lane2_button"):
++                self.lane2_button.setChecked(False)
++            print("Switched to editing left boundary after adding new lane")
++        for label in self.image_labels:
++            label.current_lane_idx = self.current_lane_idx
++            # label.current_line_group = self.current_group
++            if not hasattr(label, "lanes") or label.lanes is None:
++                label.lanes = []
++            while len(label.lanes) < len(self.lanes):
++                label.lanes.append({"lane_id": len(label.lanes)+1, "line1_points": [], "line2_points": []})
++            if hasattr(label, "current_group"):
++                label.current_group = self.current_group
++
++        # Create lane button & delete button
++        lane_widget = QWidget()
++        hbox = QHBoxLayout()
++        hbox.setContentsMargins(0, 0, 0, 0)
++        hbox.setSpacing(2)
++        lane_button = QPushButton(f"车道{lane_id}")
++        lane_button.setCheckable(True)
++
++        delete_button = QToolButton()
++        delete_button.setIcon(QIcon(resource_path("material/delete.svg")))
++        delete_button.setIconSize(QSize(16, 16))
++        delete_button.setFixedSize(20, 20)
++        delete_button.setStyleSheet("border: none;")
++
++        hbox.addWidget(lane_button)
++        hbox.addWidget(delete_button)
++        lane_widget.setLayout(hbox)
++        self.lane_button_layout.addWidget(lane_widget)
++        # Store the widget for later show/hide logic
++        # (lane_widget, btn, del_btn)
++        self.lane_entries.append((lane_widget, lane_button, delete_button))
++
++        lane_idx = len(self.lanes) - 1
++        lane_button.clicked.connect(lambda checked, idx=lane_idx: self.switch_lane(idx))
++        delete_button.clicked.connect(lambda checked, idx=lane_idx: self.delete_lane_by_index(idx))
++
++        # Highlight the new lane button
++        for idx, entry in enumerate(self.lane_entries):
++            entry[1].setChecked(idx == self.current_lane_idx)
++
++        if hasattr(self, "lane1_button"):
++            self.lane1_button.setEnabled(True)
++        if hasattr(self, "lane2_button"):
++            self.lane2_button.setEnabled(True)
++
++        # Update global input fields
++        lane = self.lanes[self.current_lane_idx]
++        self.lane_sdtype_edit.setText(lane.get("lane_sdtype_no", ""))
++        self.lane_id_edit.setText(lane.get("LaneID", ""))
++        self.turn_dir_no_edit.setText(lane.get("turn_dir_no", ""))
++
++        # Update all labels
++        self.update_all_points_text()
++        for label in self.image_labels:
++            label.update_display()
++        print(f"Added lane:{lane_id}, switched to it.")
++
++    def delete_lane_by_index(self, idx):
++        if idx < 0 or idx >= len(self.lanes):
++            return
++        self.current_lane_idx = idx
++        self.delete_current_lane()
++        if not self.lanes:
++            if hasattr(self, "lane1_button"):
++                self.lane1_button.setEnabled(False)
++            if hasattr(self, "lane2_button"):
++                self.lane2_button.setEnabled(False)
++
++    def switch_lane(self, lane_idx):
++        """ Switch to the specified lane, and also switch the global input box content. """
++        if lane_idx < 0 or lane_idx >= len(self.lanes):
++            return
++        self.current_lane_idx = lane_idx
++        # Keep the previous boundary selection
++        self.current_group = getattr(self, "current_group", 1)
++        # Highlight the selected lane button
++        for idx, entry in enumerate(self.lane_entries):
++            entry[1].setChecked(idx == self.current_lane_idx)
++
++        lane = self.lanes[self.current_lane_idx]
++        self.lane_sdtype_edit.setText(lane.get("lane_sdtype_no", ""))
++        self.lane_id_edit.setText(lane.get("LaneID", ""))
++        self.turn_dir_no_edit.setText(lane.get("turn_dir_no", ""))
++
++        for label in self.image_labels:
++            label.current_lane_idx = self.current_lane_idx
++            # label.current_line_group = self.current_group
++            label.current_group = self.current_group
++            label.update_display()
++
++        self.update_all_points_text()
++        print(f"Switch to lane: {self.current_lane_idx+1}")
++
++    def delete_current_lane(self):
++        """ Delete the current lane and reindex remaining lanes and buttons """
++        if not hasattr(self, "lanes") or self.current_lane_idx < 0 or self.current_lane_idx >= len(self.lanes):
++            print("No lane to delete!")
++            return
++        # Index of lane to delete
++        del_idx = self.current_lane_idx
++        # Delete lane from lane list
++        del self.lanes[del_idx]
++
++        # Update lane entries in each image label
++        for label in getattr(self, "image_labels", []):
++            if hasattr(label, "lanes"):
++                if del_idx < len(label.lanes):
++                    del label.lanes[del_idx]
++                # Reassign lane_id for remaining lanes
++                for j, l in enumerate(label.lanes):
++                    if isinstance(l, dict):
++                        l["lane_id"] = j + 1
++
++        # Delete current lane widget
++        if hasattr(self, "lane_entries"):
++            if 0 <= del_idx < len(self.lane_entries):
++                lane_widget, btn, del_btn = self.lane_entries.pop(del_idx)
++                lane_widget.setParent(None)
++                lane_widget.deleteLater()
++            # Reset text and callbacks for remaining buttons
++            for idx, (lane_widget, btn, del_btn) in enumerate(self.lane_entries):
++                btn.setText(f"车道{idx+1}")
++                try:
++                    btn.clicked.disconnect()
++                except Exception:
++                    pass
++                btn.clicked.connect(lambda checked, idx=idx: self.switch_lane(idx))
++                try:
++                    del_btn.clicked.disconnect()
++                except Exception:
++                    pass
++                del_btn.clicked.connect(lambda checked=False, idx=idx: self.delete_lane_by_index(idx))
++
++        # Reindex lane_id for remaining lanes
++        for i, lane in enumerate(self.lanes):
++            if isinstance(lane, dict):
++                lane["lane_id"] = i + 1
++
++        # Adjust current_lane_idx: if only one lane left, index is 0; if more, min(del_idx, len-1)
++        if self.lanes:
++            self.current_lane_idx = min(del_idx, len(self.lanes) - 1)
++        else:
++            self.current_lane_idx = -1
++
++        # Synchronize current_lane_idx and current_group to all image labels
++        for label in getattr(self, "image_labels", []):
++            label.current_lane_idx = self.current_lane_idx
++            label.current_group = getattr(self, "current_group", 1)
++            label.update_display()
++
++        # Update global input fields
++        if self.lanes and self.current_lane_idx >= 0:
++            lane = self.lanes[self.current_lane_idx]
++            self.lane_sdtype_edit.setText(lane.get("lane_sdtype_no", ""))
++            self.lane_id_edit.setText(lane.get("LaneID", ""))
++            self.turn_dir_no_edit.setText(lane.get("turn_dir_no", ""))
++        else:
++            self.lane_sdtype_edit.clear()
++            self.lane_id_edit.clear()
++            self.turn_dir_no_edit.clear()
++
++        # Update lane line buttons (highlight current)
++        for idx, entry in enumerate(getattr(self, "lane_entries", [])):
++            entry[1].setChecked(idx == self.current_lane_idx)
++
++        # Update text and displays
++        if hasattr(self, "update_all_points_text"):
++            self.update_all_points_text()
++
++    def ensure_lane_exists(self):
++        if self.current_lane_idx >= len(self.lanes):
++            self.add_new_lane()
++
++    def init_image_labels(self):
++        # Clear existing labels
++        for i in reversed(range(self.grid_layout.count())):
++            widget = self.grid_layout.itemAt(i).widget()
++            if widget:
++                widget.setParent(None)
++        self.image_labels = []
++        for image_path in self.image_files:
++            try:
++                img_label = ImageLabel(image_path, parent=self)
++                img_label.setStyleSheet("border: none; margin: 0px; padding: 0px;")
++                # Set thumbnail size, will be dynamically adjusted later by update_thumb_size
++                orig_h, orig_w = img_label.image.shape[:2]
++                scale = min(self.thumb_size / orig_w, self.thumb_size / orig_h)
++                img_label.scale_factor = scale
++                # Support multi lanes
++                img_label.lanes = []
++                img_label.current_lane_idx = 0
++                # img_label.current_line_group = 1
++                # Do NOT override update_display or mousePressEvent; let ImageLabel handle its own logic
++                self.image_labels.append(img_label)
++            except Exception as e:
++                msg = QLabel(f"图片加载失败: {image_path}\n{e}")
++                self.image_labels.append(msg)
++        self.arrange_grid()
++
++    # def make_update_display(self, label):
++    #     # Plot all lanes and points on the image label, with current lane highlighted and others faded (20% opacity)
++    #     def update_display():
++    #         img = label.image.copy()
++    #         disp_w = int(label.width * (1.0 if label.is_full_size else label.scale_factor))
++    #         disp_h = int(label.height * (1.0 if label.is_full_size else label.scale_factor))
++    #         if not label.is_full_size:
++    #             img = cv2.resize(img, (disp_w, disp_h), interpolation=cv2.INTER_AREA)
++
++    #         overlay = img.copy()
++    #         for lane_idx, lane in enumerate(label.lanes):
++    #             is_current = (lane_idx == label.current_lane_idx)
++    #             if is_current:
++    #                 continue
++    #             color1 = (255, 0, 0)  # Blue
++    #             color2 = (0, 0, 255)  # Red
++    #             # Draw line1 point
++    #             for pt in lane["line1_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(overlay, (disp_px, disp_py), 5, color1, -1)
++    #             # Draw line2 point
++    #             for pt in lane["line2_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(overlay, (disp_px, disp_py), 5, color2, -1)
++    #             # Draw line segment
++    #             if len(lane["line1_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line1_points"]], np.int32)
++    #                 cv2.polylines(overlay, [pts], False, color1, 2)
++    #             if len(lane["line2_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line2_points"]], np.int32)
++    #                 cv2.polylines(overlay, [pts], False, color2, 2)
++    #         # Add overlay with 20% opacity
++    #         cv2.addWeighted(overlay, 0.2, img, 0.8, 0, img)
++
++    #         # Highlight current lane
++    #         if 0 <= label.current_lane_idx < len(label.lanes):
++    #             lane = label.lanes[label.current_lane_idx]
++    #             color1 = (255, 0, 0)  # Blue
++    #             color2 = (0, 0, 255)  # Red
++    #             # Draw line1 point
++    #             for pt in lane["line1_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(img, (disp_px, disp_py), 5, color1, -1)
++    #             # Draw line2 point
++    #             for pt in lane["line2_points"]:
++    #                 px, py = pt[0], pt[1]
++    #                 disp_px = int(round(px * disp_w / label.width))
++    #                 disp_py = int(round(py * disp_h / label.height))
++    #                 cv2.circle(img, (disp_px, disp_py), 5, color2, -1)
++    #             # Draw line segment
++    #             if len(lane["line1_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line1_points"]], np.int32)
++    #                 cv2.polylines(img, [pts], False, color1, 2)
++    #             if len(lane["line2_points"]) >= 2:
++    #                 pts = np.array([[int(round(pt[0] * disp_w / label.width)), int(round(pt[1] * disp_h / label.height))] for pt in lane["line2_points"]], np.int32)
++    #                 cv2.polylines(img, [pts], False, color2, 2)
++    #             # Draw larger yellow circle around points
++    #             for group in [1, 2]:
++    #                 pts = lane["line1_points"] if group == 1 else lane["line2_points"]
++    #                 for pt in pts:
++    #                     px, py = pt[0], pt[1]
++    #                     disp_px = int(round(px * disp_w / label.width))
++    #                     disp_py = int(round(py * disp_h / label.height))
++    #                     cv2.circle(img, (disp_px, disp_py), 7, (0, 255, 255), 1)
++    #         qimage = label.convert_to_qimage(img)
++    #         pixmap = QPixmap.fromImage(qimage)
++    #         label.setPixmap(pixmap)
++    #         label.setFixedSize(pixmap.size())
++    #     return update_display
++
++    # def make_mouse_press_event(self, label):
++    #     def mousePressEvent(event):
++    #         pos = event.position().toPoint()
++    #         mx, my = pos.x(), pos.y()
++    #         pixmap = label.pixmap()
++    #         if pixmap is not None:
++    #             disp_w = pixmap.width()
++    #             disp_h = pixmap.height()
++    #         else:
++    #             disp_w = int(label.width * (1.0 if label.is_full_size else label.scale_factor))
++    #             disp_h = int(label.height * (1.0 if label.is_full_size else label.scale_factor))
++    #         if not (0 <= mx < disp_w and 0 <= my < disp_h):
++    #             return
++    #         px = mx * label.width / disp_w
++    #         py = my * label.height / disp_h
++    #         pixel_x = round(px)
++    #         pixel_y = round(py)
++    #         pixel_x = min(max(0, pixel_x), label.width - 1)
++    #         pixel_y = min(max(0, pixel_y), label.height - 1)
++
++    #         # If no lanes exist, do nothing
++    #         if not self.lanes:
++    #             print("No lanes exist, cannot add points.")
++    #             return
++
++    #         # Add point to current lane
++    #         if event.button() == Qt.MouseButton.LeftButton:
++    #             self.ensure_lane_exists()
++    #             lane_idx = getattr(label, "current_lane_idx", 0)
++    #             line_group = getattr(label, "current_line_group", 1)
++    #             if lane_idx >= len(label.lanes):
++    #                 while len(label.lanes) <= lane_idx:
++    #                     label.lanes.append({"lane_id": len(label.lanes)+1, "line1_points": [], "line2_points": []})
++    #             lane = label.lanes[lane_idx]
++    #             pixel_coord = [pixel_x, pixel_y]
++    #             # Use the label's own coord_convertor instead of self.coord_convertor
++    #             world_coords = label.coord_convertor.pixel2wgs84([pixel_coord])
++    #             lon, lat = world_coords[0]
++    #             global_idx = self.get_next_global_index() if hasattr(self, "get_next_global_index") else 1
++    #             creation_order = time.time()
++    #             pt_tuple = (pixel_x, pixel_y, lat, lon, global_idx, creation_order)
++    #             if line_group == 1:
++    #                 lane["line1_points"].append(pt_tuple)
++    #             else:
++    #                 lane["line2_points"].append(pt_tuple)
++    #             label.update_display()
++    #             self.update_all_points_text()
++    #             return
++    #         elif event.button() == Qt.MouseButton.RightButton:
++    #             # Delete last added point in current lane and group
++    #             line_group = getattr(label, "current_line_group", 1)
++    #             self.remove_last_global_point(group=line_group)
++    #             return
++    #     return mousePressEvent
++
++    def arrange_grid(self):
++        self.update_thumb_size()
++        # Clear existing widgets in the grid layout
++        for i in reversed(range(self.grid_layout.count())):
++            widget = self.grid_layout.itemAt(i).widget()
++            if widget:
++                widget.setParent(None)
++        # Re-add widgets in grid layout
++        n_col = self.desired_columns
++        row, col = 0, 0
++        for label in self.image_labels:
++            self.grid_layout.addWidget(label, row, col)
++            col += 1
++            if col >= n_col:
++                col = 0
++                row += 1
++
++    def update_thumb_size(self):
++        for label in self.image_labels:
++            if hasattr(label, "image"):
++                orig_h, orig_w = label.image.shape[:2]
++                scale = min(self.thumb_size / orig_w, self.thumb_size / orig_h)
++                disp_width = int(orig_w * scale)
++                disp_height = int(orig_h * scale)
++                label.scale_factor = scale
++                label.setFixedSize(disp_width, disp_height)
++                label.update_display()
++
++    def resizeEvent(self, event):
++        super().resizeEvent(event)
++        self.arrange_grid()
++
++    def remove_last_global_point(self, group=1, lane_idx=None):
++        """
++        Delete the last added point in the specified lane (lane_idx, default to self.current_lane_idx) and group (1=left, 2=right).
++        If no points are numbered, revert to deleting the last added point based on creation_order.
++        """
++        if group not in (1, 2):
++            print("Invalid group for removal.")
++            return
++        if lane_idx is None:
++            lane_idx = getattr(self, "current_lane_idx", 0)
++
++        all_points = []
++        for label in getattr(self, "image_labels", []):
++            if not hasattr(label, "lanes") or lane_idx >= len(label.lanes):
++                continue
++            pts = label.lanes[lane_idx].get("line1_points") if group == 1 else label.lanes[lane_idx].get("line2_points")
++            for idx_in_label, pt in enumerate(pts):
++                # normalize to 6-tuple if possible
++                creation_order = pt[5] if len(pt) >= 6 else float("inf")
++                global_idx = pt[4] if len(pt) >= 5 else None
++                all_points.append({
++                    "label": label,
++                    "idx_in_label": idx_in_label,
++                    "pt": pt,
++                    "global_idx": global_idx,
++                    "creation_order": creation_order
++                })
++
++        if not all_points:
++            print(f"No points to remove in lane {lane_idx+1} group {group}.")
++            return
++
++        # Delete the last added point according to global_idx if any, otherwise delete the last added point based on creation_order
++        pts_with_idx = [p for p in all_points if p["global_idx"] is not None]
++        if pts_with_idx:
++            max_global_idx = max(p["global_idx"] for p in pts_with_idx)
++            candidates = [p for p in pts_with_idx if p["global_idx"] == max_global_idx]
++            if len(candidates) > 1:
++                to_remove = max(candidates, key=lambda x: x["creation_order"])
++            else:
++                to_remove = candidates[0]
++        else:
++            # If no points have global_idx, remove the last added point based on creation_order
++            to_remove = max(all_points, key=lambda x: x["creation_order"])
++
++        label = to_remove["label"]
++        idx_in_label = to_remove["idx_in_label"]
++        if group == 1:
++            removed = label.lanes[lane_idx]["line1_points"].pop(idx_in_label)
++        else:
++            removed = label.lanes[lane_idx]["line2_points"].pop(idx_in_label)
++
++        px, py, wx, wy = removed[0], removed[1], removed[2], removed[3]
++        removed_idx = removed[4] if len(removed) >= 5 else None
++        print(f"Removed lane {lane_idx+1} group {group} last indexed point: Pixel ({px}, {py}) → Coord ({wx:.3f}, {wy:.3f}), idx={removed_idx}")
++
++        self.reassign_global_indices()
++
++    # def keyPressEvent(self, event):
++    #     super().keyPressEvent(event)
++
++    def update_all_points_text(self):
++        if not hasattr(self, "points_text1") or not hasattr(self, "points_text2"):
++            return
++
++        lines1 = []
++        lines2 = []
++        latest1 = []
++        latest2 = []
++
++        lane_idx = getattr(self, "current_lane_idx", -1)
++        if lane_idx < 0:
++            # No lanes exist, clear text and return
++            self.points_text1.setPlainText("尚未添加车道左边界点")
++            self.points_text2.setPlainText("尚未添加车道右边界点")
++            self._latest_group_points = {1: [], 2: []}
++            return
++
++        # Collect left boundary points across all images for current lane
++        left_entries = []
++        for label_idx, label in enumerate(self.image_labels):
++            if not hasattr(label, "lanes") or lane_idx >= len(label.lanes) or len(label.lanes) == 0:
++                continue
++            lane = label.lanes[lane_idx]
++            for idx_in_label, pt in enumerate(lane.get("line1_points", [])):
++                order = pt[5] if len(pt) >= 6 else float("inf")
++                left_entries.append({
++                    "label": label,
++                    "label_idx": label_idx,
++                    "pt": pt,
++                    "order": order,
++                    "idx_in_label": idx_in_label,
++                })
++        left_entries_sorted = sorted(left_entries, key=lambda x: x["order"])
++        for disp_idx, entry in enumerate(left_entries_sorted, start=1):
++            pt = entry["pt"]
++            label_idx = entry["label_idx"]
++            px, py = pt[0], pt[1]
++            lines1.append(f"车道{lane_idx+1} LP{disp_idx}: ({px}, {py}) [图片{label_idx+1}]")
++            latest1.append({
++                "label_idx": label_idx,
++                "img_label": entry["label"],
++                "pixel_x": px,
++                "pixel_y": py,
++                "global_idx": disp_idx,
++                "creation_order": entry["order"],
++                "lane_idx": lane_idx,
++                "idx_in_label": entry["idx_in_label"],
++            })
++
++        # Collect right boundary points across all images for current lane
++        right_entries = []
++        for label_idx, label in enumerate(self.image_labels):
++            if not hasattr(label, "lanes") or lane_idx >= len(label.lanes) or len(label.lanes) == 0:
++                continue
++            lane = label.lanes[lane_idx]
++            for idx_in_label, pt in enumerate(lane.get("line2_points", [])):
++                order = pt[5] if len(pt) >= 6 else float("inf")
++                right_entries.append({
++                    "label": label,
++                    "label_idx": label_idx,
++                    "pt": pt,
++                    "order": order,
++                    "idx_in_label": idx_in_label,
++                })
++        right_entries_sorted = sorted(right_entries, key=lambda x: x["order"])
++        for disp_idx, entry in enumerate(right_entries_sorted, start=1):
++            pt = entry["pt"]
++            label_idx = entry["label_idx"]
++            px, py = pt[0], pt[1]
++            lines2.append(f"车道{lane_idx+1} RP{disp_idx}: ({px}, {py}) [图片{label_idx+1}]")
++            latest2.append({
++                "label_idx": label_idx,
++                "img_label": entry["label"],
++                "pixel_x": px,
++                "pixel_y": py,
++                "global_idx": disp_idx,
++                "creation_order": entry["order"],
++                "lane_idx": lane_idx,
++                "idx_in_label": entry["idx_in_label"],
++            })
++
++        # Update text widgets
++        self.points_text1.setPlainText("尚未添加车道左边界点" if not lines1 else '\n'.join(lines1))
++        self.points_text2.setPlainText("尚未添加车道右边界点" if not lines2 else '\n'.join(lines2))
++
++        # Save latest point info for context menu delete/locate
++        self._latest_group_points = {1: latest1, 2: latest2}
++
++    def showEvent(self, event):
++        # Update points text when the window is shown
++        self.update_all_points_text()
++        return super().showEvent(event)
++
++    def on_text1_context_menu(self, pos):
++        self.show_context_menu_for_group(self.points_text1, group=1, pos=pos)
++
++    def on_text2_context_menu(self, pos):
++        self.show_context_menu_for_group(self.points_text2, group=2, pos=pos)
++
++    def show_context_menu_for_group(self, text_widget, group, pos):
++        # Get the clicked line number
++        cursor = text_widget.cursorForPosition(pos)
++        line_num = cursor.blockNumber()
++        # Get the corresponding point info
++        group_pts = self._latest_group_points.get(group, [])
++        if line_num < 0 or line_num >= len(group_pts):
++            return
++        pt = group_pts[line_num]
++        menu = QMenu(text_widget)
++        action_del = QAction("删除该点", menu)
++        def do_delete():
++            self.delete_point_by_info(pt, group)
++        action_del.triggered.connect(do_delete)
++        menu.addAction(action_del)
++        menu.exec(text_widget.mapToGlobal(pos))
++
++    def delete_point_by_info(self, ptinfo, group):
++        """删除点时保持车道显示正常，先删数据再刷新索引和显示"""
++        img_label = ptinfo["img_label"]
++        px, py = ptinfo["pixel_x"], ptinfo["pixel_y"]
++        lane_idx = ptinfo.get("lane_idx", getattr(self, 'current_lane_idx', 0))
++
++        # 删除点（优先 lanes）
++        if hasattr(img_label, 'lanes') and 0 <= lane_idx < len(img_label.lanes):
++            group_key = 'line1_points' if group == 1 else 'line2_points'
++            pts = img_label.lanes[lane_idx].get(group_key, [])
++            idx_to_del = next((i for i, pt in enumerate(pts) if (pt[0], pt[1]) == (px, py)), None)
++            if idx_to_del is not None:
++                del pts[idx_to_del]
++        else:
++            # 兼容旧逻辑
++            group_list = img_label.points_group1 if group == 1 else img_label.points_group2
++            idx_to_del = next((i for i, pt in enumerate(group_list) if (pt[0], pt[1]) == (px, py)), None)
++            if idx_to_del is not None:
++                del group_list[idx_to_del]
++
++        # ✅ 先重排索引
++        self.reassign_global_indices()
++
++        # ✅ 再刷新所有图像标签的显示（确保数据稳定后再画）
++        for label in getattr(self, "image_labels", []):
++            if hasattr(label, "update_display"):
++                label.update_display()
++
++        # ✅ 最后更新文本
++        self.update_all_points_text()
++
++    # Bind context menu to points text widgets
++    def bind_context_menu(self):
++        self.points_text1.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
++        self.points_text2.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
++        self.points_text1.customContextMenuRequested.connect(self.on_text1_context_menu)
++        self.points_text2.customContextMenuRequested.connect(self.on_text2_context_menu)
+
+@@@C	ThorfromAsgard	e3422911d52881f04a76fa7bd6af63fe2c9a3ebc	2025-10-10	add gitignore
+diff --git a/.gitignore b/.gitignore
+index 9f32123..5e4c52e 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -29,6 +29,9 @@ bld/
+ .vscode/
+ [Tt]emp/
+ 
++# Test data
++**/test_data/
++
+ # Visual Studio 2015/2017 cache/options directory
+ .vs/
+ # Uncomment if you have tasks that create the project's static files in wwwroot
+@@ -339,4 +342,7 @@ ASALocalRun/
+ .localhistory/
+ 
+ # BeatPulse healthcheck temp database
+-healthchecksdb
+\ No newline at end of file
++healthchecksdb
++
++# macOS system files
++.DS_Store
+\ No newline at end of file
+

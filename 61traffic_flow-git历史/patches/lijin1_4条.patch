@@ -1,0 +1,145 @@
+# 作者: lijin1
+# 提交数: 4
+# 来源: 193 机 /work/sunboxue/LiuLiang/traffic_flow (--all)
+
+@@@C	lijin1	52195961c3fd387ebf7c60b1edbb455a2dc1acd8	2025-05-28	fix include error
+diff --git a/src/math/util.hpp b/src/math/util.hpp
+index de3100c..e2dd998 100644
+--- a/src/math/util.hpp
++++ b/src/math/util.hpp
+@@ -14,6 +14,7 @@
+ #define TRAFFIC_FLOW_MATH_UTIL_HPP
+ 
+ #include <algorithm>
++#include <limits>
+ 
+ namespace fusion_perception::math {
+ const double DOUBLE_EPSILON = std::numeric_limits<double>::epsilon();
+
+@@@C	lijin1	a29ba7db510fb3654a4cbe9efc5194d846efa8f8	2025-05-28	traffic flow add time align function
+diff --git a/src/traffic_flow/traffic_flow_factory.cpp b/src/traffic_flow/traffic_flow_factory.cpp
+index c759398..c8aacfe 100644
+--- a/src/traffic_flow/traffic_flow_factory.cpp
++++ b/src/traffic_flow/traffic_flow_factory.cpp
+@@ -50,7 +50,7 @@ TrafficFlowDetector* TrafficFlowFactory::create_detector(const DetectorConfig& d
+ }
+ 
+ TrafficFlowFactory::TrafficFlowFactory()
+-    : _status(FactoryStatus::NEW), _input_buffer(BUFFER_CAPACITY), _publish_callback(), _current_period_start(0) {
++    : _status(FactoryStatus::NEW), _input_buffer(BUFFER_CAPACITY), _publish_callback(), _current_period_start(0),_time_is_alignment(false) {
+     auto& global_config = traffic_flow::GlobalConfig::get_instance();
+     auto road_section_info_map = global_config.get_road_section_infos();
+     for (const auto& one_road_section_info : road_section_info_map) {
+@@ -190,7 +190,21 @@ bool TrafficFlowFactory::update_new_frame(const std::string& new_frame_data) {
+         if (buffer_size >= _input_buffer.capacity() * BUFFER_SIZE_WARNING_RATIO) {
+             std::cerr << "Warning, buffer size reaches to " << buffer_size << std::endl;
+         }
+-        _input_buffer.put(detected_result);
++        if(traffic_flow::GlobalConfig::get_instance().get_time_align_flag() && !_time_is_alignment)
++        {
++            uint64_t second_time = detected_result.timestamp/SECOND_TO_MILLISECOND;
++            uint32_t second_cycle = traffic_flow::GlobalConfig::get_instance().get_ensemble_cycle()/SECOND_TO_MILLISECOND;
++            if (second_time % second_cycle==0)
++            {
++                _time_is_alignment=true;
++            }
++            return false;
++        }
++        if ((traffic_flow::GlobalConfig::get_instance().get_time_align_flag() && _time_is_alignment) || !traffic_flow::GlobalConfig::get_instance().get_time_align_flag())
++        {
++            _input_buffer.put(detected_result);
++        }
++        
+         return true;
+     } else {
+         std::cerr << "Warning, TrafficFlowFactory not running, current status: " << factory_status_to_string(_status)
+@@ -240,7 +254,7 @@ void TrafficFlowFactory::detect() {
+                     }
+                 }
+                 ensemble_result_j["CoilNum"] = ensemble_result_j["Coil_List"].size();
+-                _current_period_start = detected_result.timestamp;
++                _current_period_start += GlobalConfig::get_instance().get_ensemble_cycle();
+                 _publish_callback(ensemble_result_j.dump());
+ 
+ #ifdef DEBUG
+diff --git a/src/traffic_flow/traffic_flow_factory.h b/src/traffic_flow/traffic_flow_factory.h
+index eaeb25d..0bddb06 100644
+--- a/src/traffic_flow/traffic_flow_factory.h
++++ b/src/traffic_flow/traffic_flow_factory.h
+@@ -98,6 +98,7 @@ private:
+     WorkingMode _working_mode = WorkingMode::DEFAULT;
+     uint64_t _current_period_start;
+     uint64_t _ensemble_detect_period;
++    bool _time_is_alignment;
+ };
+ 
+ }  // namespace traffic_flow
+
+@@@C	lijin1	3465d2d38d5c57c7d804f5eee02c4bfca6d875f1	2025-05-28	add time_align parser
+diff --git a/src/common/config.cpp b/src/common/config.cpp
+index 4d7da11..cbeb862 100644
+--- a/src/common/config.cpp
++++ b/src/common/config.cpp
+@@ -157,6 +157,11 @@ uint64_t GlobalConfig::get_ensemble_cycle() {
+     return _ensemble_cycle;
+ }
+ 
++bool GlobalConfig::get_time_align_flag()
++{
++    return _time_align_flag;
++}
++
+ bool GlobalConfig::load_lane_info() {
+     // read lane info from file
+     std::ifstream ifile;
+@@ -237,6 +242,14 @@ bool GlobalConfig::load_global_config() {
+         } else {
+             _working_mode = WorkingMode::SOLO;
+         }
++        if (config_json.contains("time_align"))
++        {
++            config_json.at("time_align").get_to(_time_align_flag);
++        }
++        else{
++            _time_align_flag = false;
++        }
++        
+         if (!load_lane_info()) {
+             std::cerr << "Error, unable to load lane info." << std::endl;
+             return false;
+diff --git a/src/common/config.h b/src/common/config.h
+index cb73cdf..a2b4cdb 100644
+--- a/src/common/config.h
++++ b/src/common/config.h
+@@ -161,6 +161,7 @@ public:
+     std::string get_dev_no();
+     std::string get_mec_no();
+     uint64_t get_ensemble_cycle();
++    bool get_time_align_flag();
+     std::unordered_map<std::string, RoadSectionInfo> get_road_section_infos();
+     std::vector<CoilInfo> get_coil_infos(const std::string& road_section_tag);
+     std::vector<DetectorConfig> get_detector_config(const std::string& coil_tag);
+@@ -173,6 +174,7 @@ private:
+     std::string _region_id;
+     // calculate time interval
+     uint64_t _ensemble_cycle = 0;  // ms
++    bool _time_align_flag = false;
+     WorkingMode _working_mode = WorkingMode::DEFAULT;
+     // key: road section tag,  value: road section infos
+     std::unordered_map<std::string, RoadSectionInfo> _road_section_infos;
+
+@@@C	lijin1	d3ffe752d6d8350bff6b7afd2d4d7080863bf510	2025-05-28	update config
+diff --git a/config/traffic_flow_config.json b/config/traffic_flow_config.json
+index 989af26..4319e6a 100644
+--- a/config/traffic_flow_config.json
++++ b/config/traffic_flow_config.json
+@@ -3,5 +3,6 @@
+     "dev_no":"test_dev",
+     "mec_no":"test_mec",
+     "region_id":"1",
+-    "cycle":10000
++    "ensemble_cycle":5000,
++    "time_align":true
+ }
+\ No newline at end of file
+

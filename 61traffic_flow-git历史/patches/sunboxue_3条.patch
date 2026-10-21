@@ -1,0 +1,204 @@
+# 作者: sunboxue
+# 提交数: 3
+# 来源: 193 机 /work/sunboxue/LiuLiang/traffic_flow (--all)
+
+@@@C	sunboxue	9a6a82752d92cb2055c893cf7dc690990f0a1e7b	2026-09-09	WIP on main: 692b8e1 （config）配置文件变更
+
+
+@@@C	sunboxue	c6f2131e0c5863c3f1a1a62dc82cd1ea8ffdf801	2026-09-09	index on main: 692b8e1 （config）配置文件变更
+
+
+@@@C	sunboxue	6550dc13dff4b6f9bf8457aff14d4b6e8c2a22d3	2026-09-04	车头时距 增加信号级周期 1s级周期 5分钟周期
+diff --git a/src/traffic_flow/detectors/accumulate_headway_detector.cpp b/src/traffic_flow/detectors/accumulate_headway_detector.cpp
+index d5b3dec..77b62b6 100644
+--- a/src/traffic_flow/detectors/accumulate_headway_detector.cpp
++++ b/src/traffic_flow/detectors/accumulate_headway_detector.cpp
+@@ -2,6 +2,16 @@
+ 
+ namespace fusion_perception::traffic_flow {
+ 
++std::string AccumulateHeadwayDetector::vehicle_type_to_string(const TrafficObject& obj) {
++    if (obj.inner_type == InnerType::BUS) return "BUS";
++    if (obj.inner_type == InnerType::TRUCK) return "TRUCK";
++    if (obj.inner_type == InnerType::CAR) {
++        if (obj.vehicle_subtype == VehicleSubtype::MINIVAN) return "VAN";
++        return "CAR";
++    }
++    return "CAR";
++}
++
+ AccumulateHeadwayDetector::AccumulateHeadwayDetector(
+     const std::string& detector_id, const CoilInfo& coil_info)
+     : AccumulateDetector(detector_id), _coil_info(coil_info),
+@@ -20,15 +30,24 @@ AccumulateHeadwayDetector::AccumulateHeadwayDetector(
+ void AccumulateHeadwayDetector::update(const PerceptionResult& frame) {
+     auto crossed = _tracker.process_frame(frame);
+     for (const auto& obj : crossed) {
++        if (_signal_phase_manager && _reference_phase_id > 0 &&!_signal_phase_manager->is_simulation_running()) {
++            if (!_signal_phase_manager->is_green(_reference_phase_id)) {
++                continue;
++            }
++        }
+         auto& acc = _lane_acc[_coil_info.tag];
+         uint64_t current_time = frame.timestamp;
+         uint64_t tail_time = current_time +
+             (uint64_t)(obj.length / (obj.speed / 3.6) * 1000);
++        
++        acc.vehicle_types.push_back(vehicle_type_to_string(obj));
+ 
+         if (acc.count == 0) {
+             acc.last_arrival = current_time;
+             acc.last_tail = tail_time;
+         } else {
++            double headway_sec = (current_time - acc.last_arrival) / 1000.0;
++            acc.headway_detail.push_back(headway_sec);
+             acc.headway_sum += (current_time - acc.last_arrival);
+             if (current_time > acc.last_tail) {
+                 acc.gap_sum += (current_time - acc.last_tail);
+@@ -44,13 +63,31 @@ nlohmann::json AccumulateHeadwayDetector::calculate_once() {
+     nlohmann::json result = nlohmann::json::array();
+     for (auto& [lane_tag, acc] : _lane_acc) {
+         nlohmann::json entry = acc.meta;
+-        if (acc.count > 1) {
++        std::string detail;
++        if (acc.count == 0) {
++            entry["Headway"] = 0.0;
++            entry["Gap"] = 0.0;
++            detail = "0";
++        } else if (acc.count == 1) {
++            entry["Headway"] = 0.0;
++            entry["Gap"] = 0.0;
++            detail = acc.vehicle_types.front() + ";0";
++        } else {
+             entry["Headway"] = acc.headway_sum / double(acc.count - 1) / 1000.0;
+             entry["Gap"] = acc.gap_sum / double(acc.count - 1) / 1000.0;
+-        } else {
+-            entry["Headway"] = -1.0;
+-            entry["Gap"] = -1.0;
++            std::string types;
++            for (size_t i = 0; i < acc.vehicle_types.size(); ++i) {
++                if (i > 0) types += ",";
++                types += acc.vehicle_types[i];
++            }
++            std::string diffs;
++            for (size_t i = 0; i < acc.headway_detail.size(); ++i) {
++                if (i > 0) diffs += ",";
++                diffs += std::to_string(acc.headway_detail[i]);
++            }
++            detail = types + ";" + diffs;
+         }
++        entry["HeadTimeDiffDetail"] = detail;
+         result.push_back(entry);
+ 
+         acc.last_arrival = 0;
+@@ -58,6 +95,9 @@ nlohmann::json AccumulateHeadwayDetector::calculate_once() {
+         acc.headway_sum = 0;
+         acc.gap_sum = 0;
+         acc.count = 0;
++        
++        acc.vehicle_types.clear();
++        acc.headway_detail.clear();
+     }
+     _tracker.clear_crossing_state();
+     return result;
+diff --git a/src/traffic_flow/detectors/accumulate_headway_detector.h b/src/traffic_flow/detectors/accumulate_headway_detector.h
+index 0740b9e..5c245f1 100644
+--- a/src/traffic_flow/detectors/accumulate_headway_detector.h
++++ b/src/traffic_flow/detectors/accumulate_headway_detector.h
+@@ -2,11 +2,13 @@
+ #define ACCUMULATE_HEADWAY_DETECTOR_H
+ 
+ #include <map>
++#include <string>
++#include <vector>
+ #include <nlohmann/json.hpp>
+ #include "traffic_flow/traffic_flow_detector.h"
+ #include "common/config.h"
+ #include "traffic_flow/detectors/stop_line_crossing_helper.h"
+-
++#include "traffic_flow/signal_phase_manager.h"
+ namespace fusion_perception::traffic_flow {
+ 
+ class AccumulateHeadwayDetector : public AccumulateDetector {
+@@ -17,9 +19,16 @@ public:
+     void update(const PerceptionResult& frame) override;
+     nlohmann::json calculate_once() override;
+ 
++    void set_signal_phase_manager(SignalPhaseManager* spm, int reference_phase_id) {
++        _signal_phase_manager = spm;
++        _reference_phase_id = reference_phase_id;
++    }
++
+ private:
+     CoilInfo _coil_info;
+     StopLineCrossingTracker _tracker;
++    SignalPhaseManager* _signal_phase_manager = nullptr;
++    int _reference_phase_id = -1;
+ 
+     struct LaneHeadwayAcc {
+         uint64_t last_arrival = 0;
+@@ -28,8 +37,11 @@ private:
+         uint64_t gap_sum = 0;
+         uint16_t count = 0;
+         nlohmann::json meta;// 车道元信息（tag、方向等）
++        std::vector<std::string> vehicle_types;
++        std::vector<double> headway_detail;
+     };
+     std::map<std::string, LaneHeadwayAcc> _lane_acc;//每条车道的累积数据
++    static std::string vehicle_type_to_string(const TrafficObject& obj);
+ };
+ 
+ } 
+diff --git a/src/traffic_flow/signal_phase_manager.h b/src/traffic_flow/signal_phase_manager.h
+index ead1a62..bf31fee 100644
+--- a/src/traffic_flow/signal_phase_manager.h
++++ b/src/traffic_flow/signal_phase_manager.h
+@@ -38,6 +38,8 @@ public:
+     void set_reference_phase_id(int phase_id);
+ 
+     void start_simulation(uint64_t interval_ms);
++    
++    bool is_simulation_running() const { return _sim_running.load(); }
+ 
+ private:
+     mutable std::mutex _mutex;
+diff --git a/src/traffic_flow/traffic_flow_factory.cpp b/src/traffic_flow/traffic_flow_factory.cpp
+index a955785..005084e 100644
+--- a/src/traffic_flow/traffic_flow_factory.cpp
++++ b/src/traffic_flow/traffic_flow_factory.cpp
+@@ -169,6 +169,10 @@ nlohmann::json TrafficFlowFactory::build_output(
+             entry["LaneID"] = lane.value("lane_id", "");
+             entry["Volume"] = lane.value("Volume", 0);
+             entry["PCU"] = lane.value("PCU", 0.0f);
++
++            if (lane.contains("Headway")) entry["Headway"] = lane["Headway"];
++            if (lane.contains("HeadTimeDiffDetail")) entry["HeadTimeDiffDetail"] = lane["HeadTimeDiffDetail"];
++
+             if (lane.contains("QueueCount")) entry["QueueCount"] = lane["QueueCount"];
+             if (lane.contains("QueueTransCount")) entry["QueueTransCount"] = lane["QueueTransCount"];
+             if (lane.contains("ClassQueueNaturalNumber")) entry["ClassQueueNaturalNumber"] = lane["ClassQueueNaturalNumber"];
+@@ -278,8 +282,12 @@ void TrafficFlowFactory::build_detectors_from_config() {
+                                   << detector_id << std::endl;
+                     }else if (detector_item.type == "headway") {
+                         std::string detector_id = cycle_config.cycle_type + "_headway_" + coil_info.tag;
+-                        channel.detectors.push_back(
+-                            std::make_unique<AccumulateHeadwayDetector>(detector_id, coil_info));
++                        auto headway_detector = std::make_unique<AccumulateHeadwayDetector>(detector_id, coil_info);
++                        if (cycle_config.cycle_type == "signal_cycle") {
++                            headway_detector->set_signal_phase_manager(
++                                _signal_phase_manager.get(), cycle_config.reference_phase_id);
++                        }
++                        channel.detectors.push_back(std::move(headway_detector));
+                         std::cout << "[BuildDetectors] Created AccumulateHeadwayDetector: "
+                                   << detector_id << std::endl;
+                     }
+@@ -342,7 +350,7 @@ void TrafficFlowFactory::detect() {
+                 std::string key = item.value("lane_tag", item.value("road_section_tag", ""));
+                 auto it = lane_index_map.find(key);
+                 if (it != lane_index_map.end()) {
+-                    for (auto& [k, v] : item.items()) {
++                    for (auto& [k, v] : item.items()) { 
+                         merged_results[it->second][k] = v;
+                     }
+                 } else {
+

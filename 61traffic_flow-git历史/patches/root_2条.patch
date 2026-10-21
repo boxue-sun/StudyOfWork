@@ -1,0 +1,1288 @@
+# 作者: root
+# 提交数: 2
+# 来源: 193 机 /work/sunboxue/LiuLiang/traffic_flow (--all)
+
+@@@C	root	eb14716dc6287385e20d3118286b2194954ba098	2026-09-03	feat: 新增车头时距检测器，接入OutputChannel统一管道架构
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1feb707..1e804f8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -41,6 +41,7 @@ ENDIF()
+ 
+ SET(CMAKE_C_STANDARD 99)
+ SET(CMAKE_CXX_STANDARD 17)
++SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+ 
+ IF (MSVC OR WIN32)
+     IF (${CMAKE_VERSION} VERSION_LESS "3.14.0")
+diff --git a/src/traffic_flow/detectors/accumulate_headway_detector.cpp b/src/traffic_flow/detectors/accumulate_headway_detector.cpp
+new file mode 100644
+index 0000000..d5b3dec
+--- /dev/null
++++ b/src/traffic_flow/detectors/accumulate_headway_detector.cpp
+@@ -0,0 +1,66 @@
++#include "detectors/accumulate_headway_detector.h"
++
++namespace fusion_perception::traffic_flow {
++
++AccumulateHeadwayDetector::AccumulateHeadwayDetector(
++    const std::string& detector_id, const CoilInfo& coil_info)
++    : AccumulateDetector(detector_id), _coil_info(coil_info),
++      _tracker(coil_info.stop_line_segments) {
++    std::string lane_tag = _coil_info.tag;
++    _lane_acc[lane_tag] = LaneHeadwayAcc{
++        0, 0, 0, 0, 0,
++        {{"lane_tag", lane_tag},
++         {"road_section_tag", _coil_info.road_section_info.tag},
++         {"lane_no", _coil_info.lane_no},
++         {"lane_id", _coil_info.lane_id},
++         {"turn_dir_no", _coil_info.turn_dir_no}}
++    };
++}
++
++void AccumulateHeadwayDetector::update(const PerceptionResult& frame) {
++    auto crossed = _tracker.process_frame(frame);
++    for (const auto& obj : crossed) {
++        auto& acc = _lane_acc[_coil_info.tag];
++        uint64_t current_time = frame.timestamp;
++        uint64_t tail_time = current_time +
++            (uint64_t)(obj.length / (obj.speed / 3.6) * 1000);
++
++        if (acc.count == 0) {
++            acc.last_arrival = current_time;
++            acc.last_tail = tail_time;
++        } else {
++            acc.headway_sum += (current_time - acc.last_arrival);
++            if (current_time > acc.last_tail) {
++                acc.gap_sum += (current_time - acc.last_tail);
++            }
++            acc.last_arrival = current_time;
++            acc.last_tail = tail_time;
++        }
++        ++acc.count;
++    }
++}
++
++nlohmann::json AccumulateHeadwayDetector::calculate_once() {
++    nlohmann::json result = nlohmann::json::array();
++    for (auto& [lane_tag, acc] : _lane_acc) {
++        nlohmann::json entry = acc.meta;
++        if (acc.count > 1) {
++            entry["Headway"] = acc.headway_sum / double(acc.count - 1) / 1000.0;
++            entry["Gap"] = acc.gap_sum / double(acc.count - 1) / 1000.0;
++        } else {
++            entry["Headway"] = -1.0;
++            entry["Gap"] = -1.0;
++        }
++        result.push_back(entry);
++
++        acc.last_arrival = 0;
++        acc.last_tail = 0;
++        acc.headway_sum = 0;
++        acc.gap_sum = 0;
++        acc.count = 0;
++    }
++    _tracker.clear_crossing_state();
++    return result;
++}
++
++}  // namespace fusion_perception::traffic_flow
+\ No newline at end of file
+diff --git a/src/traffic_flow/detectors/accumulate_headway_detector.h b/src/traffic_flow/detectors/accumulate_headway_detector.h
+new file mode 100644
+index 0000000..0740b9e
+--- /dev/null
++++ b/src/traffic_flow/detectors/accumulate_headway_detector.h
+@@ -0,0 +1,37 @@
++#ifndef ACCUMULATE_HEADWAY_DETECTOR_H
++#define ACCUMULATE_HEADWAY_DETECTOR_H
++
++#include <map>
++#include <nlohmann/json.hpp>
++#include "traffic_flow/traffic_flow_detector.h"
++#include "common/config.h"
++#include "traffic_flow/detectors/stop_line_crossing_helper.h"
++
++namespace fusion_perception::traffic_flow {
++
++class AccumulateHeadwayDetector : public AccumulateDetector {
++public:
++    AccumulateHeadwayDetector(const std::string& detector_id, const CoilInfo& coil_info);
++    ~AccumulateHeadwayDetector() override = default;
++
++    void update(const PerceptionResult& frame) override;
++    nlohmann::json calculate_once() override;
++
++private:
++    CoilInfo _coil_info;
++    StopLineCrossingTracker _tracker;
++
++    struct LaneHeadwayAcc {
++        uint64_t last_arrival = 0;
++        uint64_t last_tail = 0;
++        uint64_t headway_sum = 0;// 所有 headway 的累加和
++        uint64_t gap_sum = 0;
++        uint16_t count = 0;
++        nlohmann::json meta;// 车道元信息（tag、方向等）
++    };
++    std::map<std::string, LaneHeadwayAcc> _lane_acc;//每条车道的累积数据
++};
++
++} 
++ // namespace fusion_perception::traffic_flow
++#endif
+\ No newline at end of file
+diff --git a/src/traffic_flow/traffic_flow_factory.cpp b/src/traffic_flow/traffic_flow_factory.cpp
+index 97d77ef..a955785 100644
+--- a/src/traffic_flow/traffic_flow_factory.cpp
++++ b/src/traffic_flow/traffic_flow_factory.cpp
+@@ -276,6 +276,12 @@ void TrafficFlowFactory::build_detectors_from_config() {
+                             std::make_unique<AccumulateQueueDetector>(detector_id, coil_info));
+                         std::cout << "[BuildDetectors] Created AccumulateQueueDetector: "
+                                   << detector_id << std::endl;
++                    }else if (detector_item.type == "headway") {
++                        std::string detector_id = cycle_config.cycle_type + "_headway_" + coil_info.tag;
++                        channel.detectors.push_back(
++                            std::make_unique<AccumulateHeadwayDetector>(detector_id, coil_info));
++                        std::cout << "[BuildDetectors] Created AccumulateHeadwayDetector: "
++                                  << detector_id << std::endl;
+                     }
+                 }
+             }
+diff --git a/src/traffic_flow/traffic_flow_factory.h b/src/traffic_flow/traffic_flow_factory.h
+index ad1b9f2..e37411a 100644
+--- a/src/traffic_flow/traffic_flow_factory.h
++++ b/src/traffic_flow/traffic_flow_factory.h
+@@ -34,6 +34,8 @@
+ #include "detectors/accumulate_volume_detector.h"
+ #include "detectors/accumulate_queue_detector.h"
+ 
++#include "detectors/accumulate_headway_detector.h"
++
+ namespace fusion_perception {
+ struct PerceptionResult;
+ 
+
+@@@C	root	61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	备份之前做的信号机 后来不让我做了
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ed150e8..46ba063 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -113,7 +113,7 @@ IF (BUILD_PLUGIN)
+ ENDIF()
+ 
+ # copy conf files
+-FILE(GLOB CONFIG_FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/*)
++FILE(GLOB CONFIG_FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/traffic_flow/*)
+ INSTALL(FILES ${CONFIG_FILES} DESTINATION ${CMAKE_INSTALL_CONFIGDIR})
+ # copy documentation files
+ FILE(GLOB DOC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/*)
+diff --git a/config/traffic_flow/traffic_flow_service_5m.json b/config/traffic_flow/traffic_flow_service_5m.json
+index aeae529..0a27d63 100644
+--- a/config/traffic_flow/traffic_flow_service_5m.json
++++ b/config/traffic_flow/traffic_flow_service_5m.json
+@@ -36,6 +36,20 @@
+ 			"history_depth": 50,
+ 			"max_samples": 50,
+ 			"allocated_samples": 50
++		},
++
++		{	
++			"id": 3,
++            "name": "SignalJsonSubscriber:0",
++            "service": "FusionSubscriber",
++            "topic": "SignalJsonTopic:16",
++            "domain_id": 16,
++            "transport": "UDPv4",
++            "peers_list": [],
++            "segment_size": 12441600,
++            "history_depth": 50,
++            "max_samples": 50,
++            "allocated_samples": 50
+ 		}
+ 	],
+ 	"max_instances": 64,
+diff --git a/config/traffic_flow/traffic_flow_service_5s.json b/config/traffic_flow/traffic_flow_service_5s.json
+index 191bba1..16a26ca 100644
+--- a/config/traffic_flow/traffic_flow_service_5s.json
++++ b/config/traffic_flow/traffic_flow_service_5s.json
+@@ -36,6 +36,19 @@
+ 			"history_depth": 50,
+ 			"max_samples": 50,
+ 			"allocated_samples": 50
++		},
++		{	
++			"id": 3,
++            "name": "SignalJsonSubscriber:0",
++            "service": "FusionSubscriber",
++            "topic": "SignalJsonTopic:16",
++            "domain_id": 16,
++            "transport": "UDPv4",
++            "peers_list": [],
++            "segment_size": 12441600,
++            "history_depth": 50,
++            "max_samples": 50,
++            "allocated_samples": 50
+ 		}
+ 	],
+ 	"max_instances": 64,
+diff --git a/src/common/signal_phase_data.cpp b/src/common/signal_phase_data.cpp
+new file mode 100644
+index 0000000..cb6d47f
+--- /dev/null
++++ b/src/common/signal_phase_data.cpp
+@@ -0,0 +1,69 @@
++#include "signal_phase_data.h"
++#include <iostream>
++
++namespace fusion_perception::traffic_flow {
++
++std::vector<SignalPhaseData> parse_signal_json(const std::string& json_str) {
++    std::vector<SignalPhaseData> result;
++
++    if (json_str.empty()) {
++        std::cerr << "parse_signal_json: empty input" << std::endl;
++        return result;
++    }
++
++    nlohmann::json j;
++    try {
++        j = nlohmann::json::parse(json_str);
++    } catch (const std::exception& e) {
++        std::cerr << "parse_signal_json: JSON parse failed: " << e.what() << std::endl;
++        return result;
++    }
++
++    if (!j.contains("intersections") || !j["intersections"].is_array() || j["intersections"].empty()) {
++        std::cerr << "parse_signal_json: no intersections" << std::endl;
++        return result;
++    }
++
++    auto& phases = j["intersections"][0]["phases"];
++    if (!phases.is_array()) {
++        std::cerr << "parse_signal_json: no phases" << std::endl;
++        return result;
++    }
++
++    uint64_t timestamp = j.contains("timeStamp") ? j["timeStamp"].get<uint64_t>() : 0;
++
++    for (auto& phase : phases) {
++        int32_t phase_id = phase.value("phaseId", 0);
++        DirectionCode dir = phase_id_to_direction(phase_id);
++        if (dir == DirectionCode::DEFAULT) {
++            continue;
++        }
++
++        auto& phase_states = phase["phaseStates"];
++        if (!phase_states.is_array() || phase_states.empty()) {
++            continue;
++        }
++
++        auto& ps = phase_states[0];
++        int light_val = ps.value("light", 0);
++
++        int32_t time_remaining = 0;
++        if (ps.contains("timing") && ps["timing"].contains("counting")) {
++            auto& counting = ps["timing"]["counting"];
++            if (counting.contains("likelyEndTime") && counting["likelyEndTime"].contains("timeMark")) {
++                time_remaining = counting["likelyEndTime"]["timeMark"].get<int32_t>();
++            }
++        }
++
++        SignalPhaseData spd;
++        spd.direction = dir;
++        spd.light = int_to_light_state(light_val);
++        spd.time_remaining = time_remaining;
++        spd.timestamp = timestamp;
++        result.push_back(spd);
++    }
++
++    return result;
++}
++
++}  // namespace fusion_perception::traffic_flow
+\ No newline at end of file
+diff --git a/src/common/signal_phase_data.h b/src/common/signal_phase_data.h
+new file mode 100644
+index 0000000..7e7a989
+--- /dev/null
++++ b/src/common/signal_phase_data.h
+@@ -0,0 +1,51 @@
++#ifndef TRAFFIC_FLOW_SIGNAL_PHASE_DATA_H
++#define TRAFFIC_FLOW_SIGNAL_PHASE_DATA_H
++
++#include <string>
++#include <vector>
++#include <nlohmann/json.hpp>
++#include "common/config.h"
++
++namespace fusion_perception::traffic_flow {
++
++enum class SignalLightState : uint8_t {
++    UNAVAILABLE = 0,
++    DARK = 1,
++    FLASHING_RED = 2,
++    RED = 3,
++    FLASHING_GREEN = 4,
++    PERMISSIVE_GREEN = 5,
++    PROTECTED_GREEN = 6,
++    YELLOW = 7,
++    FLASHING_YELLOW = 8
++};
++
++struct SignalPhaseData {
++    DirectionCode direction;
++    SignalLightState light;
++    int32_t time_remaining;    // 剩余时间，单位0.1秒
++    uint64_t timestamp;
++};
++
++inline DirectionCode phase_id_to_direction(int32_t phase_id) {
++    switch (phase_id) {
++        case 2:  return DirectionCode::NORTH;
++        case 10: return DirectionCode::EAST;
++        case 18: return DirectionCode::SOUTH;
++        case 26: return DirectionCode::WEST;
++        default: return DirectionCode::DEFAULT;
++    }
++}
++
++inline SignalLightState int_to_light_state(int light) {
++    if (light >= 0 && light <= 8) {
++        return static_cast<SignalLightState>(light);
++    }
++    return SignalLightState::UNAVAILABLE;
++}
++
++std::vector<SignalPhaseData> parse_signal_json(const std::string& json_str);
++
++}  // namespace fusion_perception::traffic_flow
++
++#endif
+\ No newline at end of file
+diff --git a/src/common/signal_phase_manager.cpp b/src/common/signal_phase_manager.cpp
+new file mode 100644
+index 0000000..bdae5fc
+--- /dev/null
++++ b/src/common/signal_phase_manager.cpp
+@@ -0,0 +1,50 @@
++#include "signal_phase_manager.h"
++#include <iostream>
++
++namespace fusion_perception::traffic_flow {
++
++void SignalPhaseManager::update(const std::vector<SignalPhaseData>& phases) {
++    std::lock_guard<std::mutex> lock(_mtx);
++
++    for (const auto& phase : phases) {
++        auto dir = phase.direction;
++        if (dir == DirectionCode::DEFAULT) {
++            continue;
++        }
++
++        _previous_states[dir] = _current_states[dir];
++        _current_states[dir] = phase.light;
++
++        if (_previous_states[dir] == SignalLightState::PROTECTED_GREEN &&
++            phase.light == SignalLightState::RED) {
++            _boundary_triggered[dir] = true;
++#ifdef DEBUG
++            std::cout << "[SignalPhaseManager] " << direction_code_to_string(dir)
++                      << " phase boundary detected: green -> red" << std::endl;
++#endif
++        }
++    }
++}
++
++bool SignalPhaseManager::check_phase_boundary(DirectionCode direction) {
++    std::lock_guard<std::mutex> lock(_mtx);
++
++    auto it = _boundary_triggered.find(direction);
++    if (it != _boundary_triggered.end() && it->second) {
++        it->second = false;
++        return true;
++    }
++    return false;
++}
++
++SignalLightState SignalPhaseManager::get_light_state(DirectionCode direction) {
++    std::lock_guard<std::mutex> lock(_mtx);
++
++    auto it = _current_states.find(direction);
++    if (it != _current_states.end()) {
++        return it->second;
++    }
++    return SignalLightState::UNAVAILABLE;
++}
++
++}  // namespace fusion_perception::traffic_flow
+\ No newline at end of file
+diff --git a/src/common/signal_phase_manager.h b/src/common/signal_phase_manager.h
+new file mode 100644
+index 0000000..e01cbe1
+--- /dev/null
++++ b/src/common/signal_phase_manager.h
+@@ -0,0 +1,35 @@
++#ifndef TRAFFIC_FLOW_SIGNAL_PHASE_MANAGER_H
++#define TRAFFIC_FLOW_SIGNAL_PHASE_MANAGER_H
++
++#include <mutex>
++#include <unordered_map>
++
++#include "base/Singleton.h"
++#include "common/config.h"
++#include "common/signal_phase_data.h"
++
++namespace fusion_perception::traffic_flow {
++
++class SignalPhaseManager final : public cybertron::base::Singleton<SignalPhaseManager> {
++    friend class cybertron::base::Singleton<SignalPhaseManager>;
++
++public:
++    void update(const std::vector<SignalPhaseData>& phases);
++
++    bool check_phase_boundary(DirectionCode direction);
++
++    SignalLightState get_light_state(DirectionCode direction);
++
++private:
++    SignalPhaseManager() = default;
++    virtual ~SignalPhaseManager() = default;
++
++    std::mutex _mtx;
++    std::unordered_map<DirectionCode, SignalLightState> _current_states;
++    std::unordered_map<DirectionCode, SignalLightState> _previous_states;
++    std::unordered_map<DirectionCode, bool> _boundary_triggered;
++};
++
++}  // namespace fusion_perception::traffic_flow
++
++#endif
+\ No newline at end of file
+diff --git a/src/plugin/traffic_flow_service_impl.cpp b/src/plugin/traffic_flow_service_impl.cpp
+index a1936fc..9375acf 100644
+--- a/src/plugin/traffic_flow_service_impl.cpp
++++ b/src/plugin/traffic_flow_service_impl.cpp
+@@ -22,6 +22,8 @@
+ 
+ #include "FusionPlugin.h"
+ #include "common/config.h"
++#include "common/signal_phase_data.h"
++#include "common/signal_phase_manager.h"
+ #include "log.h"
+ #include "quality.h"
+ 
+@@ -79,6 +81,8 @@ void TrafficFlowServiceImpl::on_discovery(uint8_t id, DiscoveryStatus status, co
+     std::stringstream ss;
+     if (id == static_cast<uint8_t>(PartId::RSM_JSON_SUB)) {
+         ss << "[RSMJsonSubscriber]";
++    } else if (id == static_cast<uint8_t>(PartId::SIGNAL_JSON_SUB)) {
++        ss << "[SignalJsonSubscriber]";
+     } else if (id == static_cast<uint8_t>(PartId::TRAFFIC_FLOW_JSON_PUB)) {
+         ss << "[TrafficFlowJsonPublisher]";
+     } else {
+@@ -105,6 +109,8 @@ void TrafficFlowServiceImpl::on_matched(uint8_t id, int current_count, int curre
+     std::stringstream ss;
+     if (id == static_cast<uint8_t>(PartId::RSM_JSON_SUB)) {
+         ss << "[RSMJsonSubscriber] Matched: " << current_count << std::endl;
++    } else if (id == static_cast<uint8_t>(PartId::SIGNAL_JSON_SUB)) {
++        ss << "[SignalJsonSubscriber] Matched: " << current_count << std::endl;
+     } else if (id == static_cast<uint8_t>(PartId::TRAFFIC_FLOW_JSON_PUB)) {
+         ss << "[TrafficFlowJsonPublisher] Matched: " << current_count << std::endl;
+     } else {
+@@ -149,6 +155,18 @@ void TrafficFlowServiceImpl::on_data_available(uint8_t id, const void* message)
+             bool ret = traffic_flow_factory.update_new_frame(contents);
+             break;
+         }
++
++        case PartId::SIGNAL_JSON_SUB: {
++            std::string signal_json = std::string(
++                static_cast<char*>(fusion_message->body), fusion_message->body_size);
++            if (s_fs_api_->TrafficFlowService_Log) {
++                s_fs_api_->TrafficFlowService_Log(LogLevel_Info, "Received one SignalJson.");
++            }
++            auto phases = traffic_flow::parse_signal_json(signal_json);
++            traffic_flow::SignalPhaseManager::get_instance().update(phases);
++            break;
++        }
++
+         default: {
+             if (s_fs_api_->TrafficFlowService_Log) {
+                 s_fs_api_->TrafficFlowService_Log(LogLevel_Warn, "Received Unknown data.");
+diff --git a/src/plugin/traffic_flow_service_impl.h b/src/plugin/traffic_flow_service_impl.h
+index fda841a..ffc3e18 100644
+--- a/src/plugin/traffic_flow_service_impl.h
++++ b/src/plugin/traffic_flow_service_impl.h
+@@ -32,7 +32,8 @@ enum class PartId : uint8_t {
+     TRAFFIC_FLOW_JSON_PUB = 1,
+     QUALITY_JSON_PUB = 253,
+     PART_ID_STATE_JSON_PUB = 254,
+-    PART_ID_LOG_JSON_PUB = 255
++    PART_ID_LOG_JSON_PUB = 255,
++    SIGNAL_JSON_SUB = 3
+ };
+ 
+ class TrafficFlowServiceImpl {
+diff --git a/src/traffic_flow/traffic_flow_factory.cpp b/src/traffic_flow/traffic_flow_factory.cpp
+index dc908aa..1d29338 100644
+--- a/src/traffic_flow/traffic_flow_factory.cpp
++++ b/src/traffic_flow/traffic_flow_factory.cpp
+@@ -23,6 +23,8 @@
+ #include "detectors/headway_detector.h"
+ #include "detectors/occupancy_detector.h"
+ #include "common/perception_data.h"
++#include "common/signal_phase_data.h"
++#include "common/signal_phase_manager.h"
+ 
+ namespace fusion_perception::traffic_flow {
+ 
+@@ -236,6 +238,44 @@ void TrafficFlowFactory::detect() {
+                 one_detector->update(detected_result);
+             }
+         }
++        {
++             std::vector<DirectionCode> directions = {
++                DirectionCode::NORTH, DirectionCode::SOUTH,
++                DirectionCode::EAST, DirectionCode::WEST
++            };
++            auto& global_config = traffic_flow::GlobalConfig::get_instance();
++            auto road_sections = global_config.get_road_section_infos();
++
++            for (auto dir : directions) {
++                if (!SignalPhaseManager::get_instance().check_phase_boundary(dir)) {
++                    continue;
++                }
++#ifdef DEBUG
++                std::cout << "[SignalPhase] " << direction_code_to_string(dir)
++                          << " phase boundary triggered." << std::endl;
++#endif
++                for (const auto& one_road_section : road_sections) {
++                    if (one_road_section.second.direction != dir) {
++                        continue;
++                    }
++                    std::vector<CoilInfo> coils = global_config.get_coil_infos(one_road_section.first);
++                    for (const auto& one_coil : coils) {
++#ifdef DEBUG
++                        std::cout << "[DEBUG] signal coil: " << one_coil.tag << std::endl;
++#endif
++                        nlohmann::json signal_coil_result_j;
++                        default_coil_result(signal_coil_result_j, one_coil);
++                        for (const auto& one_detector : _coil_detectors[one_coil.tag]) {
++                            one_detector->calculate_once(signal_coil_result_j);
++                        }
++                        // TODO: 组装信号灯周期结果并发布（与下游协商）
++                    }
++                }
++            }
++        }
++
++
++
+         if (_working_mode == WorkingMode::ENSEMBLE) {
+             if (_current_period_start == 0) {
+                 _current_period_start = detected_result.timestamp;
+diff --git a/test_signal b/test_signal
+new file mode 100755
+index 0000000..70222fe
+Binary files /dev/null and b/test_signal differ
+diff --git a/test_signal.cpp b/test_signal.cpp
+new file mode 100644
+index 0000000..7c57482
+--- /dev/null
++++ b/test_signal.cpp
+@@ -0,0 +1,178 @@
++#include <iostream>
++#include <cassert>
++#include "common/signal_phase_data.h"
++#include "common/signal_phase_manager.h"
++
++using namespace fusion_perception::traffic_flow;
++
++int g_pass_count = 0;
++int g_fail_count = 0;
++
++#define CHECK(cond, msg)                                          \
++    do {                                                          \
++        if (cond) {                                               \
++            std::cout << "  [PASS] " << msg << std::endl;         \
++            g_pass_count++;                                       \
++        } else {                                                  \
++            std::cout << "  [FAIL] " << msg << std::endl;         \
++            g_fail_count++;                                       \
++        }                                                         \
++    } while (0)
++
++// ============================================================
++// 测试1: 正常JSON解析（模拟DDS发来的标准数据）
++// ============================================================
++void test_parse_normal_json() {
++    std::cout << "\n===== 测试1: 正常JSON解析 =====" << std::endl;
++
++    std::string test_json = R"({
++        "msg_type": 1743,
++        "timeStamp": 1724745600000,
++        "intersections": [{
++            "regionId": "region-1",
++            "crossId": "cross-1",
++            "phases": [
++                {"phaseId": 2, "phaseStates": [{"light": 6, "timing": {"counting": {"likelyEndTime": {"timeMark": 150}}}}]},
++                {"phaseId": 10, "phaseStates": [{"light": 3, "timing": {"counting": {"likelyEndTime": {"timeMark": 200}}}}]},
++                {"phaseId": 18, "phaseStates": [{"light": 3, "timing": {"counting": {"likelyEndTime": {"timeMark": 200}}}}]},
++                {"phaseId": 26, "phaseStates": [{"light": 6, "timing": {"counting": {"likelyEndTime": {"timeMark": 150}}}}]},
++                {"phaseId": 1, "phaseStates": [{"light": 3, "timing": {"counting": {"likelyEndTime": {"timeMark": 100}}}}]}
++            ]
++        }]
++    })";
++
++    auto result = parse_signal_json(test_json);
++
++    std::cout << "  [LOG] 解析出 " << result.size() << " 个相位" << std::endl;
++    CHECK(result.size() == 4, "解析出4个直行相位(左转phaseId=1被过滤)");
++
++    for (size_t i = 0; i < result.size(); i++) {
++        std::cout << "  [LOG] phase[" << i << "] direction="
++                  << direction_code_to_string(result[i].direction)
++                  << " light=" << static_cast<int>(result[i].light)
++                  << " time_remaining=" << result[i].time_remaining
++                  << " timestamp=" << result[i].timestamp << std::endl;
++    }
++
++    CHECK(result[0].direction == DirectionCode::NORTH, "phaseId=2 → 北");
++    CHECK(result[0].light == SignalLightState::PROTECTED_GREEN, "北方向是绿灯(6)");
++    CHECK(result[0].time_remaining == 150, "北方向剩余时间150(0.1s单位)");
++    CHECK(result[1].direction == DirectionCode::EAST, "phaseId=10 → 东");
++    CHECK(result[1].light == SignalLightState::RED, "东方向是红灯(3)");
++    CHECK(result[2].direction == DirectionCode::SOUTH, "phaseId=18 → 南");
++    CHECK(result[3].direction == DirectionCode::WEST, "phaseId=26 → 西");
++}
++
++// ============================================================
++// 测试2: 空字符串（DDS可能发来空消息）
++// ============================================================
++void test_parse_empty_json() {
++    std::cout << "\n===== 测试2: 空字符串输入 =====" << std::endl;
++    auto result = parse_signal_json("");
++    CHECK(result.empty(), "空输入返回空数组，不崩溃");
++}
++
++// ============================================================
++// 测试3: 损坏的JSON（DDS数据可能传输损坏）
++// ============================================================
++void test_parse_malformed_json() {
++    std::cout << "\n===== 测试3: 损坏的JSON =====" << std::endl;
++    auto result = parse_signal_json("{\"msg_type\": 1743, \"timeStamp\": broken!!!");
++    CHECK(result.empty(), "损坏JSON返回空数组，不崩溃");
++}
++
++// ============================================================
++// 测试4: 缺少字段（信号机可能不报倒计时）
++// ============================================================
++void test_parse_missing_fields() {
++    std::cout << "\n===== 测试4: 缺少timing字段 =====" << std::endl;
++    std::string test_json = R"({
++        "timeStamp": 1724745600000,
++        "intersections": [{
++            "phases": [
++                {"phaseId": 2, "phaseStates": [{"light": 6}]}
++            ]
++        }]
++    })";
++    auto result = parse_signal_json(test_json);
++    CHECK(result.size() == 1, "缺少timing也能解析出灯态");
++    CHECK(result[0].time_remaining == 0, "缺少timing时剩余时间为0");
++}
++
++// ============================================================
++// 测试5: 相位边界检测（核心逻辑）
++// ============================================================
++void test_phase_boundary() {
++    std::cout << "\n===== 测试5: 相位边界检测(绿→红→绿) =====" << std::endl;
++
++    auto& manager = SignalPhaseManager::get_instance();
++
++    // 第1帧: 北=绿
++    std::vector<SignalPhaseData> frame1 = {
++        {DirectionCode::NORTH, SignalLightState::PROTECTED_GREEN, 150, 1000}};
++    manager.update(frame1);
++    std::cout << "  [LOG] 第1帧: 北=绿" << std::endl;
++    CHECK(!manager.check_phase_boundary(DirectionCode::NORTH),
++          "第1帧后: 无边界(没有上一次状态)");
++
++    // 第2帧: 北变红 → 绿→红，应触发边界
++    std::vector<SignalPhaseData> frame2 = {
++        {DirectionCode::NORTH, SignalLightState::RED, 200, 2000}};
++    manager.update(frame2);
++    std::cout << "  [LOG] 第2帧: 北=红 (绿→红)" << std::endl;
++    CHECK(manager.check_phase_boundary(DirectionCode::NORTH),
++          "第2帧后: 检测到边界(绿→红)");
++    CHECK(!manager.check_phase_boundary(DirectionCode::NORTH),
++          "再查一次: 边界已消费，返回false");
++
++    // 第3帧: 北又变绿 → 红→绿，不应触发边界
++    std::vector<SignalPhaseData> frame3 = {
++        {DirectionCode::NORTH, SignalLightState::PROTECTED_GREEN, 150, 3000}};
++    manager.update(frame3);
++    std::cout << "  [LOG] 第3帧: 北=绿 (红→绿)" << std::endl;
++    CHECK(!manager.check_phase_boundary(DirectionCode::NORTH),
++          "第3帧后: 红→绿不触发边界");
++
++    // 第4帧: 北又变红 → 第二个周期，再次触发
++    std::vector<SignalPhaseData> frame4 = {
++        {DirectionCode::NORTH, SignalLightState::RED, 180, 4000}};
++    manager.update(frame4);
++    std::cout << "  [LOG] 第4帧: 北=红 (绿→红，第二个周期)" << std::endl;
++    CHECK(manager.check_phase_boundary(DirectionCode::NORTH),
++          "第4帧后: 第二个周期边界也能触发");
++}
++
++// ============================================================
++// 测试6: 灯态查询
++// ============================================================
++void test_get_light_state() {
++    std::cout << "\n===== 测试6: 灯态查询 =====" << std::endl;
++    auto& manager = SignalPhaseManager::get_instance();
++
++    auto state = manager.get_light_state(DirectionCode::NORTH);
++    std::cout << "  [LOG] 北方向当前灯态=" << static_cast<int>(state) << std::endl;
++    CHECK(state == SignalLightState::RED, "查询到第4帧后的红灯状态");
++
++    state = manager.get_light_state(DirectionCode::EAST);
++    CHECK(state == SignalLightState::UNAVAILABLE, "没收到过数据的方向返回UNAVAILABLE");
++}
++
++int main() {
++    std::cout << "============================================" << std::endl;
++    std::cout << "  信号灯模块自测程序 (模拟DDS数据流)" << std::endl;
++    std::cout << "============================================" << std::endl;
++
++    test_parse_normal_json();
++    test_parse_empty_json();
++    test_parse_malformed_json();
++    test_parse_missing_fields();
++    test_phase_boundary();
++    test_get_light_state();
++
++    std::cout << "\n============================================" << std::endl;
++    std::cout << "  结果: " << g_pass_count << " 通过, "
++              << g_fail_count << " 失败" << std::endl;
++    std::cout << "============================================" << std::endl;
++
++    return g_fail_count == 0 ? 0 : 1;
++}
+\ No newline at end of file
+diff --git a/信号灯接入模块学习笔记.md b/信号灯接入模块学习笔记.md
+new file mode 100644
+index 0000000..0e48fd7
+--- /dev/null
++++ b/信号灯接入模块学习笔记.md
+@@ -0,0 +1,509 @@
++# 信号灯数据接入模块 —— 学习笔记与面试素材
++
++> 项目：traffic_flow 交通流量模块（C++ / DDS / Linux）
++> 我的任务：将信号灯数据流接入现有系统，支持按信号灯周期统计交通流量
++
++---
++
++## 一、项目背景：我做的功能是什么
++
++### 1.1 系统原本在干什么
++
++traffic_flow 模块的职责：**统计路口的交通流量**（车流量、排队长度、占有率等）。
++
++原来的数据流只有一条：
++
++```
++感知数据(摄像头/雷达检测的车辆)
++    → DDS订阅 → 阻塞队列 → detect()主线程统计 → 发布结果
++```
++
++统计方式是**固定时间周期**：不管红绿灯，每5秒出一次流量数据。
++
++### 1.2 为什么要加信号灯数据
++
++**业务需求**：交通流量按信号灯周期统计更有意义。
++比如"这个绿灯周期内通过了多少车"比"5秒内过了多少车"更能反映路口通行效率。
++
++所以新增了第二条数据流：
++
++```
++信号灯数据(信号机的红绿灯状态)
++    → DDS订阅 → 解析 → SignalPhaseManager缓存
++    → detect()检测相位边界 → 触发统计
++```
++
++### 1.3 数据从哪来
++
++信号机硬件 → (UDP二进制, GA/T 1743协议) → **TLP模块**(翻译成JSON) → DDS → 我的模块
++
++我只需要关心"DDS给我的JSON长什么样"，不用管TLP怎么解析二进制。
++
++### 1.4 信号灯 JSON 数据格式（核心输入）
++
++```json
++{
++  "msg_type": 1743,
++  "timeStamp": 1724745600000,
++  "intersections": [{
++    "regionId": "region-1",
++    "crossId": "cross-1",
++    "phases": [
++      { "phaseId": 2,  "phaseStates": [{ "light": 6, "timing": {"counting": {"likelyEndTime": {"timeMark": 150}}} }] },
++      { "phaseId": 10, "phaseStates": [{ "light": 3, "timing": {"counting": {"likelyEndTime": {"timeMark": 200}}} }] }
++    ]
++  }]
++}
++```
++
++关键字段含义：
++
++| 字段 | 含义 |
++|------|------|
++| `phaseId` | 相位编号，2=北直行, 10=东直行, 18=南直行, 26=西直行 |
++| `light` | 灯态：3=红, 6=绿, 7=黄 |
++| `timeMark` | 剩余时间，单位0.1秒 |
++
++---
++
++## 二、6个任务逐个拆解（含设计思想）
++
++### 任务1：配置文件新增 subscriber
++
++**文件**：`config/traffic_flow/traffic_flow_service_5s.json`
++
++**做了什么**：在 `subscribers` 数组里加一条订阅配置：
++
++```json
++{
++    "id": 3,
++    "name": "SignalJsonSubscriber:0",
++    "service": "FusionSubscriber",
++    "topic": "SignalJsonTopic:16",
++    "domain_id": 16,
++    "transport": "UDPv4",
++    "history_depth": 50
++}
++```
++
++**为什么**：这是"配置驱动"的设计。代码不用改，加配置就能新增数据源。
++- `id` 和代码里的 `PartId` 枚举对应（SIGNAL_JSON_SUB = 3）
++- `topic` 编号对应 `FusionPlugin.h` 里的 `TopicType` 枚举（TopicType_SignalJson = 16）
++- `domain_id` 必须和发布方一致，否则收不到消息
++
++**面试考点**：配置与代码分离、序列化思想
++
++---
++
++### 任务2：PartId 枚举新增
++
++**文件**：`src/plugin/traffic_flow_service_impl.h`
++
++```cpp
++enum class PartId : uint8_t {
++    RSM_JSON_SUB = 0,
++    TRAFFIC_FLOW_JSON_PUB = 1,
++    SIGNAL_JSON_SUB = 3,      // ← 新增
++    QUALITY_JSON_PUB = 253,
++    PART_ID_STATE_JSON_PUB = 254,
++    PART_ID_LOG_JSON_PUB = 255
++};
++```
++
++**为什么用 `enum class` 而不是普通 `enum`**：
++
++| 特性 | 普通 enum | enum class |
++|------|-----------|-----------|
++| 隐式转 int | 会（危险） | 不会（强类型） |
++| 作用域 | 泄漏到外层 | 限定在枚举内 |
++| 底层类型 | 不确定 | 可显式指定 `: uint8_t` |
++
++**面试考点**：`enum` vs `enum class` 的区别（必考题！）
++
++---
++
++### 任务3：on_data_available() 新增 case 分支
++
++**文件**：`src/plugin/traffic_flow_service_impl.cpp`
++
++**做了什么**：DDS 收到消息后回调这个函数，根据 `id` 分发：
++
++```cpp
++switch (message_type) {
++    case PartId::RSM_JSON_SUB: { ... }
++    case PartId::SIGNAL_JSON_SUB: {
++        std::string signal_json = std::string(
++            static_cast<char*>(fusion_message->body), fusion_message->body_size);
++        auto phases = traffic_flow::parse_signal_json(signal_json);
++        traffic_flow::SignalPhaseManager::get_instance().update(phases);
++        break;
++    }
++    default: { ... }
++}
++```
++
++**关键细节**：
++- `fusion_message->body` 是 `void*`，需要 `static_cast` 转成 `char*` 再构造 string
++- `std::string(ptr, size)` 这种构造方式能处理带 `\0` 的数据，比 C 风格字符串构造更安全
++- 同时要在 `on_discovery()` 和 `on_matched()` 里加对应的日志分支，方便排查连接问题
++
++**面试考点**：`void*` 的使用与转换、`static_cast` vs `reinterpret_cast`
++
++---
++
++### 任务4：JSON 解析函数
++
++**新建文件**：`src/common/signal_phase_data.h` / `.cpp`
++
++**核心思想：把非结构化的 JSON 变成强类型的结构体**
++
++```cpp
++// 1. 灯态枚举：把魔法数字变成有意义的名字
++enum class SignalLightState : uint8_t {
++    UNAVAILABLE = 0,
++    RED = 3,
++    PROTECTED_GREEN = 6,
++    YELLOW = 7,
++    // ...
++};
++
++// 2. 数据结构：一个方向的完整灯态信息
++struct SignalPhaseData {
++    DirectionCode direction;
++    SignalLightState light;
++    int32_t time_remaining;    // 剩余时间，单位0.1秒
++    uint64_t timestamp;
++};
++
++// 3. 映射函数：协议里的phaseId → 业务里的方向
++inline DirectionCode phase_id_to_direction(int32_t phase_id) {
++    switch (phase_id) {
++        case 2:  return DirectionCode::NORTH;   // 北直行
++        case 10: return DirectionCode::EAST;
++        case 18: return DirectionCode::SOUTH;
++        case 26: return DirectionCode::WEST;
++        default: return DirectionCode::DEFAULT;
++    }
++}
++```
++
++**解析函数的防御性编程**（每一层都做校验）：
++
++```cpp
++std::vector<SignalPhaseData> parse_signal_json(const std::string& json_str) {
++    // 防御1: 空输入
++    if (json_str.empty()) return result;
++
++    // 防御2: JSON格式错误，用try-catch兜底
++    try {
++        j = nlohmann::json::parse(json_str);
++    } catch (const std::exception& e) { return result; }
++
++    // 防御3: 字段缺失，逐层判断
++    if (!j.contains("intersections") || ...) return result;
++
++    // 防御4: 用 value() 提供默认值，避免抛异常
++    int32_t phase_id = phase.value("phaseId", 0);
++}
++```
++
++**面试考点**：
++- 防御性编程思想
++- 异常处理什么时候用、怎么用
++- "魔法数字"的危害与枚举的意义
++
++---
++
++### 任务5：SignalPhaseManager（最核心，面试重点讲）
++
++**新建文件**：`src/common/signal_phase_manager.h` / `.cpp`
++
++**这个类解决两个问题**：
++1. **跨线程共享状态**：DDS回调线程写入，detect()线程读取
++2. **检测状态变化**：识别"绿→红"的相位边界
++
++```cpp
++class SignalPhaseManager final : public cybertron::base::Singleton<SignalPhaseManager> {
++    friend class cybertron::base::Singleton<SignalPhaseManager>;
++
++public:
++    void update(const std::vector<SignalPhaseData>& phases);   // 写：缓存灯态
++    bool check_phase_boundary(DirectionCode direction);        // 读：查询边界
++    SignalLightState get_light_state(DirectionCode direction); // 读：查询灯态
++
++private:
++    SignalPhaseManager() = default;   // 私有！只能通过单例访问
++    std::mutex _mtx;                  // 保证线程安全
++    std::unordered_map<DirectionCode, SignalLightState> _current_states;
++    std::unordered_map<DirectionCode, SignalLightState> _previous_states;
++    std::unordered_map<DirectionCode, bool> _boundary_triggered;
++};
++```
++
++**为什么是单例？**
++- 全局只需要一份灯态状态
++- 两个线程要访问**同一个**对象才能通信（单例是跨线程共享状态的常见手段）
++- 项目里已有 `Singleton` 模板基类，直接继承（代码复用）
++
++**为什么构造函数要私有 + friend？**
++- 构造函数私有：外面不能 `new` 或直接创建对象，强制走单例
++- `friend Singleton<...>`：让单例基类能访问私有构造函数（C++ 访问控制细节）
++
++**核心逻辑——边界检测**：
++
++```cpp
++void SignalPhaseManager::update(const std::vector<SignalPhaseData>& phases) {
++    std::lock_guard<std::mutex> lock(_mtx);   // RAII 加锁
++    for (const auto& phase : phases) {
++        _previous_states[dir] = _current_states[dir];  // 1.保存旧状态
++        _current_states[dir] = phase.light;             // 2.更新新状态
++        // 3.绿→红 = 一个周期结束，触发边界
++        if (_previous_states[dir] == SignalLightState::PROTECTED_GREEN &&
++            phase.light == SignalLightState::RED) {
++            _boundary_triggered[dir] = true;
++        }
++    }
++}
++
++bool SignalPhaseManager::check_phase_boundary(DirectionCode direction) {
++    std::lock_guard<std::mutex> lock(_mtx);
++    if (_boundary_triggered[direction]) {
++        _boundary_triggered[direction] = false;  // 消费后重置，等待下一周期
++        return true;
++    }
++    return false;
++}
++```
++
++**为什么用 `lock_guard` 而不是手动 `lock()/unlock()`？**
++- RAII 思想：构造时加锁，析构时自动解锁
++- 即使中途抛异常或提前 return，锁也会被正确释放
++- 不会忘记解锁导致死锁
++
++**两个线程的协作模式（轮询）**：
++
++```
++DDS回调线程(写)                    detect()主线程(读)
++    │                                   │
++    ▼                                   ▼
++update(json)                    每帧调用 check_phase_boundary()
++写入灯态 + 标记边界              返回true就触发统计
++    │                                   │
++    └───────> 同一个对象 <───────────────┘
++```
++
++**面试考点（高频！）**：
++- 单例模式的实现（饿汉/懒汉/线程安全）
++- `lock_guard` vs `unique_lock` 的区别
++- RAII 是什么，为什么重要
++- 多线程共享数据如何保证安全
++- `unordered_map` vs `map` 的选择（哈希表，O(1)平均查找）
++
++---
++
++### 任务6：detect() 主循环集成
++
++**文件**：`src/traffic_flow/traffic_flow_factory.cpp`
++
++**做了什么**：每帧检查4个方向的相位边界，触发了就统计对应方向的流量：
++
++```cpp
++// 信号灯周期组 ×4（北/南/东/西）
++std::vector<DirectionCode> directions = {
++    DirectionCode::NORTH, DirectionCode::SOUTH,
++    DirectionCode::EAST, DirectionCode::WEST
++};
++for (auto dir : directions) {
++    if (!SignalPhaseManager::get_instance().check_phase_boundary(dir)) {
++        continue;   // 没触发，跳过
++    }
++    // 触发了：找该方向的所有线圈，调用 calculate_once()
++    for (const auto& one_road_section : road_sections) {
++        if (one_road_section.second.direction != dir) continue;  // 方向过滤
++        // ... 对该方向的线圈调用 calculate_once() ...
++    }
++}
++```
++
++**设计亮点**：
++- 信号灯周期组和固定周期组**并存互不干扰**（各管各的触发条件）
++- 通过路段的 `direction` 字段过滤，只统计对应方向的线圈
++
++---
++
++## 三、改动文件总清单
++
++| 任务 | 文件 | 操作 |
++|------|------|------|
++| 1 | `config/traffic_flow/traffic_flow_service_5s.json` | 加 subscriber |
++| 1 | `config/traffic_flow/traffic_flow_service_5m.json` | 加 subscriber |
++| 2 | `src/plugin/traffic_flow_service_impl.h` | 加枚举值 |
++| 3 | `src/plugin/traffic_flow_service_impl.cpp` | 加 case + 日志分支 + include |
++| 4 | `src/common/signal_phase_data.h` | **新建**：数据结构+映射函数 |
++| 4 | `src/common/signal_phase_data.cpp` | **新建**：JSON解析实现 |
++| 4 | `src/common/CMakeLists.txt` | 头文件加入安装列表 |
++| 5 | `src/common/signal_phase_manager.h` | **新建**：线程安全状态管理 |
++| 5 | `src/common/signal_phase_manager.cpp` | **新建**：边界检测实现 |
++| 6 | `src/traffic_flow/traffic_flow_factory.cpp` | detect()加信号灯周期组逻辑 |
++
++---
++
++## 四、这个项目涉及的架构知识（面试吹点）
++
++### 4.1 DDS 发布-订阅模式（Pub-Sub）
++
++```
++发布者(Publisher) ──发到──> Topic(主题) <──订阅── 订阅者(Subscriber)
++```
++
++- 发布者和订阅者**完全解耦**，互不知道对方存在
++- 只通过 Topic（话题）关联
++- `domain_id` 相当于"域"，同一个域内才能互相通信
++- 数据到达时，框架自动回调 `on_data_available()`
++
++**类比**：微信公众号。你关注了公众号（订阅），作者发文章（发布），你收到推送（回调），但你和作者互相不认识。
++
++### 4.2 生产者-消费者模式（BlockingQueue）
++
++现有 RSM 数据流用了这个模式：
++
++```
++on_data_available(生产者) → BlockingQueue → detect()线程(消费者)
++```
++
++**为什么要用队列解耦？**
++- 接收速度和处理速度可能不匹配
++- 队列做缓冲，避免丢数据
++- 两个线程各司其职，互不阻塞
++
++### 4.3 插件化架构
++
++`FusionPlugin.h` 定义了一套插件接口规范：
++
++```
++每个插件编译成 .so 动态库
++主程序 FusionService 运行时加载插件
++插件实现 Init/OnDataAvailable/OnPublish 等回调
++```
++
++**好处**：主程序不用重新编译，插件可以独立开发、独立升级。
++
++**面试考点**：动态库加载（`dlopen`/`dlsym`）、回调函数、接口与实现分离
++
++### 4.4 单例模式（项目里的实现方式）
++
++```cpp
++template <typename T>
++class Singleton {
++public:
++    template <typename... Args>
++    static T& get_instance(Args&&... args) {
++        std::call_once(init_flag_, init<Args...>, std::forward<Args>(args)...);
++        return *instance_;
++    }
++private:
++    static T* instance_;
++    static std::once_flag init_flag_;
++};
++```
++
++**亮点**：
++- 用 `std::call_once` 保证**线程安全**的初始化（C++11 之后编译器保证静态局部变量初始化线程安全，这是另一种思路）
++- 完美转发 `std::forward` 支持带参构造
++- 子类只需继承 + `friend` 声明，不用重复写单例代码
++
++---
++
++## 五、自测方案（我是怎么验证的）
++
++**思路**：不启动真实系统，写独立的 main 程序，用假 JSON 直接调用我的函数。
++
++**测试覆盖的场景**：
++
++| # | 测试场景 | 模拟的真实情况 |
++|---|---------|--------------|
++| 1 | 正常JSON，5个相位 | DDS 正常推送（左转被过滤，只留4个直行） |
++| 2 | 空字符串 | DDS 推了个空消息 |
++| 3 | 损坏的JSON | 数据传输损坏 |
++| 4 | 缺字段 | 信号机不报倒计时 |
++| 5 | 绿→红→绿→红连续变化 | 信号灯多个周期轮转 |
++| 6 | 查询未收到数据的方向 | 容错性 |
++
++**编译命令**（独立编译，不走 CMake）：
++
++```bash
++g++ -std=c++17 -g -DDEBUG \
++    -I./src \
++    -I./src/third_party/include \
++    ./src/common/signal_phase_data.cpp \
++    ./src/common/signal_phase_manager.cpp \
++    ./test_signal.cpp \
++    -o test_signal -lpthread
++```
++
++**验证结论**：绿→红 触发边界、红→绿 不触发、触发后重置、异常输入不崩溃。
++
++---
++
++## 六、面试怎么讲这个项目（话术模板）
++
++### Q1: 介绍一下你做的项目
++
++> 我在一个智能交通项目中负责信号灯数据接入模块。这个系统通过 DDS 中间件做模块间通信，原来只有摄像头/雷达的感知数据流，按固定5秒周期统计路口流量。我的任务是新增一路信号灯数据流，让系统能按红绿灯周期统计流量——比如一个绿灯周期内通过了多少车。
++>
++> 具体做了三块：
++> 1. **配置层**：新增 DDS 订阅配置，接入信号灯 Topic
++> 2. **数据层**：写解析函数，把信号灯 JSON 转成强类型结构体，做了完整的防御性校验
++> 3. **状态层**：实现了一个线程安全的 SignalPhaseManager 单例，缓存4个方向的灯态，检测绿→红的相位边界，触发对应方向的流量统计
++
++### Q2: 遇到了什么难点？
++
++> **多线程数据竞争**。信号灯数据由 DDS 回调线程写入，而流量统计在另一个 detect() 线程读取，两个线程访问同一个单例对象。我用 `std::mutex` + `lock_guard` 保护共享状态，用 RAII 保证锁的正确释放。
++
++### Q3: 为什么用单例模式？
++
++> 因为灯态状态全局只有一份，且需要被两个线程共享。单例保证全局唯一访问点。我用的是项目里现成的模板单例基类，通过 `std::call_once` 保证线程安全的初始化，构造函数私有防止外部实例化。
++
++### Q4: 怎么保证解析的健壮性？
++
++> 外部数据不可信，我在每一层都做了校验：空输入检查、JSON 解析用 try-catch 捕获格式错误、字段访问先判断存在性、用 `value(key, default)` 提供默认值。即使信号机数据异常，模块也只是跳过这帧，不会崩溃。
++
++### Q5: 为什么不用条件变量/消息队列，而是用轮询？
++
++> 信号灯数据频率低（秒级），而 detect() 主循环本来就是每帧轮询感知数据的，在同一个循环里顺便查一下相位边界，实现最简单，也不会引入额外的阻塞等待复杂度。如果数据频率很高，我会考虑用条件变量或无锁队列。
++
++---
++
++## 七、我掌握了的 C++ 知识点清单
++
++| 知识点 | 在哪用到的 | 面试考频 |
++|--------|-----------|---------|
++| `enum class` 强类型枚举 | PartId、SignalLightState | ⭐⭐⭐⭐ |
++| 单例模式 | SignalPhaseManager | ⭐⭐⭐⭐⭐ |
++| `std::mutex` + `lock_guard` | 线程安全 | ⭐⭐⭐⭐⭐ |
++| RAII 思想 | lock_guard 自动解锁 | ⭐⭐⭐⭐⭐ |
++| `unordered_map` 哈希表 | 灯态缓存 | ⭐⭐⭐⭐ |
++| 智能指针/unique_ptr | 工厂类管理 detector | ⭐⭐⭐⭐ |
++| 模板与泛型 | Singleton<T> 模板基类 | ⭐⭐⭐⭐ |
++| 异常处理 | JSON 解析 try-catch | ⭐⭐⭐ |
++| 移动语义 | emplace_back | ⭐⭐⭐⭐ |
++| 发布-订阅架构 | DDS 通信 | ⭐⭐⭐ |
++| 生产者-消费者 | BlockingQueue | ⭐⭐⭐⭐ |
++| `static_cast` 类型转换 | void* 转 char* | ⭐⭐⭐ |
++
++---
++
++## 八、还可以深入学习的方向
++
++1. **自己手写一个线程安全单例**（不用现成基类），理解双重检查锁（DCL）
++2. **学习 `unique_lock`**，对比 `lock_guard` 的灵活性（可中途解锁、配合条件变量）
++3. **了解条件变量 `condition_variable`**，BlockingQueue 内部就是用它实现阻塞等待的
++4. **学 gtest 单元测试框架**，把现在的 main 函数自测升级为规范的单元测试
++5. **理解动态库加载原理**，`dlopen`/`dlsym` 是怎么实现插件化的
++6. **了解无锁编程**，比如原子操作 `std::atomic`，看看能不能替代锁
++
++---
++
++*整理时间：2026年8月*
++
++*记住：面试不是背答案，是讲清楚"我做了什么、为什么这么做、还能怎么优化"。*
+

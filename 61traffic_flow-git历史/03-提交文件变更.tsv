@@ -1,0 +1,846 @@
+commit	date	author	subject	added	deleted	file
+5af1c7fe5bc753b6da79fa706d2fa26961cd6346	2026-09-16	fengxin	（config）配置+打包	1	1	CMakeLists.txt
+5af1c7fe5bc753b6da79fa706d2fa26961cd6346	2026-09-16	fengxin	（config）配置+打包	4	4	README.md
+5af1c7fe5bc753b6da79fa706d2fa26961cd6346	2026-09-16	fengxin	（config）配置+打包	2	2	config/{traffic_flow => }/traffic_flow_config.json
+5af1c7fe5bc753b6da79fa706d2fa26961cd6346	2026-09-16	fengxin	（config）配置+打包	62	0	config/traffic_flow_service.json
+5af1c7fe5bc753b6da79fa706d2fa26961cd6346	2026-09-16	fengxin	（config）配置+打包	1	11	docker-compose.yaml
+5af1c7fe5bc753b6da79fa706d2fa26961cd6346	2026-09-16	fengxin	（config）配置+打包	142	0	package.sh
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	3	2	src/common/config.h
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	3	3	src/traffic_flow/detectors/accumulate_avg_stop_times_detector.cpp
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	1	1	src/traffic_flow/detectors/accumulate_avg_stop_times_detector.h
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	4	4	src/traffic_flow/detectors/accumulate_delay_detector.cpp
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	2	2	src/traffic_flow/detectors/accumulate_delay_detector.h
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	7	7	src/traffic_flow/detectors/accumulate_headway_detector.cpp
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	2	2	src/traffic_flow/detectors/accumulate_headway_distance_detector.cpp
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	1	1	src/traffic_flow/detectors/accumulate_headway_distance_detector.h
+1f4b51673fa9804910208b2fc12fdd968af363a4	2026-09-16	fengxin	（fix）增加BranchType，修改BranchID，去哨兵值-1	15	27	src/traffic_flow/traffic_flow_factory.cpp
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	2	0	.gitignore
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	6	12	CMakeLists.txt
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	5	16	Dockerfile
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	85	0	README.md
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	36	0	config/traffic_flow/traffic_flow_config.json
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	1	1	config/traffic_flow/traffic_flow_service.json
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	38	2	doc/traffic_flow_config.md
+f39d8df78b2c37cc9e6edd701ef13c9a75e3b852	2026-09-14	fengxin	（config）配置文件更新	8	5	docker-compose.yaml
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	28	0	src/common/config.cpp
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	36	0	src/common/config.h
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	40	9	src/traffic_flow/detectors/accumulate_avg_stop_times_detector.cpp
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	13	3	src/traffic_flow/detectors/accumulate_avg_stop_times_detector.h
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	128	0	src/traffic_flow/detectors/accumulate_delay_detector.cpp
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	54	0	src/traffic_flow/detectors/accumulate_delay_detector.h
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	9	45	src/traffic_flow/detectors/accumulate_headway_distance_detector.cpp
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	4	5	src/traffic_flow/detectors/accumulate_headway_distance_detector.h
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	110	0	src/traffic_flow/detectors/accumulate_occupancy_detector.cpp
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	49	0	src/traffic_flow/detectors/accumulate_occupancy_detector.h
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	87	0	src/traffic_flow/detectors/lane_axis_frame.h
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	8	0	src/traffic_flow/traffic_flow_detector.h
+8431fb18e4ffc13f5f80e22018cb0a8ce4c13291	2026-09-14	fengxin	（feat）增加延误时间、时空占有率3个指标，修改车头间距+平均停车次数，输出精度统一	69	5	src/traffic_flow/traffic_flow_factory.cpp
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	14	0	src/common/config.cpp
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	14	0	src/common/config.h
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	1	0	src/common/track_info.h
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	109	0	src/traffic_flow/detectors/accumulate_avg_stop_times_detector.cpp
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	46	0	src/traffic_flow/detectors/accumulate_avg_stop_times_detector.h
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	7	4	src/traffic_flow/detectors/accumulate_headway_detector.cpp
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	135	0	src/traffic_flow/detectors/accumulate_headway_distance_detector.cpp
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	39	0	src/traffic_flow/detectors/accumulate_headway_distance_detector.h
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	6	16	src/traffic_flow/detectors/accumulate_queue_detector.cpp
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	0	3	src/traffic_flow/detectors/accumulate_queue_detector.h
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	1	14	src/traffic_flow/detectors/accumulate_volume_detector.cpp
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	0	2	src/traffic_flow/detectors/accumulate_volume_detector.h
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	22	3	src/traffic_flow/traffic_flow_detector.h
+7ee24a506718568eb366a10eb85734a855d58582	2026-09-14	fengxin	（feat）增加了平均停车次数和车头间距两个指标，对分支级增加了BranchType字段表示进道口还是出道口，增加了停车规则，统一了排队和流量的自然数和当量数的转换规则。	46	1	src/traffic_flow/traffic_flow_factory.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	1	2	config/traffic_flow/lane_info_212.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	0	328	config/traffic_flow/lane_info_289.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	9	3	config/traffic_flow/traffic_flow_config.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	0	17	config/traffic_flow/traffic_flow_config_5m.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	0	8	config/traffic_flow/traffic_flow_config_5s.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	0	9	config/traffic_flow/traffic_flow_config_new.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	7	7	config/traffic_flow/traffic_flow_service.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	0	49	config/traffic_flow/traffic_flow_service_5m.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	0	49	config/traffic_flow/traffic_flow_service_5s.json
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	319	0	script/gen_aligned_signal.py
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	690	0	script/save_to_csv.py
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	10	0	src/traffic_flow/detectors/accumulate_detector_impl.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	201	0	src/traffic_flow/detectors/accumulate_waste_time_detector.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	70	0	src/traffic_flow/detectors/accumulate_waste_time_detector.h
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	48	0	src/traffic_flow/detectors/waste_time_average_detector.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	32	0	src/traffic_flow/detectors/waste_time_average_detector.h
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	6	4	src/traffic_flow/signal_phase_manager.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	1	0	src/traffic_flow/signal_phase_manager.h
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	9	0	src/traffic_flow/spatial_aggregator.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	9	0	src/traffic_flow/traffic_flow_detector.h
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	85	1	src/traffic_flow/traffic_flow_factory.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	8	1	src/traffic_flow/traffic_flow_factory.h
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	61	0	src/traffic_flow/waste_time_cycle_store.cpp
+57db1ff4dc18a2de03d1a94967377d2e975e1670	2026-09-10	fengwenxi	add waste_time calculation	47	0	src/traffic_flow/waste_time_cycle_store.h
+500bc4a7d884444962851d4b604bad15cc0ae4a6	2026-09-09	fengxin	（fix）增加信号灯相关的枚举和方法，为后续指标留下每个路口相位灯态查询接口	51	4	src/traffic_flow/signal_phase_manager.cpp
+500bc4a7d884444962851d4b604bad15cc0ae4a6	2026-09-09	fengxin	（fix）增加信号灯相关的枚举和方法，为后续指标留下每个路口相位灯态查询接口	63	3	src/traffic_flow/signal_phase_manager.h
+c2327c77ead5c96bb747dfd4995403161a4b7a0a	2026-09-09	fengxin	（fix）修复左右转流向的数据给反+流向级不输出排队数量+配置更新	360	127	config/traffic_flow/lane_info_212.json
+c2327c77ead5c96bb747dfd4995403161a4b7a0a	2026-09-09	fengxin	（fix）修复左右转流向的数据给反+流向级不输出排队数量+配置更新	5	1	config/traffic_flow/traffic_flow_config.json
+c2327c77ead5c96bb747dfd4995403161a4b7a0a	2026-09-09	fengxin	（fix）修复左右转流向的数据给反+流向级不输出排队数量+配置更新	4	2	src/traffic_flow/spatial_aggregator.cpp
+c2327c77ead5c96bb747dfd4995403161a4b7a0a	2026-09-09	fengxin	（fix）修复左右转流向的数据给反+流向级不输出排队数量+配置更新	0	2	src/traffic_flow/traffic_flow_factory.cpp
+e8680840629e4d00456c890371e7c52987f560ce	2026-09-09	fengxin	（fix）行人/非机动车过街数门限控制，帧数和速度需要满足阈值，加入到配置项	32	16	src/common/config.cpp
+e8680840629e4d00456c890371e7c52987f560ce	2026-09-09	fengxin	（fix）行人/非机动车过街数门限控制，帧数和速度需要满足阈值，加入到配置项	13	0	src/common/config.h
+e8680840629e4d00456c890371e7c52987f560ce	2026-09-09	fengxin	（fix）行人/非机动车过街数门限控制，帧数和速度需要满足阈值，加入到配置项	42	12	src/traffic_flow/detectors/accumulate_crosswalk_detector.cpp
+e8680840629e4d00456c890371e7c52987f560ce	2026-09-09	fengxin	（fix）行人/非机动车过街数门限控制，帧数和速度需要满足阈值，加入到配置项	16	4	src/traffic_flow/detectors/accumulate_crosswalk_detector.h
+e8680840629e4d00456c890371e7c52987f560ce	2026-09-09	fengxin	（fix）行人/非机动车过街数门限控制，帧数和速度需要满足阈值，加入到配置项	29	20	src/traffic_flow/signal_phase_manager.cpp
+e8680840629e4d00456c890371e7c52987f560ce	2026-09-09	fengxin	（fix）行人/非机动车过街数门限控制，帧数和速度需要满足阈值，加入到配置项	23	4	src/traffic_flow/signal_phase_manager.h
+e8680840629e4d00456c890371e7c52987f560ce	2026-09-09	fengxin	（fix）行人/非机动车过街数门限控制，帧数和速度需要满足阈值，加入到配置项	6	1	src/traffic_flow/traffic_flow_factory.cpp
+997de52baf8a3dc39ef3bbff5a5deb2a403094fc	2026-09-08	fengxin	（fix）修复排队指标中排队规则中一个车身的计算	2	1	src/common/config.h
+997de52baf8a3dc39ef3bbff5a5deb2a403094fc	2026-09-08	fengxin	（fix）修复排队指标中排队规则中一个车身的计算	29	9	src/traffic_flow/detectors/accumulate_queue_detector.cpp
+997de52baf8a3dc39ef3bbff5a5deb2a403094fc	2026-09-08	fengxin	（fix）修复排队指标中排队规则中一个车身的计算	4	3	src/traffic_flow/traffic_flow_factory.cpp
+692b8e1f58e1d198a58970498652eef8640cf06f	2026-09-08	fengxin	（config）配置文件变更	71	23	config/traffic_flow/lane_info_212.json
+692b8e1f58e1d198a58970498652eef8640cf06f	2026-09-08	fengxin	（config）配置文件变更	19	1	config/traffic_flow/traffic_flow_config.json
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	30	58	src/common/config.cpp
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	18	10	src/common/config.h
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	0	5	src/traffic_flow/detectors/accumulate_headway_detector.cpp
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	0	8	src/traffic_flow/detectors/accumulate_headway_detector.h
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	27	60	src/traffic_flow/signal_phase_manager.cpp
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	11	21	src/traffic_flow/signal_phase_manager.h
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	0	3	src/traffic_flow/traffic_flow_detector.h
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	37	24	src/traffic_flow/traffic_flow_factory.cpp
+0e6486b12ab4c31e333a969c5ab1bcd37ea58030	2026-09-08	fengxin	（fix）信号周期级去模拟化+headway检测去掉信号灯门控+time_align时间对齐	65	19	src/traffic_flow/traffic_flow_factory.h
+0f2937a37f4790979ef2fac85ec2bb6bd71cc460	2026-09-08	fengxin	（fix）排队规则可配置+连续排队判定	14	2	doc/traffic_flow_config.md
+0f2937a37f4790979ef2fac85ec2bb6bd71cc460	2026-09-08	fengxin	（fix）排队规则可配置+连续排队判定	8	5	src/traffic_flow/detectors/accumulate_overflow_detector.cpp
+0f2937a37f4790979ef2fac85ec2bb6bd71cc460	2026-09-08	fengxin	（fix）排队规则可配置+连续排队判定	3	4	src/traffic_flow/detectors/accumulate_overflow_detector.h
+0f2937a37f4790979ef2fac85ec2bb6bd71cc460	2026-09-08	fengxin	（fix）排队规则可配置+连续排队判定	35	11	src/traffic_flow/detectors/accumulate_queue_detector.cpp
+0f2937a37f4790979ef2fac85ec2bb6bd71cc460	2026-09-08	fengxin	（fix）排队规则可配置+连续排队判定	3	3	src/traffic_flow/detectors/accumulate_queue_detector.h
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	22	20	src/common/config.cpp
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	3	6	src/common/config.h
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	1	1	src/traffic_flow/detectors/accumulate_crosswalk_detector.cpp
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	89	0	src/traffic_flow/detectors/accumulate_overflow_detector.cpp
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	38	0	src/traffic_flow/detectors/accumulate_overflow_detector.h
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	0	1	src/traffic_flow/detectors/accumulate_queue_detector.h
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	3	0	src/traffic_flow/traffic_flow_detector.h
+a686703b63e1b9f41b055af2be470cac2deb5537	2026-09-07	fengxin	（feat）增加溢流告警、溢流预警、溢流死锁指标，NodeID / UpstreamCrossID 取真值，删除CrosswalkInfo中无用的字段	15	10	src/traffic_flow/traffic_flow_factory.cpp
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	3	56	src/common/config.cpp
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	4	18	src/common/config.h
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	34	21	src/traffic_flow/detectors/accumulate_volume_detector.cpp
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	3	2	src/traffic_flow/detectors/accumulate_volume_detector.h
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	46	4	src/traffic_flow/detectors/stop_line_crossing_helper.cpp
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	8	1	src/traffic_flow/detectors/stop_line_crossing_helper.h
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	21	2	src/traffic_flow/spatial_aggregator.cpp
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	29	29	src/traffic_flow/traffic_flow_detector.h
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	82	91	src/traffic_flow/traffic_flow_factory.cpp
+90982e3588c3f0a09dc389fbdc42385a6a66aa7b	2026-09-07	fengxin	（fix）输出周期栅格化+spatial_output 升到通道级+Volume1~5 分型计数+流向分摊取整	40	19	src/traffic_flow/traffic_flow_factory.h
+9cead146b765c652205e4f15bdbbce3e5988e7fa	2026-09-07	fengxin	（feat）新增行人/非机动车过街检测、平均速度指标	50	0	src/traffic_flow/detectors/accumulate_crosswalk_detector.cpp
+9cead146b765c652205e4f15bdbbce3e5988e7fa	2026-09-07	fengxin	（feat）新增行人/非机动车过街检测、平均速度指标	28	0	src/traffic_flow/detectors/accumulate_crosswalk_detector.h
+9cead146b765c652205e4f15bdbbce3e5988e7fa	2026-09-07	fengxin	（feat）新增行人/非机动车过街检测、平均速度指标	49	0	src/traffic_flow/detectors/accumulate_speed_detector.cpp
+9cead146b765c652205e4f15bdbbce3e5988e7fa	2026-09-07	fengxin	（feat）新增行人/非机动车过街检测、平均速度指标	24	0	src/traffic_flow/detectors/accumulate_speed_detector.h
+0b885c644836a3844e8c3b0c832a77a250568dd6	2026-09-07	fengxin	（config） 修改配置文件	221	49	config/traffic_flow/lane_info_212.json
+0b885c644836a3844e8c3b0c832a77a250568dd6	2026-09-07	fengxin	（config） 修改配置文件	28	24	config/traffic_flow/traffic_flow_config.json
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	62	src/traffic_flow/detector_type.h
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	194	src/traffic_flow/detectors/headway_detector.cpp
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	48	src/traffic_flow/detectors/headway_detector.h
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	186	src/traffic_flow/detectors/occupancy_detector.cpp
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	44	src/traffic_flow/detectors/occupancy_detector.h
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	160	src/traffic_flow/detectors/queue_detector.cpp
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	48	src/traffic_flow/detectors/queue_detector.h
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	197	src/traffic_flow/detectors/volume_detector.cpp
+363332fd05bac72aab45dba2ed48f600d52f6c2d	2026-09-07	fengxin	（del）删除旧架构的文件	0	56	src/traffic_flow/detectors/volume_detector.h
+6550dc13dff4b6f9bf8457aff14d4b6e8c2a22d3	2026-09-04	sunboxue	车头时距 增加信号级周期 1s级周期 5分钟周期	44	4	src/traffic_flow/detectors/accumulate_headway_detector.cpp
+6550dc13dff4b6f9bf8457aff14d4b6e8c2a22d3	2026-09-04	sunboxue	车头时距 增加信号级周期 1s级周期 5分钟周期	13	1	src/traffic_flow/detectors/accumulate_headway_detector.h
+6550dc13dff4b6f9bf8457aff14d4b6e8c2a22d3	2026-09-04	sunboxue	车头时距 增加信号级周期 1s级周期 5分钟周期	2	0	src/traffic_flow/signal_phase_manager.h
+6550dc13dff4b6f9bf8457aff14d4b6e8c2a22d3	2026-09-04	sunboxue	车头时距 增加信号级周期 1s级周期 5分钟周期	11	3	src/traffic_flow/traffic_flow_factory.cpp
+eb14716dc6287385e20d3118286b2194954ba098	2026-09-03	root	feat: 新增车头时距检测器，接入OutputChannel统一管道架构	1	0	CMakeLists.txt
+eb14716dc6287385e20d3118286b2194954ba098	2026-09-03	root	feat: 新增车头时距检测器，接入OutputChannel统一管道架构	66	0	src/traffic_flow/detectors/accumulate_headway_detector.cpp
+eb14716dc6287385e20d3118286b2194954ba098	2026-09-03	root	feat: 新增车头时距检测器，接入OutputChannel统一管道架构	37	0	src/traffic_flow/detectors/accumulate_headway_detector.h
+eb14716dc6287385e20d3118286b2194954ba098	2026-09-03	root	feat: 新增车头时距检测器，接入OutputChannel统一管道架构	6	0	src/traffic_flow/traffic_flow_factory.cpp
+eb14716dc6287385e20d3118286b2194954ba098	2026-09-03	root	feat: 新增车头时距检测器，接入OutputChannel统一管道架构	2	0	src/traffic_flow/traffic_flow_factory.h
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	15	0	config/traffic_flow/traffic_flow_config.json
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	14	1	config/traffic_flow/traffic_flow_service.json
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	6	0	src/common/config.cpp
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	2	0	src/common/config.h
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	12	0	src/plugin/traffic_flow_service_impl.cpp
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	29	24	src/traffic_flow/detectors/{snapshot_queue_detector.cpp => accumulate_queue_detector.cpp}
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	10	8	src/traffic_flow/detectors/{snapshot_queue_detector.h => accumulate_queue_detector.h}
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	0	47	src/traffic_flow/detectors/snapshot_volume_detector.cpp
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	0	29	src/traffic_flow/detectors/snapshot_volume_detector.h
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	30	0	src/traffic_flow/signal_phase_manager.cpp
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	11	0	src/traffic_flow/signal_phase_manager.h
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	6	6	src/traffic_flow/spatial_aggregator.cpp
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	0	14	src/traffic_flow/traffic_flow_detector.h
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	103	198	src/traffic_flow/traffic_flow_factory.cpp
+95eed779e67e850f80cdfc36f8b4019c85f1244b	2026-09-03	fengxin	OutputChannel 统一架构重构 + 信号灯周期级支持（信号灯真实链路+模拟信号灯周期触发） + Bug 修复	34	18	src/traffic_flow/traffic_flow_factory.h
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	1	1	CMakeLists.txt
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	14	0	config/traffic_flow/traffic_flow_service_5m.json
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	13	0	config/traffic_flow/traffic_flow_service_5s.json
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	69	0	src/common/signal_phase_data.cpp
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	51	0	src/common/signal_phase_data.h
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	50	0	src/common/signal_phase_manager.cpp
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	35	0	src/common/signal_phase_manager.h
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	18	0	src/plugin/traffic_flow_service_impl.cpp
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	2	1	src/plugin/traffic_flow_service_impl.h
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	40	0	src/traffic_flow/traffic_flow_factory.cpp
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	-	-	test_signal
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	178	0	test_signal.cpp
+61ca92669509725caa6115a78d6d676b29615b88	2026-09-02	root	备份之前做的信号机 后来不让我做了	509	0	信号灯接入模块学习笔记.md
+05f02197dd51b3130c6dd5cb0f443f1f8bceb8ff	2026-09-01	fengxin	新增交通流量配置文件和文档	134	0	config/traffic_flow/lane_info_212.json
+05f02197dd51b3130c6dd5cb0f443f1f8bceb8ff	2026-09-01	fengxin	新增交通流量配置文件和文档	44	0	config/traffic_flow/lane_info_289.json
+05f02197dd51b3130c6dd5cb0f443f1f8bceb8ff	2026-09-01	fengxin	新增交通流量配置文件和文档	45	0	config/traffic_flow/traffic_flow_config.json
+05f02197dd51b3130c6dd5cb0f443f1f8bceb8ff	2026-09-01	fengxin	新增交通流量配置文件和文档	12	3	config/traffic_flow/traffic_flow_config_5m.json
+05f02197dd51b3130c6dd5cb0f443f1f8bceb8ff	2026-09-01	fengxin	新增交通流量配置文件和文档	49	0	config/traffic_flow/traffic_flow_service.json
+05f02197dd51b3130c6dd5cb0f443f1f8bceb8ff	2026-09-01	fengxin	新增交通流量配置文件和文档	63	0	doc/交通流指标统一需求定义表_V4.md
+05f02197dd51b3130c6dd5cb0f443f1f8bceb8ff	2026-09-01	fengxin	新增交通流量配置文件和文档	86	0	doc/输出协议.md
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	21	0	src/plugin/traffic_flow_service_impl.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	1	0	src/plugin/traffic_flow_service_impl.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	64	0	src/traffic_flow/detectors/accumulate_volume_detector.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	36	0	src/traffic_flow/detectors/accumulate_volume_detector.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	138	0	src/traffic_flow/detectors/snapshot_queue_detector.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	36	0	src/traffic_flow/detectors/snapshot_queue_detector.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	47	0	src/traffic_flow/detectors/snapshot_volume_detector.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	29	0	src/traffic_flow/detectors/snapshot_volume_detector.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	48	0	src/traffic_flow/detectors/stop_line_crossing_helper.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	31	0	src/traffic_flow/detectors/stop_line_crossing_helper.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	81	0	src/traffic_flow/signal_phase_manager.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	44	0	src/traffic_flow/signal_phase_manager.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	156	0	src/traffic_flow/spatial_aggregator.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	41	0	src/traffic_flow/spatial_aggregator.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	28	0	src/traffic_flow/traffic_flow_detector.h
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	291	126	src/traffic_flow/traffic_flow_factory.cpp
+f7591c0888b6639afebe3e14b03980676b898445	2026-09-01	fengxin	新增快照/累积检测器框架，重构工厂为双管道架构	36	11	src/traffic_flow/traffic_flow_factory.h
+50bee12f202e76337818a3b2794c740fa1f64cfd	2026-09-01	fengxin	重构配置解析系统和构建脚本	10	0	CMakeLists.txt
+50bee12f202e76337818a3b2794c740fa1f64cfd	2026-09-01	fengxin	重构配置解析系统和构建脚本	8	4	build.sh
+50bee12f202e76337818a3b2794c740fa1f64cfd	2026-09-01	fengxin	重构配置解析系统和构建脚本	217	15	src/common/config.cpp
+50bee12f202e76337818a3b2794c740fa1f64cfd	2026-09-01	fengxin	重构配置解析系统和构建脚本	59	7	src/common/config.h
+50bee12f202e76337818a3b2794c740fa1f64cfd	2026-09-01	fengxin	重构配置解析系统和构建脚本	1	1	src/traffic_flow/detectors/occupancy_detector.cpp
+ade3ee77197d2fe198c372ae1da374af73cdfd56	2026-08-20	fengwenxi	add example config	9	0	config/traffic_flow/traffic_flow_config_new.json
+ee4907df81b457069d24d8f26e492071ecfa10df	2026-08-18	fengwenxi	add timestamp disorder warning & update packing method	1	0	.gitignore
+ee4907df81b457069d24d8f26e492071ecfa10df	2026-08-18	fengwenxi	add timestamp disorder warning & update packing method	6	22	CMakeLists.txt
+ee4907df81b457069d24d8f26e492071ecfa10df	2026-08-18	fengwenxi	add timestamp disorder warning & update packing method	10	9	Dockerfile
+ee4907df81b457069d24d8f26e492071ecfa10df	2026-08-18	fengwenxi	add timestamp disorder warning & update packing method	-	-	fusion_service_1.0.2.0.tar.gz => dependency/FusionService
+ee4907df81b457069d24d8f26e492071ecfa10df	2026-08-18	fengwenxi	add timestamp disorder warning & update packing method	-	-	doc/TrafficFlow.vsdx
+ee4907df81b457069d24d8f26e492071ecfa10df	2026-08-18	fengwenxi	add timestamp disorder warning & update packing method	4	4	docker-compose.yaml
+ee4907df81b457069d24d8f26e492071ecfa10df	2026-08-18	fengwenxi	add timestamp disorder warning & update packing method	7	2	src/traffic_flow/traffic_flow_factory.cpp
+db308585d5fbef5fceded62d06e9b9045e5abdfa	2026-03-16	fengwenxi	change CMakeLists for document export	4	4	CMakeLists.txt
+a123a93316b19109d18ff4579d4646de88b367a1	2026-03-11	fengwenxi	update documents	-	-	doc/FusionFlow交通流量ROI绘制说明.pdf
+a123a93316b19109d18ff4579d4646de88b367a1	2026-03-11	fengwenxi	update documents	48	0	doc/traffic_flow_config.md
+a123a93316b19109d18ff4579d4646de88b367a1	2026-03-11	fengwenxi	update documents	-	-	doc/交通流量模块配置说明.pdf
+a123a93316b19109d18ff4579d4646de88b367a1	2026-03-11	fengwenxi	update documents	-	-	doc/基于视频图像的交通流量区域绘制说明.docx
+43a0b08f89eca68e92e3a7c8b85be1817b1ede09	2026-03-09	fengwenxi	update docker related & config	20	5	Dockerfile
+43a0b08f89eca68e92e3a7c8b85be1817b1ede09	2026-03-09	fengwenxi	update docker related & config	0	0	config/{ => traffic_flow}/lane_info_289.json
+43a0b08f89eca68e92e3a7c8b85be1817b1ede09	2026-03-09	fengwenxi	update docker related & config	1	1	config/{ => traffic_flow}/traffic_flow_config_5m.json
+43a0b08f89eca68e92e3a7c8b85be1817b1ede09	2026-03-09	fengwenxi	update docker related & config	1	1	config/{ => traffic_flow}/traffic_flow_config_5s.json
+43a0b08f89eca68e92e3a7c8b85be1817b1ede09	2026-03-09	fengwenxi	update docker related & config	13	6	config/{ => traffic_flow}/traffic_flow_service_5m.json
+43a0b08f89eca68e92e3a7c8b85be1817b1ede09	2026-03-09	fengwenxi	update docker related & config	13	6	config/{ => traffic_flow}/traffic_flow_service_5s.json
+43a0b08f89eca68e92e3a7c8b85be1817b1ede09	2026-03-09	fengwenxi	update docker related & config	20	0	docker-compose.yaml
+0c764ea2ef5bd50c433920b91e70cd25910078c0	2026-03-04	fengwenxi	update release.sh	1	1	release.sh
+8f59afa7f3bb3eabc6ef6207bb65f635ae262c6f	2026-03-04	fengwenxi	update release.sh	1	0	release.sh
+7d52ed912d4d5d4e837c537aff8c95fa6ba09f8b	2026-03-04	fengwenxi	change CI/CD	1	1	CMakeLists.txt
+7d52ed912d4d5d4e837c537aff8c95fa6ba09f8b	2026-03-04	fengwenxi	change CI/CD	1	1	build.sh
+7d52ed912d4d5d4e837c537aff8c95fa6ba09f8b	2026-03-04	fengwenxi	change CI/CD	0	0	release.sh
+ac7f1478eeba1dc16e6d613af3458784ef68ad01	2026-03-04	fengwenxi	update build.sh	1	1	build.sh
+d0e733ac77df9e9bd30b2fdee2628baefe17f366	2026-03-04	fengwenxi	add CI/CD	10	0	Dockerfile
+d0e733ac77df9e9bd30b2fdee2628baefe17f366	2026-03-04	fengwenxi	add CI/CD	-	-	fusion_service_1.0.2.0.tar.gz
+d0e733ac77df9e9bd30b2fdee2628baefe17f366	2026-03-04	fengwenxi	add CI/CD	1	0	imagename.txt
+d0e733ac77df9e9bd30b2fdee2628baefe17f366	2026-03-04	fengwenxi	add CI/CD	4	0	release.sh
+0ad54582ca4c3e749e25a470bad226927fe8ee26	2026-03-04	fengwenxi	add build.sh	86	0	release_bak.sh
+bf31a51357fe043f4afea4eb0cf71209afc84729	2026-03-04	fengwenxi	add build.sh	2	2	CMakeLists.txt
+bf31a51357fe043f4afea4eb0cf71209afc84729	2026-03-04	fengwenxi	add build.sh	24	0	build.sh
+bf31a51357fe043f4afea4eb0cf71209afc84729	2026-03-04	fengwenxi	add build.sh	2	0	release.sh
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	502	0	,gitlab-ci.yml
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	17	1	CMakeLists.txt
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	284	0	config/lane_info_289.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	44	config/test_lanes.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	8	config/traffic_flow_config.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	8	0	config/traffic_flow_config_5m.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	8	0	config/traffic_flow_config_5s.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	49	config/traffic_flow_service.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	42	0	config/traffic_flow_service_5m.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	42	0	config/traffic_flow_service_5s.json
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	-	-	doc/TrafficFlow.vsdx
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/BlockingQueue.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Condition.cc
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Condition.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Copyable.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/CurrentThread.cc
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/CurrentThread.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/License
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Mutex.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Noncopyable.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Singleton.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Timestamp.cc
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	0	src/base/Timestamp.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	2	0	src/common/perception_data.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	1	0	src/common/track_info.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	9	2	src/traffic_flow/detectors/headway_detector.cpp
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	2	1	src/traffic_flow/detectors/headway_detector.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	0	1	src/traffic_flow/detectors/queue_detector.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	32	10	src/traffic_flow/detectors/volume_detector.cpp
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	3	0	src/traffic_flow/detectors/volume_detector.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	4	2	src/traffic_flow/traffic_flow_detector.h
+d65d691c9f0eb9267b9d3ea724771f22dbc68240	2026-03-04	fengwenxi	add stop& delay	31	23	src/traffic_flow/traffic_flow_factory.cpp
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	17	1	tool/FusionFlow/traffic_flow_entry_page.py
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	65	0	tool/FusionFlowFluent/app/common/config.py
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	-	-	tool/FusionFlowFluent/app/resource/i18n/gallery.zh_CN.qm
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	1811	0	tool/FusionFlowFluent/app/resource/i18n/gallery.zh_CN.ts
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	-	-	tool/FusionFlowFluent/app/resource/i18n/gallery.zh_HK.qm
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	1811	0	tool/FusionFlowFluent/app/resource/i18n/gallery.zh_HK.ts
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	157	0	tool/FusionFlowFluent/app/view/main_window.py
+75f62289eacdc152b0d1f1c26eadd25b2e918e6a	2025-10-23	fengwenxi	FusionFlow:fix export json bug& init FusionFlowFluent	36	0	tool/FusionFlowFluent/fusion_flow.py
+4f73eaa6576995227b3b55702ec3dd985db94e95	2025-10-21	fengwenxi	fix Fusion Flow file open sequence bug	8	1	tool/FusionFlow/draw_roi_page.py
+f3791112c850bb73fed71d66be7ff5be0584a4b2	2025-10-21	fengwenxi	delete backup file	0	1382	tool/FusionFlow/draw_roi_page_bak.py
+73d987ebd93357b95d1f3f76d23d1dfc20dedcaf	2025-10-17	fengwenxi	add export&import	1	0	tool/FusionFlow/draw_roi_page.py
+73d987ebd93357b95d1f3f76d23d1dfc20dedcaf	2025-10-17	fengwenxi	add export&import	1	0	tool/FusionFlow/material/import.svg
+73d987ebd93357b95d1f3f76d23d1dfc20dedcaf	2025-10-17	fengwenxi	add export&import	230	53	tool/FusionFlow/traffic_flow_entry_page.py
+5cf2cb528941a23215a33f455a9daa21a98f205f	2025-10-16	fengwenxi	add debug	2	1	src/traffic_flow/traffic_flow_factory.cpp
+efbc4aca7d692008b6eb9107d6dd387cfb57412e	2025-10-16	fengwenxi	add debug print	2	2	src/traffic_flow/detectors/queue_detector.cpp
+efbc4aca7d692008b6eb9107d6dd387cfb57412e	2025-10-16	fengwenxi	add debug print	26	11	src/traffic_flow/traffic_flow_factory.cpp
+ebbd4d7ce2bbe7b3a08e056b977195ba22cdee38	2025-10-14	fengwenxi	add fisheye & solve problem with file  path in chinese	153	305	tool/FusionFlow/draw_roi_page.py
+ebbd4d7ce2bbe7b3a08e056b977195ba22cdee38	2025-10-14	fengwenxi	add fisheye & solve problem with file  path in chinese	80	20	tool/FusionFlow/pixel2wgs84.py
+ebbd4d7ce2bbe7b3a08e056b977195ba22cdee38	2025-10-14	fengwenxi	add fisheye & solve problem with file  path in chinese	12	7	tool/FusionFlow/traffic_flow_entry_page.py
+5f38e92b7ca50d62977da6e5031810177b1ca5b9	2025-10-13	fengwenxi	code optimization	5	153	tool/FusionFlow/draw_roi_page.py
+0b7376a4579198ecf8ebdefa327bf36d2731df6b	2025-10-11	ThorfromAsgard	update FusionFlow Tool	360	225	tool/FusionFlow/draw_roi_page.py
+0b7376a4579198ecf8ebdefa327bf36d2731df6b	2025-10-11	ThorfromAsgard	update FusionFlow Tool	1382	0	tool/FusionFlow/draw_roi_page_bak.py
+e3422911d52881f04a76fa7bd6af63fe2c9a3ebc	2025-10-10	ThorfromAsgard	add gitignore	7	1	.gitignore
+cbeecefd6c4420b0f0d5cfa361e818c1f580860b	2025-10-10	fengwenxi	optimize code	360	431	tool/FusionFlow/draw_roi_page.py
+cbeecefd6c4420b0f0d5cfa361e818c1f580860b	2025-10-10	fengwenxi	optimize code	8	69	tool/FusionFlow/traffic_flow_entry_page.py
+cf1ced593fd97816c97f2f3f34fea06a3dc9a8f4	2025-10-09	fengwenxi	optimizztion	139	0	tool/FusionFlow/Trajectory_test.py
+cf1ced593fd97816c97f2f3f34fea06a3dc9a8f4	2025-10-09	fengwenxi	optimizztion	28	13	tool/FusionFlow/draw_roi_page.py
+cf1ced593fd97816c97f2f3f34fea06a3dc9a8f4	2025-10-09	fengwenxi	optimizztion	0	1	tool/FusionFlow/fusion_flow.py
+cf1ced593fd97816c97f2f3f34fea06a3dc9a8f4	2025-10-09	fengwenxi	optimizztion	6	15	tool/FusionFlow/main_page.py
+cf1ced593fd97816c97f2f3f34fea06a3dc9a8f4	2025-10-09	fengwenxi	optimizztion	123	141	tool/FusionFlow/traffic_flow_entry_page.py
+cf1ced593fd97816c97f2f3f34fea06a3dc9a8f4	2025-10-09	fengwenxi	optimizztion	9	0	tool/FusionFlow/util.py
+045c59d0397bd1251ba0c9ef9a08315a011da295	2025-09-30	fengwenxi	fix fusion flow tool  material path	20	23	tool/FusionFlow/main_page.py
+045c59d0397bd1251ba0c9ef9a08315a011da295	2025-09-30	fengwenxi	fix fusion flow tool  material path	15	18	tool/FusionFlow/traffic_flow_entry_page.py
+033567b360a2174c11df7707cd2c67a754ed71e2	2025-09-22	fengwenxi	fix bug	20	4	tool/FusionFlow/draw_roi_page.py
+033567b360a2174c11df7707cd2c67a754ed71e2	2025-09-22	fengwenxi	fix bug	64	10	tool/FusionFlow/main_page.py
+033567b360a2174c11df7707cd2c67a754ed71e2	2025-09-22	fengwenxi	fix bug	-	-	tool/FusionFlow/material/LOGO.icns
+033567b360a2174c11df7707cd2c67a754ed71e2	2025-09-22	fengwenxi	fix bug	-	-	tool/FusionFlow/material/LOGO.ico
+033567b360a2174c11df7707cd2c67a754ed71e2	2025-09-22	fengwenxi	fix bug	1404	0	tool/FusionFlow/material/LOGO.svg
+033567b360a2174c11df7707cd2c67a754ed71e2	2025-09-22	fengwenxi	fix bug	13	4	tool/FusionFlow/traffic_flow_entry_page.py
+507da2e3fb6e08c5657850bb1010a2ec6b655042	2025-09-18	fengwenxi	feature: FusionFlow tool	1287	0	tool/FusionFlow/draw_roi_page.py
+507da2e3fb6e08c5657850bb1010a2ec6b655042	2025-09-18	fengwenxi	feature: FusionFlow tool	12	0	tool/FusionFlow/fusion_flow.py
+507da2e3fb6e08c5657850bb1010a2ec6b655042	2025-09-18	fengwenxi	feature: FusionFlow tool	63	0	tool/FusionFlow/main_page.py
+507da2e3fb6e08c5657850bb1010a2ec6b655042	2025-09-18	fengwenxi	feature: FusionFlow tool	1	0	tool/FusionFlow/material/delete.svg
+507da2e3fb6e08c5657850bb1010a2ec6b655042	2025-09-18	fengwenxi	feature: FusionFlow tool	1	0	tool/FusionFlow/material/save.svg
+507da2e3fb6e08c5657850bb1010a2ec6b655042	2025-09-18	fengwenxi	feature: FusionFlow tool	326	0	tool/FusionFlow/pixel2wgs84.py
+507da2e3fb6e08c5657850bb1010a2ec6b655042	2025-09-18	fengwenxi	feature: FusionFlow tool	326	0	tool/FusionFlow/traffic_flow_entry_page.py
+6683a18a3b579e0e8afa2f0194a276b23ad419c5	2025-07-30	fengwenxi	update version	1	1	CMakeLists.txt
+6683a18a3b579e0e8afa2f0194a276b23ad419c5	2025-07-30	fengwenxi	update version	1	1	config/traffic_flow_service.json
+e3428b0d38fb1d1bd7766163a910cebf56833aae	2025-07-22	fengwenxi	queue detector debug	1	1	src/math/segment2d.hpp
+e3428b0d38fb1d1bd7766163a910cebf56833aae	2025-07-22	fengwenxi	queue detector debug	4	5	src/traffic_flow/detectors/queue_detector.cpp
+e3428b0d38fb1d1bd7766163a910cebf56833aae	2025-07-22	fengwenxi	queue detector debug	1	1	src/traffic_flow/detectors/volume_detector.cpp
+7a5928ce83c467ae7517671d8647088c5c5fe3bd	2025-06-26	fengwenxi	agreement output fix	1	1	src/traffic_flow/traffic_flow_factory.cpp
+e253c60e3badba91e574bfb48391f8055900b09c	2025-06-24	fengwenxi	add class queue number&equivalent number	37	11	src/traffic_flow/detectors/queue_detector.cpp
+e253c60e3badba91e574bfb48391f8055900b09c	2025-06-24	fengwenxi	add class queue number&equivalent number	2	0	src/traffic_flow/detectors/queue_detector.h
+e253c60e3badba91e574bfb48391f8055900b09c	2025-06-24	fengwenxi	add class queue number&equivalent number	2	0	src/traffic_flow/traffic_flow_factory.cpp
+9636e52b9e98021aad3c00e4cd8a652e1fb19e59	2025-06-07	fengwenxi	add pedestrian class count & non vehicle class count	23	4	src/traffic_flow/detectors/queue_detector.cpp
+9636e52b9e98021aad3c00e4cd8a652e1fb19e59	2025-06-07	fengwenxi	add pedestrian class count & non vehicle class count	2	0	src/traffic_flow/traffic_flow_factory.cpp
+52195961c3fd387ebf7c60b1edbb455a2dc1acd8	2025-05-28	lijin1	fix include error	1	0	src/math/util.hpp
+a29ba7db510fb3654a4cbe9efc5194d846efa8f8	2025-05-28	lijin1	traffic flow add time align function	17	3	src/traffic_flow/traffic_flow_factory.cpp
+a29ba7db510fb3654a4cbe9efc5194d846efa8f8	2025-05-28	lijin1	traffic flow add time align function	1	0	src/traffic_flow/traffic_flow_factory.h
+3465d2d38d5c57c7d804f5eee02c4bfca6d875f1	2025-05-28	lijin1	add time_align parser	13	0	src/common/config.cpp
+3465d2d38d5c57c7d804f5eee02c4bfca6d875f1	2025-05-28	lijin1	add time_align parser	2	0	src/common/config.h
+d3ffe752d6d8350bff6b7afd2d4d7080863bf510	2025-05-28	lijin1	update config	2	1	config/traffic_flow_config.json
+d2cb33dea6d74d1fd6ac5896db3b63e44d908c23	2025-05-07	fengwenxi	add gitignore	1	0	.gitignore
+fc994209aeab3f71457cfe93bbc56b59f05abff9	2025-03-06	fengwenxi	update gitignore	1	0	.gitignore
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	155	backup/average_speed_detector.cpp
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	55	backup/average_speed_detector.h
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	130	backup/occupancy_detector.cpp
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	50	backup/occupancy_detector.h
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	162	backup/pcu_detector.cpp
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	57	backup/pcu_detector.h
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	152	backup/queue_length_detector.cpp
+e6359dd7047d73af8799e9a641c7b91702aaaec3	2025-02-24	fengwenxi	delete backup files	0	53	backup/queue_length_detector.h
+af905c64e16c9920686eec2c3429850bf124ac76	2025-02-24	fengwenxi	upload documents	11	87	README.md
+af905c64e16c9920686eec2c3429850bf124ac76	2025-02-24	fengwenxi	upload documents	1	0	config/test_lanes.json
+af905c64e16c9920686eec2c3429850bf124ac76	2025-02-24	fengwenxi	upload documents	3	2	config/traffic_flow_config.json
+af905c64e16c9920686eec2c3429850bf124ac76	2025-02-24	fengwenxi	upload documents	9	9	config/traffic_flow_service.json
+af905c64e16c9920686eec2c3429850bf124ac76	2025-02-24	fengwenxi	upload documents	-	-	doc/TrafficFlow.vsdx
+af905c64e16c9920686eec2c3429850bf124ac76	2025-02-24	fengwenxi	upload documents	0	0	doc/traffic_flow_config.md
+3528089fbbb18e1fab520993ce3765e819435a40	2025-02-20	fengwenxi	deqing debug: improve calculation method	58	35	src/traffic_flow/detectors/headway_detector.cpp
+3528089fbbb18e1fab520993ce3765e819435a40	2025-02-20	fengwenxi	deqing debug: improve calculation method	6	2	src/traffic_flow/detectors/headway_detector.h
+3528089fbbb18e1fab520993ce3765e819435a40	2025-02-20	fengwenxi	deqing debug: improve calculation method	48	35	src/traffic_flow/detectors/occupancy_detector.cpp
+3528089fbbb18e1fab520993ce3765e819435a40	2025-02-20	fengwenxi	deqing debug: improve calculation method	2	0	src/traffic_flow/detectors/occupancy_detector.h
+3528089fbbb18e1fab520993ce3765e819435a40	2025-02-20	fengwenxi	deqing debug: improve calculation method	3	0	src/traffic_flow/detectors/queue_detector.cpp
+3528089fbbb18e1fab520993ce3765e819435a40	2025-02-20	fengwenxi	deqing debug: improve calculation method	1	3	src/traffic_flow/detectors/volume_detector.cpp
+19597e30bde1131f4615368247696d175099a0bd	2025-02-19	fengwenxi	change geo distance calculation	6	5	src/math/test_math.cpp
+19597e30bde1131f4615368247696d175099a0bd	2025-02-19	fengwenxi	change geo distance calculation	3	3	src/math/vec2d.hpp
+19597e30bde1131f4615368247696d175099a0bd	2025-02-19	fengwenxi	change geo distance calculation	8	8	src/traffic_flow/detectors/occupancy_detector.cpp
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	2	2	src/common/config.cpp
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	2	0	src/common/config.h
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	1	1	src/common/track_info.h
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	1	1	src/math/segment2d.hpp
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	9	15	src/traffic_flow/detector_type.h
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	125	105	src/traffic_flow/detectors/headway_detector.cpp
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	143	36	src/traffic_flow/detectors/occupancy_detector.cpp
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	5	3	src/traffic_flow/detectors/occupancy_detector.h
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	71	55	src/traffic_flow/detectors/queue_detector.cpp
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	4	3	src/traffic_flow/detectors/queue_detector.h
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	16	3	src/traffic_flow/detectors/volume_detector.cpp
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	1	0	src/traffic_flow/detectors/volume_detector.h
+d4c152fd0350c606cb102d7c79d454ab377f092e	2025-02-19	fengwenxi	deqing debug& improve calculation method	10	3	src/traffic_flow/traffic_flow_factory.cpp
+7f71330353b1df4c97ef00a5596e494d60c98f78	2025-02-18	fengwenxi	deqing debug,using id instead of inner_id	15	5	src/common/config.cpp
+7f71330353b1df4c97ef00a5596e494d60c98f78	2025-02-18	fengwenxi	deqing debug,using id instead of inner_id	1	1	src/common/track_info.h
+7f71330353b1df4c97ef00a5596e494d60c98f78	2025-02-18	fengwenxi	deqing debug,using id instead of inner_id	4	4	src/traffic_flow/detectors/volume_detector.cpp
+7f71330353b1df4c97ef00a5596e494d60c98f78	2025-02-18	fengwenxi	deqing debug,using id instead of inner_id	2	2	src/traffic_flow/traffic_flow_detector.h
+7f71330353b1df4c97ef00a5596e494d60c98f78	2025-02-18	fengwenxi	deqing debug,using id instead of inner_id	27	2	src/traffic_flow/traffic_flow_factory.cpp
+84b7d07f25389e12f48f026af1779ee7746595b6	2025-02-18	fengwenxi	change volume calculation	1	1	src/traffic_flow/detectors/volume_detector.cpp
+84b7d07f25389e12f48f026af1779ee7746595b6	2025-02-18	fengwenxi	change volume calculation	4	4	src/traffic_flow/traffic_flow_detector.h
+63c9b0817da844faa90f8d371eb164570cab6301	2025-02-18	fengwenxi	change default destruct func	1	1	src/traffic_flow/detectors/occupancy_detector.cpp
+2ad6c55597df12c31cfd2b6e5d81e7a4de677833	2025-02-18	fengwenxi	change default output	105	105	src/traffic_flow/detectors/headway_detector.cpp
+2ad6c55597df12c31cfd2b6e5d81e7a4de677833	2025-02-18	fengwenxi	change default output	33	34	src/traffic_flow/detectors/occupancy_detector.cpp
+2ad6c55597df12c31cfd2b6e5d81e7a4de677833	2025-02-18	fengwenxi	change default output	54	54	src/traffic_flow/detectors/queue_detector.cpp
+2ad6c55597df12c31cfd2b6e5d81e7a4de677833	2025-02-18	fengwenxi	change default output	1	0	src/traffic_flow/detectors/volume_detector.cpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	1	1	CMakeLists.txt
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	1	0	src/math/segment2d.hpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	1	0	src/math/vec2d.hpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	1	1	src/plugin/traffic_flow_service_impl.cpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	144	0	src/traffic_flow/detectors/headway_detector.cpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	43	0	src/traffic_flow/detectors/headway_detector.h
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	67	0	src/traffic_flow/detectors/occupancy_detector.cpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	40	0	src/traffic_flow/detectors/occupancy_detector.h
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	66	113	src/traffic_flow/detectors/queue_detector.cpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	8	12	src/traffic_flow/detectors/queue_detector.h
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	4	12	src/traffic_flow/detectors/volume_detector.cpp
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	4	12	src/traffic_flow/detectors/volume_detector.h
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	1	1	src/traffic_flow/traffic_flow_detector.h
+40410e2b983ca0e46ac086fdadf46f3b5fac2f5e	2025-02-17	fengwenxi	add headway detector& occupancy detector	7	5	src/traffic_flow/traffic_flow_factory.cpp
+50310fce2b89ad7d3298cfae3a898b1139aa717e	2025-01-21	fengwenxi	feature ensemble mode	0	26	src/common/track_info.cpp
+50310fce2b89ad7d3298cfae3a898b1139aa717e	2025-01-21	fengwenxi	feature ensemble mode	3	3	src/common/track_info.h
+50310fce2b89ad7d3298cfae3a898b1139aa717e	2025-01-21	fengwenxi	feature ensemble mode	11	2	src/traffic_flow/detectors/volume_detector.cpp
+50310fce2b89ad7d3298cfae3a898b1139aa717e	2025-01-21	fengwenxi	feature ensemble mode	4	7	src/traffic_flow/traffic_flow_factory.cpp
+7fbd618f66d2d0bf3509746aeef53a958771ce9d	2025-01-20	fengwenxi	feature volume detector	129	102	src/traffic_flow/detectors/volume_detector.cpp
+7fbd618f66d2d0bf3509746aeef53a958771ce9d	2025-01-20	fengwenxi	feature volume detector	13	4	src/traffic_flow/detectors/volume_detector.h
+7fbd618f66d2d0bf3509746aeef53a958771ce9d	2025-01-20	fengwenxi	feature volume detector	4	3	src/traffic_flow/traffic_flow_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	3	3	backup/average_speed_detector.cpp
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	backup/average_speed_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	3	3	backup/occupancy_detector.cpp
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	backup/occupancy_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	3	3	backup/pcu_detector.cpp
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	backup/pcu_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	3	3	backup/queue_length_detector.cpp
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	backup/queue_length_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	3	3	src/traffic_flow/detectors/queue_detector.cpp
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	src/traffic_flow/detectors/queue_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	src/traffic_flow/detectors/volume_detector.cpp
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	src/traffic_flow/detectors/volume_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	src/traffic_flow/traffic_flow_detector.h
+d51524cf8fb0319b0ed4c7faff37edd8a546d587	2025-01-20	fengwenxi	change detect_solo function name	1	1	src/traffic_flow/traffic_flow_factory.cpp
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	83	0	src/base/BlockingQueue.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	4	1	src/base/CMakeLists.txt
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	25	0	src/base/Condition.cc
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	49	0	src/base/Condition.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	17	0	src/base/Copyable.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	90	0	src/base/CurrentThread.cc
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	49	0	src/base/CurrentThread.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	29	0	src/base/License
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	223	0	src/base/Mutex.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	18	0	src/base/Noncopyable.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	3	3	src/base/{singleton.hpp => Singleton.h}
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	58	0	src/base/Timestamp.cc
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	157	0	src/base/Timestamp.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	0	336	src/base/blocking_queue.hpp
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	0	29	src/base/copyable.hpp
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	0	33	src/base/noncopyable.hpp
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	1	1	src/common/config.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	1	1	src/plugin/CMakeLists.txt
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	1	0	src/traffic_flow/CMakeLists.txt
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	2	2	src/traffic_flow/traffic_flow_detector.h
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	20	11	src/traffic_flow/traffic_flow_factory.cpp
+1734eafac9c73bc3f87c7e81b6543a69806a9732	2025-01-20	fengwenxi	change afl base dependency	4	3	src/traffic_flow/traffic_flow_factory.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	83	backup/base/BlockingQueue.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	4	backup/base/CMakeLists.txt
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	25	backup/base/Condition.cc
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	49	backup/base/Condition.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	17	backup/base/Copyable.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	90	backup/base/CurrentThread.cc
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	49	backup/base/CurrentThread.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	29	backup/base/License
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	223	backup/base/Mutex.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	18	backup/base/Noncopyable.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	71	backup/base/Singleton.h
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	58	backup/base/Timestamp.cc
+5cd74213c0ccb57f3a65e3b02cebdd775c722379	2025-01-20	fengwenxi	delete base backup	0	157	backup/base/Timestamp.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/average_speed_detector.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/average_speed_detector.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	83	0	backup/base/BlockingQueue.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	4	0	backup/base/CMakeLists.txt
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	25	0	backup/base/Condition.cc
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	49	0	backup/base/Condition.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	17	0	backup/base/Copyable.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	90	0	backup/base/CurrentThread.cc
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	49	0	backup/base/CurrentThread.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	29	0	backup/base/License
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	223	0	backup/base/Mutex.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	18	0	backup/base/Noncopyable.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	71	0	backup/base/Singleton.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	58	0	backup/base/Timestamp.cc
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	157	0	backup/base/Timestamp.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/occupancy_detector.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/occupancy_detector.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/pcu_detector.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/pcu_detector.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/queue_length_detector.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	0	0	{src/traffic_flow/detectors => backup}/queue_length_detector.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	3	3	src/common/config.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	112	106	src/traffic_flow/detectors/queue_detector.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	1	0	src/traffic_flow/detectors/queue_detector.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	4	0	src/traffic_flow/detectors/volume_detector.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	1	0	src/traffic_flow/detectors/volume_detector.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	1	1	src/traffic_flow/traffic_flow_detector.h
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	23	14	src/traffic_flow/traffic_flow_factory.cpp
+d35d276d7cc472f533955dc23d1c2db1566a779d	2025-01-20	fengwenxi	frature ensemble working mode	5	2	src/traffic_flow/traffic_flow_factory.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	20	0	src/common/config.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	5	0	src/common/config.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	3	3	src/traffic_flow/detectors/average_speed_detector.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	1	1	src/traffic_flow/detectors/average_speed_detector.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	3	3	src/traffic_flow/detectors/occupancy_detector.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	1	1	src/traffic_flow/detectors/occupancy_detector.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	3	3	src/traffic_flow/detectors/pcu_detector.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	1	1	src/traffic_flow/detectors/pcu_detector.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	3	3	src/traffic_flow/detectors/queue_detector.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	1	1	src/traffic_flow/detectors/queue_detector.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	3	3	src/traffic_flow/detectors/queue_length_detector.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	1	1	src/traffic_flow/detectors/queue_length_detector.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	1	1	src/traffic_flow/detectors/volume_detector.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	1	1	src/traffic_flow/detectors/volume_detector.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	3	1	src/traffic_flow/traffic_flow_detector.h
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	91	17	src/traffic_flow/traffic_flow_factory.cpp
+d185d3701cc414e1e1ba88aa1113c211524e5a67	2025-01-20	fengwenxi	add ensemble working mode	14	5	src/traffic_flow/traffic_flow_factory.h
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	23	5	src/common/config.cpp
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	12	8	src/common/config.h
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	3	3	src/traffic_flow/detector_type.h
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	99	117	src/traffic_flow/detectors/occupancy_detector.cpp
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	0	4	src/traffic_flow/detectors/occupancy_detector.h
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	138	0	src/traffic_flow/detectors/queue_detector.cpp
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	6	11	src/traffic_flow/detectors/{queue_size_detector.h => queue_detector.h}
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	0	157	src/traffic_flow/detectors/queue_size_detector.cpp
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	101	118	src/traffic_flow/detectors/volume_detector.cpp
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	1	5	src/traffic_flow/detectors/volume_detector.h
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	2	34	src/traffic_flow/traffic_flow_detector.h
+01e8bcace1afb167c3c68af14dfa178722f59ff2	2025-01-16	fengwenxi	change config for ensemble calculate cycle	9	24	src/traffic_flow/traffic_flow_factory.cpp
+45514b0fa2ccc9f12ed191c2daa51ee00eb845b9	2025-01-16	fengwenxi	change config settings for ensemble cycle	29	28	src/common/config.cpp
+45514b0fa2ccc9f12ed191c2daa51ee00eb845b9	2025-01-16	fengwenxi	change config settings for ensemble cycle	15	15	src/common/config.h
+45514b0fa2ccc9f12ed191c2daa51ee00eb845b9	2025-01-16	fengwenxi	change config settings for ensemble cycle	5	8	src/traffic_flow/detector_type.h
+88d6ebee9359cf36e666ba268b640f06443af674	2025-01-16	fengwenxi	update config for ensemble cycle time	14	15	config/{example.json => test_lanes.json}
+88d6ebee9359cf36e666ba268b640f06443af674	2025-01-16	fengwenxi	update config for ensemble cycle time	4	45	config/traffic_flow_config.json
+88d6ebee9359cf36e666ba268b640f06443af674	2025-01-16	fengwenxi	update config for ensemble cycle time	165	69	src/common/config.cpp
+88d6ebee9359cf36e666ba268b640f06443af674	2025-01-16	fengwenxi	update config for ensemble cycle time	114	11	src/common/config.h
+88d6ebee9359cf36e666ba268b640f06443af674	2025-01-16	fengwenxi	update config for ensemble cycle time	1	1	src/common/perception_data.h
+88d6ebee9359cf36e666ba268b640f06443af674	2025-01-16	fengwenxi	update config for ensemble cycle time	2	0	src/math/test_math.cpp
+88d6ebee9359cf36e666ba268b640f06443af674	2025-01-16	fengwenxi	update config for ensemble cycle time	31	43	src/traffic_flow/detector_type.h
+3f23f094ae721684e5c87f7c9f017424012fc241	2025-01-14	fengwenxi	update CommonDefine & config	157	152	src/common/CommonDefineV2.h
+3f23f094ae721684e5c87f7c9f017424012fc241	2025-01-14	fengwenxi	update CommonDefine & config	6	2	src/common/config.h
+abd44267f05013419e17df7f5d560fd4c5b45c16	2025-01-13	fengwenxi	add track extract script	11	11	config/example.json
+abd44267f05013419e17df7f5d560fd4c5b45c16	2025-01-13	fengwenxi	add track extract script	13	0	script/get_specific_track.py
+abd44267f05013419e17df7f5d560fd4c5b45c16	2025-01-13	fengwenxi	add track extract script	8	0	src/traffic_flow/detectors/queue_size_detector.cpp
+abd44267f05013419e17df7f5d560fd4c5b45c16	2025-01-13	fengwenxi	add track extract script	4	0	src/traffic_flow/traffic_flow_factory.h
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	8	2	src/common/config.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	3	1	src/common/config.h
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	16	8	src/math/test_math.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	13	3	src/math/vec2d.hpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	4	1	src/traffic_flow/detectors/average_speed_detector.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	148	0	src/traffic_flow/detectors/occupancy_detector.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	54	0	src/traffic_flow/detectors/occupancy_detector.h
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	4	1	src/traffic_flow/detectors/pcu_detector.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	83	33	src/traffic_flow/detectors/queue_length_detector.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	1	0	src/traffic_flow/detectors/queue_length_detector.h
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	20	7	src/traffic_flow/detectors/queue_size_detector.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	4	1	src/traffic_flow/detectors/volume_detector.cpp
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	8	1	src/traffic_flow/traffic_flow_detector.h
+ee68c656d2f1e7114cacb1d2cea2176a1b847d20	2024-12-31	fengwenxi	add json publish	8	0	src/traffic_flow/traffic_flow_factory.cpp
+c26eea59379d702880f2020c8ca11b8ee4160002	2024-12-31	fengwenxi	add queue size detector & debug queue length detector	2	0	src/traffic_flow/detectors/average_speed_detector.h
+c26eea59379d702880f2020c8ca11b8ee4160002	2024-12-31	fengwenxi	add queue size detector & debug queue length detector	3	3	src/traffic_flow/detectors/pcu_detector.cpp
+c26eea59379d702880f2020c8ca11b8ee4160002	2024-12-31	fengwenxi	add queue size detector & debug queue length detector	5	3	src/traffic_flow/detectors/queue_length_detector.h
+c26eea59379d702880f2020c8ca11b8ee4160002	2024-12-31	fengwenxi	add queue size detector & debug queue length detector	136	0	src/traffic_flow/detectors/queue_size_detector.cpp
+c26eea59379d702880f2020c8ca11b8ee4160002	2024-12-31	fengwenxi	add queue size detector & debug queue length detector	54	0	src/traffic_flow/detectors/queue_size_detector.h
+60976070ed3345ceff83477eed8a5df4856f453a	2024-12-31	fengwenxi	detector debug	78	54	src/traffic_flow/detectors/average_speed_detector.cpp
+60976070ed3345ceff83477eed8a5df4856f453a	2024-12-31	fengwenxi	detector debug	4	1	src/traffic_flow/detectors/average_speed_detector.h
+60976070ed3345ceff83477eed8a5df4856f453a	2024-12-31	fengwenxi	detector debug	71	54	src/traffic_flow/detectors/pcu_detector.cpp
+60976070ed3345ceff83477eed8a5df4856f453a	2024-12-31	fengwenxi	detector debug	3	1	src/traffic_flow/detectors/pcu_detector.h
+60976070ed3345ceff83477eed8a5df4856f453a	2024-12-31	fengwenxi	detector debug	6	4	src/traffic_flow/detectors/volume_detector.cpp
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	44	0	config/example.json
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	2	2	src/common/perception_data.cpp
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	5	1	src/math/CMakeLists.txt
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	18	3	src/math/segment2d.hpp
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	13	0	src/math/test_math.cpp
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	5	1	src/plugin/traffic_flow_service_impl.cpp
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	53	45	src/traffic_flow/detectors/volume_detector.cpp
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	3	1	src/traffic_flow/detectors/volume_detector.h
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	16	2	src/traffic_flow/traffic_flow_factory.cpp
+195e0faed02b1d3b691f6e04d5988bc9517b5bce	2024-12-31	fengwenxi	volume detector debug	3	2	src/traffic_flow/traffic_flow_factory.h
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	2	2	src/common/config.cpp
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	25	13	src/common/perception_data.h
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	2	2	src/plugin/traffic_flow_service_impl.cpp
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	2	2	src/traffic_flow/detector_type.h
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	4	4	src/traffic_flow/detectors/average_speed_detector.cpp
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	6	6	src/traffic_flow/detectors/pcu_detector.cpp
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	4	4	src/traffic_flow/detectors/queue_length_detector.cpp
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	13	8	src/traffic_flow/detectors/volume_detector.cpp
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	36	5	src/traffic_flow/traffic_flow_detector.h
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	40	8	src/traffic_flow/traffic_flow_factory.cpp
+4ba947a159baae03b8590ae863d7d31c947ca32c	2024-12-30	fengwenxi	change config read	7	2	src/traffic_flow/traffic_flow_factory.h
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	1	1	CMakeLists.txt
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	42	8	config/traffic_flow_config.json
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	3	45	config/traffic_flow_service.json
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	1	1	src/base/singleton.hpp
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	17	13	src/common/config.cpp
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	3	0	src/common/config.h
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	1	1	src/plugin/traffic_flow_service_impl.h
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	10	2	src/traffic_flow/detectors/volume_detector.cpp
+a0ce35304747e7df879d27c205307a9ae9ce11f9	2024-12-29	fengwenxi	change cmake & config	5	0	src/traffic_flow/traffic_flow_detector.h
+d956a3ca25d7ae08f665b14913b5509e3c82c5d4	2024-12-26	fengwenxi	change detector calculation	1	1	src/common/track_info.h
+d956a3ca25d7ae08f665b14913b5509e3c82c5d4	2024-12-26	fengwenxi	change detector calculation	2	1	src/traffic_flow/detectors/average_speed_detector.cpp
+d956a3ca25d7ae08f665b14913b5509e3c82c5d4	2024-12-26	fengwenxi	change detector calculation	2	1	src/traffic_flow/detectors/pcu_detector.cpp
+d956a3ca25d7ae08f665b14913b5509e3c82c5d4	2024-12-26	fengwenxi	change detector calculation	9	8	src/traffic_flow/detectors/queue_length_detector.cpp
+d956a3ca25d7ae08f665b14913b5509e3c82c5d4	2024-12-26	fengwenxi	change detector calculation	2	1	src/traffic_flow/detectors/volume_detector.cpp
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	46	11	src/common/config.cpp
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	9	0	src/common/config.h
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	8	7	src/common/track_info.h
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	1	0	src/math/segment2d.hpp
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	30	23	src/traffic_flow/detectors/average_speed_detector.cpp
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	5	7	src/traffic_flow/detectors/average_speed_detector.h
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	27	20	src/traffic_flow/detectors/pcu_detector.cpp
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	12	5	src/traffic_flow/detectors/pcu_detector.h
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	4	6	src/traffic_flow/detectors/queue_length_detector.cpp
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	11	5	src/traffic_flow/detectors/queue_length_detector.h
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	22	15	src/traffic_flow/detectors/volume_detector.cpp
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	12	5	src/traffic_flow/detectors/volume_detector.h
+9e6a62f8d09e141ef8c89ccff208ef444ff724b8	2024-12-26	fengwenxi	change detector calculation	3	3	src/traffic_flow/traffic_flow_detector.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	0	CMakeLists.txt
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	1	src/base/CMakeLists.txt
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/base/blocking_queue.hpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/base/copyable.hpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	2	4	src/base/noncopyable.hpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/base/singleton.hpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	0	1	src/common/config.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	2	3	src/common/config.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	0	1	src/common/perception_data.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/common/perception_data.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	0	1	src/common/track_info.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/common/track_info.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	0	src/math/CMakeLists.txt
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	4	4	src/math/polygon2d.hpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	3	4	src/math/segment2d.hpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	2	4	src/math/{math_util.hpp => util.hpp}
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/math/vec2d.hpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/traffic_flow/detector_type.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	4	3	src/traffic_flow/detectors/average_speed_detector.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	13	3	src/traffic_flow/detectors/average_speed_detector.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	0	1	src/traffic_flow/detectors/pcu_detector.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	2	src/traffic_flow/detectors/pcu_detector.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	0	src/traffic_flow/detectors/queue_length_detector.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	2	1	src/traffic_flow/detectors/queue_length_detector.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	0	1	src/traffic_flow/detectors/volume_detector.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	3	src/traffic_flow/detectors/volume_detector.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	2	src/traffic_flow/traffic_flow_detector.h
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	0	1	src/traffic_flow/traffic_flow_factory.cpp
+d0654e30c6ab8f463a1e727f38745bebe3e06dd7	2024-12-25	fengwenxi	change coding style	1	2	src/traffic_flow/traffic_flow_factory.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	126	118	src/base/blocking_queue.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	4	3	src/base/copyable.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	3	2	src/base/noncopyable.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	11	10	src/base/singleton.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	10	10	src/common/config.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	13	13	src/common/config.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	107	107	src/common/perception_data.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	6	5	src/common/track_info.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	2	2	src/{common => }/math/math_util.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	6	5	src/{common => }/math/polygon2d.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	5	5	src/{common => }/math/segment2d.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	2	2	src/{common => }/math/vec2d.hpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	9	7	src/plugin/traffic_flow_service.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	33	32	src/plugin/traffic_flow_service_impl.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	19	19	src/plugin/traffic_flow_service_impl.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	40	40	src/traffic_flow/detector_type.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	32	31	src/traffic_flow/detectors/average_speed_detector.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	9	9	src/traffic_flow/detectors/average_speed_detector.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	41	40	src/traffic_flow/detectors/pcu_detector.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	13	13	src/traffic_flow/detectors/pcu_detector.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	33	33	src/traffic_flow/detectors/queue_length_detector.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	9	9	src/traffic_flow/detectors/queue_length_detector.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	32	31	src/traffic_flow/detectors/volume_detector.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	11	11	src/traffic_flow/detectors/volume_detector.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	10	11	src/traffic_flow/traffic_flow_detector.h
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	44	43	src/traffic_flow/traffic_flow_factory.cpp
+9aced1cd33be3173f9b30e291684f7aa42e64d95	2024-12-25	fengwenxi	change coding style	28	28	src/traffic_flow/traffic_flow_factory.h
+ced261870683a4883d6c3e882a91f2f97b6551d5	2024-12-25	fengwenxi	add math utils	31	0	src/common/math/math_util.hpp
+ced261870683a4883d6c3e882a91f2f97b6551d5	2024-12-25	fengwenxi	add math utils	145	0	src/common/math/polygon2d.hpp
+ced261870683a4883d6c3e882a91f2f97b6551d5	2024-12-25	fengwenxi	add math utils	111	0	src/common/math/segment2d.hpp
+ced261870683a4883d6c3e882a91f2f97b6551d5	2024-12-25	fengwenxi	add math utils	0	12	src/common/math/vec2d.cpp
+ced261870683a4883d6c3e882a91f2f97b6551d5	2024-12-25	fengwenxi	add math utils	0	16	src/common/math/vec2d.h
+ced261870683a4883d6c3e882a91f2f97b6551d5	2024-12-25	fengwenxi	add math utils	62	0	src/common/math/vec2d.hpp
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/base/blocking_queue.hpp
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/base/copyable.hpp
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/base/noncopyable.hpp
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/base/singleton.hpp
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	3	3	src/common/config.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	0	84	src/common/geometry_calc.cpp
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	0	33	src/common/geometry_calc.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	12	0	src/common/math/vec2d.cpp
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	16	0	src/common/math/vec2d.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/common/perception_data.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/common/track_info.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/plugin/traffic_flow_service_impl.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/traffic_flow/detector_type.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/traffic_flow/detectors/average_speed_detector.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/traffic_flow/detectors/pcu_detector.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/traffic_flow/detectors/queue_length_detector.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/traffic_flow/detectors/volume_detector.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/traffic_flow/traffic_flow_detector.h
+59b18ae86945a2bcf32e60e6a72c133d46c527f5	2024-12-24	fengwenxi	change header macro	2	2	src/traffic_flow/traffic_flow_factory.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	1	0	src/base/singleton.hpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	1082	0	src/common/CommonDefineV2.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	0	53	src/common/geo_calc.cpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	0	25	src/common/geo_calc.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	84	0	src/common/geometry_calc.cpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	33	0	src/common/geometry_calc.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	8	8	src/common/track_info.cpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	11	15	src/common/track_info.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	1	0	src/traffic_flow/detector_type.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	118	0	src/traffic_flow/detectors/average_speed_detector.cpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	42	0	src/traffic_flow/detectors/average_speed_detector.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	12	9	src/traffic_flow/detectors/pcu_detector.cpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	1	1	src/traffic_flow/detectors/pcu_detector.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	102	0	src/traffic_flow/detectors/queue_length_detector.cpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	43	0	src/traffic_flow/detectors/queue_length_detector.h
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	13	9	src/traffic_flow/detectors/volume_detector.cpp
+9b476d144fce5e00191f653b83bf07acc63658ae	2024-12-24	fengwenxi	add new traffic flow detectors & change geometry calc	4	2	src/traffic_flow/traffic_flow_detector.h
+8c53617d63f31001e7bd3a9fcfae83154cc27a08	2024-12-23	fengwenxi	update detector	1	1	src/base/blocking_queue.hpp
+8c53617d63f31001e7bd3a9fcfae83154cc27a08	2024-12-23	fengwenxi	update detector	2	14	src/common/config.cpp
+8c53617d63f31001e7bd3a9fcfae83154cc27a08	2024-12-23	fengwenxi	update detector	1	1	src/traffic_flow/detectors/pcu_detector.h
+8c53617d63f31001e7bd3a9fcfae83154cc27a08	2024-12-23	fengwenxi	update detector	1	1	src/traffic_flow/detectors/volume_detector.h
+47485fbeb32d3ff1043e4139ecf041105db585c2	2024-12-06	fengwenxi	change pcu detector	13	0	config/traffic_flow_config.json
+47485fbeb32d3ff1043e4139ecf041105db585c2	2024-12-06	fengwenxi	change pcu detector	91	0	config/traffic_flow_service.json
+47485fbeb32d3ff1043e4139ecf041105db585c2	2024-12-06	fengwenxi	change pcu detector	10	8	src/common/config.cpp
+47485fbeb32d3ff1043e4139ecf041105db585c2	2024-12-06	fengwenxi	change pcu detector	1	3	src/common/config.h
+47485fbeb32d3ff1043e4139ecf041105db585c2	2024-12-06	fengwenxi	change pcu detector	23	0	src/traffic_flow/detector_type.h
+47485fbeb32d3ff1043e4139ecf041105db585c2	2024-12-06	fengwenxi	change pcu detector	11	6	src/traffic_flow/detectors/pcu_detector.cpp
+47485fbeb32d3ff1043e4139ecf041105db585c2	2024-12-06	fengwenxi	change pcu detector	9	4	src/traffic_flow/detectors/volume_detector.cpp
+73501bdb8601397cb446a4edf394ab0ce53373d8	2024-11-10	fengwenxi	change Geopos & Track	1	0	src/common/config.cpp
+73501bdb8601397cb446a4edf394ab0ce53373d8	2024-11-10	fengwenxi	change Geopos & Track	2	0	src/common/track_info.h
+73501bdb8601397cb446a4edf394ab0ce53373d8	2024-11-10	fengwenxi	change Geopos & Track	3	3	src/traffic_flow/detectors/pcu_detector.cpp
+73501bdb8601397cb446a4edf394ab0ce53373d8	2024-11-10	fengwenxi	change Geopos & Track	1	1	src/traffic_flow/detectors/volume_detector.cpp
+fab4c2db1c07798046346ebd19afb30331d5c855	2024-11-10	fengwenxi	add track_info default construction func	1	0	src/common/track_info.h
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	37	2	src/common/config.cpp
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	4	1	src/common/config.h
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	39	39	src/common/perception_data.cpp
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	3	2	src/common/perception_data.h
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	27	0	src/common/track_info.cpp
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	6	1	src/common/track_info.h
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	1	1	src/traffic_flow/detectors/pcu_detector.cpp
+cf5c57e72e72a51500cc1cea14a20d454828f85d	2024-10-28	fengwenxi	add config conversion	1	1	src/traffic_flow/detectors/volume_detector.cpp
+c385128442230dedf1ee70ac78cac2d2e2d9e1aa	2024-10-24	fengwenxi	add pcu detector	1	0	src/common/track_info.h
+c385128442230dedf1ee70ac78cac2d2e2d9e1aa	2024-10-24	fengwenxi	add pcu detector	126	0	src/traffic_flow/detectors/pcu_detector.cpp
+c385128442230dedf1ee70ac78cac2d2e2d9e1aa	2024-10-24	fengwenxi	add pcu detector	49	0	src/traffic_flow/detectors/pcu_detector.h
+c385128442230dedf1ee70ac78cac2d2e2d9e1aa	2024-10-24	fengwenxi	add pcu detector	1	1	src/traffic_flow/detectors/volume_detector.cpp
+c385128442230dedf1ee70ac78cac2d2e2d9e1aa	2024-10-24	fengwenxi	add pcu detector	1	1	src/traffic_flow/detectors/volume_detector.h
+5584edcc6f26cefd08db780b57bef614f5990cbb	2024-10-23	fengwenxi	feature volume_detector	4	1	src/common/config.h
+5584edcc6f26cefd08db780b57bef614f5990cbb	2024-10-23	fengwenxi	feature volume_detector	53	0	src/common/geo_calc.cpp
+5584edcc6f26cefd08db780b57bef614f5990cbb	2024-10-23	fengwenxi	feature volume_detector	25	0	src/common/geo_calc.h
+5584edcc6f26cefd08db780b57bef614f5990cbb	2024-10-23	fengwenxi	feature volume_detector	20	0	src/common/perception_data.h
+5584edcc6f26cefd08db780b57bef614f5990cbb	2024-10-23	fengwenxi	feature volume_detector	2	2	src/common/track_info.h
+5584edcc6f26cefd08db780b57bef614f5990cbb	2024-10-23	fengwenxi	feature volume_detector	45	5	src/traffic_flow/detectors/volume_detector.cpp
+5584edcc6f26cefd08db780b57bef614f5990cbb	2024-10-23	fengwenxi	feature volume_detector	6	3	src/traffic_flow/detectors/volume_detector.h
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	3	2	src/common/config.h
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	4	4	src/common/perception_data.h
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	9	2	src/{traffic_flow => common}/track_info.h
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	26	1	src/traffic_flow/detector_type.h
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	65	0	src/traffic_flow/detectors/volume_detector.cpp
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	44	0	src/traffic_flow/detectors/volume_detector.h
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	0	25	src/traffic_flow/traffic_flow_detector.cpp
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	8	20	src/traffic_flow/traffic_flow_detector.h
+a4686eec13a55e6eabff1407f2aaae52127deead	2024-10-22	fengwenxi	add volume detector	6	5	src/traffic_flow/traffic_flow_factory.h
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	44	34	src/base/blocking_queue.hpp
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	2	1	src/base/copyable.hpp
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	2	1	src/base/noncopyable.hpp
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	2	1	src/base/singleton.hpp
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	7	3	src/common/config.h
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	10	8	src/plugin/traffic_flow_service_impl.cpp
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	5	3	src/plugin/traffic_flow_service_impl.h
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	15	2	src/traffic_flow/{detector_types.h => detector_type.h}
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	33	0	src/traffic_flow/track_info.h
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	25	0	src/traffic_flow/traffic_flow_detector.cpp
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	27	8	src/traffic_flow/traffic_flow_detector.h
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	86	19	src/traffic_flow/traffic_flow_factory.cpp
+f1122bb3203b8cc83eff413e8e1d62dcef13dff5	2024-10-21	fengwenxi	add traffic flow detector & perfect blocking queue	40	2	src/traffic_flow/traffic_flow_factory.h
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	15	15	CMakeLists.txt
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	1	0	src/base/CMakeLists.txt
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	0	1	src/base/blocking_queue.hpp
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	13	0	src/common/CMakeLists.txt
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	33	9	src/common/config.cpp
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	6	4	src/common/config.h
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	34	36	src/common/perception_data.cpp
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	11	26	src/common/perception_data.h
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	6	9	src/plugin/CMakeLists.txt
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	65	62	src/plugin/traffic_flow_service.cpp
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	3	3	src/plugin/traffic_flow_service.h
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	22	44	src/plugin/traffic_flow_service_impl.cpp
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	4	4	src/plugin/traffic_flow_service_impl.h
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	33	0	src/traffic_flow/CMakeLists.txt
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	4	4	src/traffic_flow/detector_types.h
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	3	3	src/traffic_flow/traffic_flow_detector.h
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	6	11	src/traffic_flow/traffic_flow_factory.cpp
+35d1aebfe644ad4baa9ca08a0fb682d1de60b292	2024-10-17	fengwenxi	add CMakeLists.txt & change format	5	7	src/traffic_flow/traffic_flow_factory.h
+a818aa81721460bfe27aa60a6e5b38af8339d1c1	2024-10-17	fengwenxi	change format & modify blocking queue	1	1	.clang-format
+a818aa81721460bfe27aa60a6e5b38af8339d1c1	2024-10-17	fengwenxi	change format & modify blocking queue	57	54	CMakeLists.txt
+a818aa81721460bfe27aa60a6e5b38af8339d1c1	2024-10-17	fengwenxi	change format & modify blocking queue	107	254	src/base/blocking_queue.hpp
+a818aa81721460bfe27aa60a6e5b38af8339d1c1	2024-10-17	fengwenxi	change format & modify blocking queue	3	3	src/base/copyable.hpp
+a818aa81721460bfe27aa60a6e5b38af8339d1c1	2024-10-17	fengwenxi	change format & modify blocking queue	4	5	src/base/noncopyable.hpp
+a818aa81721460bfe27aa60a6e5b38af8339d1c1	2024-10-17	fengwenxi	change format & modify blocking queue	8	11	src/base/singleton.hpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	26	16	src/base/blocking_queue.hpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	4	4	src/base/copyable.hpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	4	4	src/base/noncopyable.hpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	4	4	src/base/singleton.hpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	4	4	src/common/config.cpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	4	4	src/common/config.h
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	4	4	src/common/perception_data.cpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	4	4	src/common/perception_data.h
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	12	0	src/plugin/traffic_flow_service.cpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	12	0	src/plugin/traffic_flow_service.h
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	12	0	src/plugin/traffic_flow_service_impl.cpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	12	0	src/plugin/traffic_flow_service_impl.h
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	5	5	src/traffic_flow/detector_types.h
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	5	5	src/traffic_flow/traffic_flow_detector.h
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	8	9	src/traffic_flow/traffic_flow_factory.cpp
+f28228536338abbbbdc0a5621c6ab1b1041f19d6	2024-10-16	fengwenxi	change/add header comment	5	5	src/traffic_flow/traffic_flow_factory.h
+9a3abd9409b0aabd1df97a8c507b4d683810946f	2024-10-16	fengwenxi	perfect blocking queue	230	76	src/base/blocking_queue.hpp
+6b7c6aff66229cef021ba04059783363c1ec7132	2024-10-15	fengwenxi	perfect BlockingQueue	92	71	src/base/blocking_queue.hpp
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	1	1	.clang-format
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	283	0	src/base/blocking_queue.hpp
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	2	1	src/base/singleton.hpp
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	79	75	src/plugin/traffic_flow_service_impl.cpp
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	7	5	src/plugin/traffic_flow_service_impl.h
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	6	0	src/traffic_flow/traffic_flow_detector.h
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	29	5	src/traffic_flow/traffic_flow_factory.cpp
+1150fda6d59a1508e8e0f1de3eaff6a27d6fb935	2024-10-15	fengwenxi	perfect framework & add blocking queue	6	2	src/traffic_flow/traffic_flow_factory.h
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	3	2	.clang-format
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	52	0	src/common/config.cpp
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	7	1	src/common/config.h
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	6	7	src/common/{traffic_object.cpp => perception_data.cpp}
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	10	11	src/common/{traffic_object.h => perception_data.h}
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	1	1	src/plugin/quality.cpp
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	1	1	src/plugin/quality.h
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	9	9	src/plugin/traffic_flow_service.cpp
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	112	268	src/plugin/traffic_flow_service_impl.cpp
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	12	22	src/plugin/traffic_flow_service_impl.h
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	5	3	src/traffic_flow/traffic_flow_detector.h
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	23	3	src/traffic_flow/traffic_flow_factory.cpp
+74867d1f129718f24fdab453aab332113daca90e	2024-10-14	fengwenxi	perfect framework	3	1	src/traffic_flow/traffic_flow_factory.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	82	0	.clang-format
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	63	0	.gitattributes
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	340	0	.gitignore
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	116	0	CMakeLists.txt
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	29	0	src/base/copyable.hpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	34	0	src/base/noncopyable.hpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	72	0	src/base/singleton.hpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	39	0	src/common/config.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	143	0	src/common/traffic_object.cpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	238	0	src/common/traffic_object.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	25	0	src/plugin/CMakeLists.txt
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	391	0	src/plugin/FusionPlugin.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	122	0	src/plugin/log.cpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	191	0	src/plugin/log.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	73	0	src/plugin/quality.cpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	96	0	src/plugin/quality.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	104	0	src/plugin/traffic_flow_service.cpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	37	0	src/plugin/traffic_flow_service.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	373	0	src/plugin/traffic_flow_service_impl.cpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	103	0	src/plugin/traffic_flow_service_impl.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	24765	0	src/third_party/include/nlohmann/json.hpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	23	0	src/traffic_flow/detector_types.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	29	0	src/traffic_flow/traffic_flow_detector.h
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	23	0	src/traffic_flow/traffic_flow_factory.cpp
+17d3b87e3a4fd8e92547cc3bcf977b4ac4bbee82	2024-10-12	fengwenxi	add traffic flow framework	40	0	src/traffic_flow/traffic_flow_factory.h
+ba81ef38cd4aad8bca5a886e5db43570b73aabcf	2024-09-30	冯文茜	Initial commit	93	0	README.md
