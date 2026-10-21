@@ -82,6 +82,235 @@
 
 📌 *自己复习：底盘来源 `akhiljithvg/Autonomous-Navigation-Robot`；原项目的 RK3588、串口、CAN 那些能力**不属于**本项目，别拿来充数。*
 
+---
+
+## 前置：节点交互全景图 + 核心概念澄清（条目一之前必读）
+
+> 🧩 **这部分是节点间通信概念的集中整理，条目一的问答默认你已经理解了这些。**
+
+### 一、5 节点全景通信图
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         外部系统                                 │
+│                                                                 │
+│   Gazebo Harmonic           Nav2 导航栈                         │
+│   ┌─────────────┐          ┌─────────────────────┐             │
+│   │ 仿真物理引擎 │          │ amcl + NavFn + DWB   │             │
+│   │ gpu_lidar    │──/scan──▶│ + 代价地图          │             │
+│   │ 里程计        │──/odom──▶│                     │             │
+│   │ DiffDrive    │◀─/cmd_vel─│  /navigate_to_pose │             │
+│   └─────────────┘          └──────────▲──────────┘             │
+└────────────────────────────────────────┼───────────────────────┘
+                                         │ Action（长任务）
+                                         │ 下发目标/接收结果
+┌────────────────────────────────────────┼───────────────────────┐
+│                              tour_node ★ 主控节点                │
+│                          （唯一持有状态机）                      │
+│                                                                 │
+│  ┌─ 发 ─────────────────────────────────────────────────────┐   │
+│  │ /tour_guide/speech        ──▶ tts_node（讲解/答案文字）   │   │
+│  │ /tour_guide/state         ──▶ 所有节点（广播当前状态）     │   │
+│  │ /tour_guide/current_point ──▶ （当前展点名）              │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  ┌─ 收 ─────────────────────────────────────────────────────┐   │
+│  │ /tour_guide/visitor_detected ◀── visitor_detector         │   │
+│  │ /tour_guide/question         ◀── voice_input_sim         │   │
+│  │ /tour_guide/cmd              ◀── 人工接管指令            │   │
+│  └───────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+              │                    │                    │
+              │ state              │ state              │ state
+              ▼                    ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│ visitor_detector │  │   tts_node       │  │    qa_node       │
+│ 迎宾检测节点       │  │ 语音播报节点      │  │  问答节点         │
+│                  │  │                  │  │                  │
+│ 收 /state        │  │ 收 /speech       │  │ 收 /question     │
+│ 收 /odom         │  │ pyttsx3 本地合成 │  │ 遍历 qa_rules    │
+│ 发 /visitor_det. │  │ （自己阻塞等念完）│  │ 发 /speech 回答   │
+│ （自门控：只等   │  │                  │  │                  │
+│  WAIT_VISITOR）  │  │                  │  │                  │
+└──────────────────┘  └──────────────────┘  └──────────────────┘
+                                                          ▲
+                                                          │ question
+                                                  ┌──────────────────┐
+                                                  │ voice_input_sim  │
+                                                  │ 模拟提问节点       │
+                                                  │                  │
+                                                  │ QA 态等 3s        │
+                                                  │ 随机选个问题发出   │
+                                                  └──────────────────┘
+```
+
+---
+
+### 二、create_publisher vs publish：装管道 vs 放水
+
+**❌ 误解**：`create_publisher` 已经把内容发出去了。
+
+**✅ 澄清**：两步完全独立：
+
+```python
+# 第 1 步：create_publisher —— 只装管道，不发任何东西
+self._state_pub = self.create_publisher(String, "/tour_guide/state", 10)
+# 等价于：在墙上装一根喇叭，声明"我要用 String 类型、在 /tour_guide/state 这根管子上说话，队列能攒 10 条"
+
+# 第 2 步：publish() —— 真正灌水/按喇叭
+msg = String()              # 造消息（造一杯水）
+msg.data = "WAIT_VISITOR"   # 填内容（往杯子里装水）
+self._state_pub.publish(msg) # 按喇叭，把这杯水灌进管道
+```
+
+**类比水管系统**：
+- `create_publisher` = 装一根水管，声明往哪送、什么类型的水、水管能攒几桶
+- `publish(msg)` = 拧开水龙头，把**具体内容**（msg）送出去
+- `msg.data` = 水本身，装什么由你决定
+
+订阅侧同理：`create_subscription` = 装水龙头（声明接哪根管子、什么类型），**订阅回调** = 接水的人（管子里有东西流过来时自动触发）。
+
+---
+
+### 三、主控广播状态 + 执行节点自门控
+
+**核心模式**：主控唯一持有状态机，通过 `/tour_guide/state` 广播当前状态；每个执行节点**自己监听状态、自己决定干不干活**——这叫「自门控（self-gating）」。
+
+**典型例子：visitor_detector 只在 WAIT_VISITOR 时检测**
+
+```python
+# 迎宾节点：自己订阅状态，自己看门
+self.create_subscription(String, "/tour_guide/state", self._state_cb, 10)
+
+def _state_cb(self, msg):
+    self._state = msg.data           # 记住主控当前状态
+    if self._state != "WAIT_VISITOR":
+        self._detected = False       # 非迎宾态，重置检测标记
+
+def _tick(self):                     # 0.5s 定时器
+    if self._state != "WAIT_VISITOR":
+        return                       # ★ 自己看门：不是迎宾态，啥也不干
+    # 下面才是真正的检测逻辑
+    if d < self._dist_thr:
+        self._detect_pub.publish(msg)  # 发 visitor_detected
+```
+
+**关键：主控从不「调用」迎宾节点的任何函数**，迎宾也不「请求」主控做什么——它们只靠话题发消息，完全解耦。
+
+---
+
+### 四、`self._speak()` 到底干了啥
+
+```python
+def _speak(self, text: str):
+    msg = String()
+    msg.data = text
+    self._speech_pub.publish(msg)   # 就这一句：往话题上一丢，立刻返回
+```
+
+**`_speak` 不是调用播报节点的函数，而是把文字丢到 `/tour_guide/speech` 管道里，tts_node 那边自己订阅、自己处理**：
+
+```python
+# tts_node 侧
+self.create_subscription(String, "/tour_guide/speech", self._speak_cb, 10)
+
+def _speak_cb(self, msg):
+    self._engine.say(text)
+    self._engine.runAndWait()   # ★ tts_node 自己阻塞在这里等念完
+```
+
+**所以播报的阻塞发生在 tts_node 的线程里，主控的 `_speak()` 发完立刻就跑了，根本不知道也不关心播报完没**——这就是条目一 Q1-3 说的「没有完成确认」。
+
+---
+
+### 五、改进方案：让 tts_node 发「念完了」事件
+
+**思路**：tts_node 在 `runAndWait()` 返回后，再 publish 一个 `/tour_guide/speech_done`，主控订阅后事件驱动切状态。
+
+**tts_node 侧**
+```python
+self._done_pub = self.create_publisher(String, "/tour_guide/speech_done", 10)
+
+def _speak_cb(self, msg):
+    text = msg.data.strip()
+    if self._engine is not None:
+        self._engine.say(text)
+        self._engine.runAndWait()              # 阻塞念完
+        done = String()
+        done.data = text[:20]                  # 取前 20 字方便调试
+        self._done_pub.publish(done)           # ★ 发「念完了」事件
+    else:
+        print(f"[TTS] {text}")
+        self._done_pub.publish(String())        # ★ 降级也要发，别把主控卡死
+```
+
+**tour_node 侧**
+```python
+self.create_subscription(String, "/tour_guide/speech_done", self._speech_done_cb, 10)
+self._speech_playing = False
+
+def _speech_done_cb(self, msg):
+    self._speech_playing = False
+
+# GUIDE 状态里：原来靠固定 guide_pause，现在改成事件驱动
+def _loop(self):
+    if self._state == State.GUIDE:
+        if elapsed < 0.5 and self._timer_count == 0.0:
+            self._speak(text)
+            self._speech_playing = True        # 标记「正在播」
+            self._timer_count = 1.0
+        if not self._speech_playing and elapsed > 1.0:  # done 到了 + 1s 缓冲
+            self._change_state(State.QA)
+```
+
+**注意两个坑**：
+1. `runAndWait()` 会阻塞 tts_node 自己的线程——但它本来就只干一件事，阻塞没关系；如果以后要并发干别的，得用 `MultiThreadedExecutor`。
+2. **降级路径也要发 done**——无声卡/播放失败时如果忘了发，主控会一直卡在 GUIDE 等事件，整个导览挂掉。
+3. 更严谨的做法是**加序号匹配**：speech 消息带序号，done 事件也回同样的序号，防止连续发两句时混淆。
+
+---
+
+### 六、`visitor_1` 是什么
+
+就是**迎宾节点喊的一嗓子「有人来了！」**——一个非空字符串信号。
+
+```python
+if triggered:
+    msg = String()
+    msg.data = "visitor_1"     # 改成 "hello" 或 "访客到位" 都行
+    self._detect_pub.publish(msg)
+```
+
+主控只关心「有没有收到这个话题的消息」，不太关心内容——`"visitor_1"` 字面上是「第 1 号访客」，实际作用就是**触发主控从 WAIT_VISITOR 切到 NAVIGATE** 的信号。内容改成什么都行，只要主控的 `if msg.data` 判断能成立。
+
+---
+
+### 七、完整走一遍：迎宾→导航的消息时序
+
+```
+主控                                    迎宾节点
+────                                    ──────
+① _change_state(WAIT_VISITOR)
+   → publish "WAIT_VISITOR" 到 /state
+                                          ② _state_cb 收到，self._state="WAIT_VISITOR"
+                                          ③ 0.5s 定时器 _tick：
+                                              状态==WAIT_VISITOR ✅ → 算 odom 到 marker 距离
+                                              距离 < 1.2m → 触发!
+                                              publish "visitor_1" 到 /visitor_detected
+④ _visitor_cb 收到 "visitor_1"
+   self._visitor_arrived = True
+   播报「您好，检测到您的到来...」
+   _change_state(NAVIGATE)
+   → publish "NAVIGATE" 到 /state
+                                          ⑤ _state_cb 收到 "NAVIGATE"
+                                              self._state="NAVIGATE"
+                                              _detected=False（重置等下一轮）
+                                          ⑥ 定时器 _tick：
+                                              状态!=WAIT_VISITOR → return（不干活）
+```
+
+---
+
 ## 条目一：ROS 2 节点架构
 
 > **简历原话**
