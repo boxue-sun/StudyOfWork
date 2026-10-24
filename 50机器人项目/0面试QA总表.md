@@ -164,6 +164,7 @@ self._state_pub.publish(msg) # 按喇叭，把这杯水灌进管道
 ```
 
 **类比水管系统**：
+
 - `create_publisher` = 装一根水管，声明往哪送、什么类型的水、水管能攒几桶
 - `publish(msg)` = 拧开水龙头，把**具体内容**（msg）送出去
 - `msg.data` = 水本身，装什么由你决定
@@ -228,6 +229,7 @@ def _speak_cb(self, msg):
 **思路**：tts_node 在 `runAndWait()` 返回后，再 publish 一个 `/tour_guide/speech_done`，主控订阅后事件驱动切状态。
 
 **tts_node 侧**
+
 ```python
 self._done_pub = self.create_publisher(String, "/tour_guide/speech_done", 10)
 
@@ -245,6 +247,7 @@ def _speak_cb(self, msg):
 ```
 
 **tour_node 侧**
+
 ```python
 self.create_subscription(String, "/tour_guide/speech_done", self._speech_done_cb, 10)
 self._speech_playing = False
@@ -264,6 +267,7 @@ def _loop(self):
 ```
 
 **注意两个坑**：
+
 1. `runAndWait()` 会阻塞 tts_node 自己的线程——但它本来就只干一件事，阻塞没关系；如果以后要并发干别的，得用 `MultiThreadedExecutor`。
 2. **降级路径也要发 done**——无声卡/播放失败时如果忘了发，主控会一直卡在 GUIDE 等事件，整个导览挂掉。
 3. 更严谨的做法是**加序号匹配**：speech 消息带序号，done 事件也回同样的序号，防止连续发两句时混淆。
